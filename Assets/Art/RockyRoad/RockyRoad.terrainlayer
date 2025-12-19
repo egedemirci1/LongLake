@@ -6,11 +6,11 @@ TerrainLayer:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Orman-Asfalt-Gecis
-  m_DiffuseTexture: {fileID: 2800000, guid: 43b2396b8fa78824c8c9d2832060b7c6, type: 3}
-  m_NormalMapTexture: {fileID: 2800000, guid: 557a3e653b5ca914a800aaa3fb81dc4b, type: 3}
+  m_Name: RockyRoad
+  m_DiffuseTexture: {fileID: 2800000, guid: 6e0750891b4b5cb42872fe08eb59422f, type: 3}
+  m_NormalMapTexture: {fileID: 2800000, guid: e4c2e0418ebfe7d43b28af7f70ea30d2, type: 3}
   m_MaskMapTexture: {fileID: 0}
-  m_TileSize: {x: 15, y: 15}
+  m_TileSize: {x: 10, y: 10}
   m_TileOffset: {x: 0, y: 0}
   m_Specular: {r: 0, g: 0, b: 0, a: 0}
   m_Metallic: 0
