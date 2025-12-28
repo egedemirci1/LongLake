@@ -5,20 +5,22 @@ using UnityEngine.InputSystem;
 
 namespace StarterAssets
 {
-	public class StarterAssetsInputs : MonoBehaviour
-	{
-		[Header("Character Input Values")]
-		public Vector2 move;
-		public Vector2 look;
-		public bool jump;
-		public bool sprint;
+    public class StarterAssetsInputs : MonoBehaviour
+    {
+        [Header("Character Input Values")]
+        public Vector2 move;
+        public Vector2 look;
 
-		[Header("Movement Settings")]
-		public bool analogMovement;
+        // IMPORTANT: artýk "pressed" deðil, "pressed this frame" gibi kullanýlacak
+        public bool jump;
+        public bool sprint;
 
-		[Header("Mouse Cursor Settings")]
-		public bool cursorLocked = true;
-		public bool cursorInputForLook = true;
+        [Header("Movement Settings")]
+        public bool analogMovement;
+
+        [Header("Mouse Cursor Settings")]
+        public bool cursorLocked = true;
+        public bool cursorInputForLook = true;
 
 #if ENABLE_INPUT_SYSTEM
 		public void OnMove(InputValue value)
@@ -28,15 +30,17 @@ namespace StarterAssets
 
 		public void OnLook(InputValue value)
 		{
-			if(cursorInputForLook)
+			if (cursorInputForLook)
 			{
 				LookInput(value.Get<Vector2>());
 			}
 		}
 
+		// Jump: basýldýðý aný yakala (hold deðil)
 		public void OnJump(InputValue value)
 		{
-			JumpInput(value.isPressed);
+			if (value.isPressed)
+				JumpInput();
 		}
 
 		public void OnSprint(InputValue value)
@@ -45,36 +49,41 @@ namespace StarterAssets
 		}
 #endif
 
+        public void MoveInput(Vector2 newMoveDirection)
+        {
+            move = newMoveDirection;
+        }
 
-		public void MoveInput(Vector2 newMoveDirection)
-		{
-			move = newMoveDirection;
-		} 
+        public void LookInput(Vector2 newLookDirection)
+        {
+            look = newLookDirection;
+        }
 
-		public void LookInput(Vector2 newLookDirection)
-		{
-			look = newLookDirection;
-		}
+        // Jump artýk "toggle" deðil: 1 frame true olacak, controller consume edecek
+        public void JumpInput()
+        {
+            jump = true;
+        }
 
-		public void JumpInput(bool newJumpState)
-		{
-			jump = newJumpState;
-		}
+        public void SprintInput(bool newSprintState)
+        {
+            sprint = newSprintState;
+        }
 
-		public void SprintInput(bool newSprintState)
-		{
-			sprint = newSprintState;
-		}
-		
-		private void OnApplicationFocus(bool hasFocus)
-		{
-			SetCursorState(cursorLocked);
-		}
+        // Controller burada consume eder (kullanýnca false)
+        public void ConsumeJump()
+        {
+            jump = false;
+        }
 
-		private void SetCursorState(bool newState)
-		{
-			Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
-		}
-	}
-	
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            SetCursorState(cursorLocked);
+        }
+
+        private void SetCursorState(bool newState)
+        {
+            Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
+        }
+    }
 }
