@@ -8,19 +8,19 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: trunk
-  m_Shader: {fileID: 4800000, guid: be07626d9cb737d49aef25821700e2fa, type: 3}
+  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
+  m_ValidKeywords: []
+  m_InvalidKeywords:
   - _ANIM_OFF
   - _DETAILMODE_OFF
   - _DISABLE_SSR_TRANSPARENT
   - _NORMALMAPSPACE_TANGENT_SPACE
-  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2225
+  m_CustomRenderQueue: -1
   stringTagMap:
     MotionVector: User
   disabledShaderPasses:
@@ -575,6 +575,7 @@ Material:
     - _UVMappingMask: {r: 1, g: 0, b: 0, a: 0}
     - _UVMappingMaskEmissive: {r: 1, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!114 &731129070455655587
 MonoBehaviour:
   m_ObjectHideFlags: 11
