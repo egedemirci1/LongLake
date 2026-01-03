@@ -1,101 +1,99 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Cinemachine;
-using StarterAssets;
+using UnityEngine.SceneManagement;
 
 public class NetworkLocalSetup : NetworkBehaviour
 {
-    [Header("Temel Bileþenler")]
-    [SerializeField] private FirstPersonController firstPersonController;
-    [SerializeField] private StarterAssetsInputs starterAssetsInputs;
-    [SerializeField] private PlayerInput playerInput;
-    [SerializeField] private PlayerInteraction playerInteraction; // Yeni eklediðimiz etkileþim scripti
+    [Header("Components")]
+    [SerializeField] private PlayerController playerController;
+    [SerializeField] private PlayerInteraction playerInteraction;
 
-    [Header("Kamera ve Model Ayarlarý")]
+    [Header("Camera Settings")]
     [SerializeField] private CinemachineVirtualCamera vcam;
-    [SerializeField] private GameObject modelParent; // Karakter modellerinin (Ahu/Yaman) ana objesi
+    [SerializeField] private GameObject cameraRoot;
 
-    // Baþlangýç koordinatlarý (Zemine gömülmemesi için Y=102 yapýldý)
-    private readonly Vector3 startPosition = new Vector3(1427.68f, 102.0f, 960.8365f);
+    [Header("Scene")]
+    [SerializeField] private string gameplaySceneName = "CrashSite_Main";
+
+    [Header("Spawn Position")]
+    [SerializeField] private Vector3 startPosition = new Vector3(1427.68f, 110.0f, 960.8365f);
+
+    private bool sceneEventHooked;
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log($"[NetworkLocalSetup] Spawned. IsServer={IsServer} IsClient={IsClient} IsOwner={IsOwner} OwnerClientId={OwnerClientId} LocalClientId={NetworkManager.Singleton?.LocalClientId}");
+        if (IsServer || IsOwner) TryTeleportToStart();
 
-        // SAHÝBÝ DEÐÝLSEK: Kontrolleri kapat ve diðer oyuncuyu sadece izle
         if (!IsOwner)
         {
             DisableControls();
+            if (vcam != null) vcam.enabled = false;
             return;
         }
 
-        // --- 1. KARAKTERÝ IÞINLA ---
-        CharacterController cc = GetComponent<CharacterController>();
-        if (cc != null) cc.enabled = false; // Iþýnlanma için CC geçici kapatýlýr
+        // --- MOUSE SORUNUNUN ÇÖZÜMÜ ---
+        // Seçim ekranýnda mouse'un gelmesini saðlar
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        SetupCameraRig();
+        EnableControlsWithoutInteraction();
+        HookSceneEventsWithRetry();
+        TryEnableInteractionIfAlreadyInGameplayScene();
+    }
+
+    private void SetupCameraRig()
+    {
+        // Yön sorunu çözümü: Kamerayý PlayerController'a baðlýyoruz
+        if (playerController != null)
+        {
+            playerController.cameraTransform = Camera.main.transform;
+        }
+
+        if (vcam != null && cameraRoot != null)
+        {
+            vcam.Follow = cameraRoot.transform;
+            vcam.LookAt = cameraRoot.transform;
+            vcam.enabled = true;
+            vcam.Priority = 100;
+        }
+    }
+
+    private void TryTeleportToStart()
+    {
+        var cc = GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
         transform.position = startPosition;
         if (cc != null) cc.enabled = true;
-
-        // --- 2. MODELÝ MERKEZLE ---
-        // Modellerin kapsül dýþýna kaymasýný önler
-        if (modelParent != null)
-        {
-            modelParent.transform.localPosition = Vector3.zero;
-            modelParent.transform.localRotation = Quaternion.identity;
-        }
-
-        // --- 3. KAMERA VE BAKIÞ SÝSTEMÝNÝ KUR ---
-        if (firstPersonController != null && firstPersonController.CinemachineCameraTarget != null)
-        {
-            Transform cameraRoot = firstPersonController.CinemachineCameraTarget.transform;
-
-            // Kafa objesini (Root) göz hizasýna al
-            cameraRoot.SetParent(this.transform);
-            cameraRoot.localPosition = new Vector3(0f, 1.375f, 0f);
-            cameraRoot.localRotation = Quaternion.identity;
-
-            // Sanal Kamerayý (VCAM) kafa içine hapset (Yukarý-aþaðý bakýþ için)
-            if (vcam != null)
-            {
-                vcam.transform.SetParent(cameraRoot);
-                vcam.transform.localPosition = Vector3.zero;
-                vcam.transform.localRotation = Quaternion.identity;
-                vcam.enabled = true;
-                vcam.Priority = 100;
-                vcam.Follow = cameraRoot;
-                vcam.LookAt = cameraRoot;
-            }
-        }
-
-        // --- 4. YEREL KONTROLLERÝ AKTÝF ET ---
-        EnableControls();
-
     }
 
-    private void EnableControls()
+    private void EnableControlsWithoutInteraction() { if (playerController) playerController.enabled = true; }
+    private void DisableControls() { if (playerController) playerController.enabled = false; }
+
+    private void OnNetcodeSceneLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        if (firstPersonController) firstPersonController.enabled = true;
-        if (starterAssetsInputs) starterAssetsInputs.enabled = true;
-        if (playerInput) playerInput.enabled = true;
-        if (playerInteraction) playerInteraction.enabled = true; // Etkileþim ve UI metni aktif olur
+        if (!IsOwner) return;
+        if (sceneName == gameplaySceneName) SafeEnableInteraction();
+        else SafeDisableInteraction();
     }
 
-    private void DisableControls()
+    private void HookSceneEventsWithRetry() => StartCoroutine(SceneHookRetryRoutine(5, 0.2f));
+    private System.Collections.IEnumerator SceneHookRetryRoutine(int tries, float waitSeconds)
     {
-        if (firstPersonController) firstPersonController.enabled = false;
-        if (starterAssetsInputs) starterAssetsInputs.enabled = false;
-        if (playerInput) playerInput.enabled = false;
-        if (playerInteraction) playerInteraction.enabled = false; // Diðer oyuncularýn UI'ý görünmez
-        if (vcam) vcam.enabled = false;
+        for (int i = 0; i < tries; i++) { if (TryHookSceneEvents()) yield break; yield return new WaitForSeconds(waitSeconds); }
     }
-
-    // Inspector'da sað týklayýp Reset derseniz bileþenleri otomatik bulur
-    private void Reset()
+    private bool TryHookSceneEvents()
     {
-        firstPersonController = GetComponent<FirstPersonController>();
-        starterAssetsInputs = GetComponent<StarterAssetsInputs>();
-        playerInput = GetComponent<PlayerInput>();
-        playerInteraction = GetComponent<PlayerInteraction>();
-        vcam = GetComponentInChildren<CinemachineVirtualCamera>(true);
+        if (sceneEventHooked) return true;
+        var nm = NetworkManager.Singleton;
+        if (nm?.SceneManager == null) return false;
+        nm.SceneManager.OnLoadEventCompleted += OnNetcodeSceneLoadCompleted;
+        sceneEventHooked = true;
+        return true;
     }
+    private void SafeEnableInteraction() { if (playerInteraction) playerInteraction.enabled = true; }
+    private void SafeDisableInteraction() { if (playerInteraction) playerInteraction.enabled = false; }
+    private void TryEnableInteractionIfAlreadyInGameplayScene() { if (SceneManager.GetActiveScene().name == gameplaySceneName) SafeEnableInteraction(); }
 }

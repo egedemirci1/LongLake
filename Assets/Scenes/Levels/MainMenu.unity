@@ -820,7 +820,7 @@ GameObject:
   - component: {fileID: 1445102123}
   - component: {fileID: 1445102122}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: NetworkManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -838,9 +838,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f40898fcae8c9645bbe2eb0ddb13206, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuUI
-  hostBtn: {fileID: 484402266}
-  clientBtn: {fileID: 1272186251}
-  gameSceneName: CrashSite_Main
+  hostButton: {fileID: 484402266}
+  clientButton: {fileID: 1272186251}
+  quitButton: {fileID: 0}
+  ipInput: {fileID: 0}
+  portInput: {fileID: 0}
+  statusText: {fileID: 0}
+  networkManager: {fileID: 1445102123}
+  unityTransport: {fileID: 1445102124}
+  defaultIp: 0.0.0.0
+  defaultPort: 7777
+  gameplaySceneName: CrashSite_Main
 --- !u!114 &1445102123
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -905,9 +913,9 @@ MonoBehaviour:
   m_MaxConnectAttempts: 60
   m_DisconnectTimeoutMS: 30000
   ConnectionData:
-    Address: 127.0.0.1
+    Address: 0.0.0.0
     Port: 7777
-    ServerListenAddress: 127.0.0.1
+    ServerListenAddress: 0.0.0.0
   DebugSimulator:
     PacketDelayMS: 0
     PacketJitterMS: 0
