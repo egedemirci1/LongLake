@@ -1,8 +1,9 @@
 using UnityEngine;
+using Unity.Netcode;
 
-[RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
+<<<<<<< Updated upstream
     public float speed = 5f;
     public float gravity = -9.81f;
     public Transform cameraTransform;
@@ -13,10 +14,24 @@ public class PlayerController : MonoBehaviour
     void Awake()
     {
         controller = GetComponent<CharacterController>();
+=======
+    [Header("Models & Character Selection")]
+    public GameObject ahuModel;
+    public GameObject yamanModel;
+
+    public NetworkVariable<int> characterIndex = new NetworkVariable<int>(0,
+        NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    public override void OnNetworkSpawn()
+    {
+        characterIndex.OnValueChanged += (_, newVal) => UpdateCharacterModel(newVal);
+        UpdateCharacterModel(characterIndex.Value);
+>>>>>>> Stashed changes
     }
 
-    void Update()
+    private void UpdateCharacterModel(int index)
     {
+<<<<<<< Updated upstream
         float h = Input.GetAxis("Horizontal");   // A-D
         float v = Input.GetAxis("Vertical");     // W-S
 
@@ -50,5 +65,14 @@ public class PlayerController : MonoBehaviour
 
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+=======
+        if (ahuModel) ahuModel.SetActive(index == 0);
+        if (yamanModel) yamanModel.SetActive(index == 1);
+    }
+
+    public void SelectCharacter(int index)
+    {
+        if (IsOwner) characterIndex.Value = index;
+>>>>>>> Stashed changes
     }
 }
