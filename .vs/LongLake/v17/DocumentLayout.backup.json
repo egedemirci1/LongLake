@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "D:\\LongLake\\LongLake\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\LongLake\\LongLake\\Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\LongLake\\LongLake\\Assets\\Scripts\\NetworkLocalSetup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\Scripts\\NetworkLocalSetup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\LongLake\\LongLake\\Assets\\Scripts\\PlayerController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -13,6 +13,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\LongLake\\LongLake\\Assets\\ThirdParty\\StarterAssets\\FirstPersonController\\Scripts\\FirstPersonController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\ThirdParty\\StarterAssets\\FirstPersonController\\Scripts\\FirstPersonController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\LongLake\\LongLake\\Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\LongLake\\LongLake\\Library\\PackageCache\\com.unity.render-pipelines.universal@cc5029882822\\Shaders\\Lit.shader||{3B902123-F8A7-4915-9F01-361F908088D0}",
@@ -38,6 +42,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "NetworkLocalSetup.cs",
+              "DocumentMoniker": "D:\\LongLake\\LongLake\\Assets\\Scripts\\NetworkLocalSetup.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\NetworkLocalSetup.cs",
+              "ToolTip": "D:\\LongLake\\LongLake\\Assets\\Scripts\\NetworkLocalSetup.cs",
+              "RelativeToolTip": "Assets\\Scripts\\NetworkLocalSetup.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAIAwwBgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-03T16:59:04.438Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "StarterAssetsInputs.cs",
               "DocumentMoniker": "D:\\LongLake\\LongLake\\Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs",
               "RelativeDocumentMoniker": "Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs",
@@ -45,12 +62,7 @@
               "RelativeToolTip": "Assets\\ThirdParty\\StarterAssets\\InputSystem\\StarterAssetsInputs.cs",
               "ViewState": "AgIAADIAAAAAAAAAAAAiwFkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-28T22:40:20.514Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+              "WhenOpened": "2025-12-28T22:40:20.514Z"
             },
             {
               "$type": "Document",
@@ -60,7 +72,7 @@
               "RelativeDocumentMoniker": "Assets\\Scripts\\PlayerController.cs",
               "ToolTip": "D:\\LongLake\\LongLake\\Assets\\Scripts\\PlayerController.cs",
               "RelativeToolTip": "Assets\\Scripts\\PlayerController.cs",
-              "ViewState": "AgIAADwAAAAAAAAAAAAiwFoAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAFgAAAAAAAAAAAAwwHkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-28T22:28:52.875Z",
               "EditorCaption": ""
@@ -73,13 +85,13 @@
               "RelativeDocumentMoniker": "Assets\\ThirdParty\\StarterAssets\\FirstPersonController\\Scripts\\FirstPersonController.cs",
               "ToolTip": "D:\\LongLake\\LongLake\\Assets\\ThirdParty\\StarterAssets\\FirstPersonController\\Scripts\\FirstPersonController.cs",
               "RelativeToolTip": "Assets\\ThirdParty\\StarterAssets\\FirstPersonController\\Scripts\\FirstPersonController.cs",
-              "ViewState": "AgIAAFkAAAAAAAAAAAAkwIAAAAABAAAAAAAAAA==",
+              "ViewState": "AgIAAJcAAAAAAAAAAAAiwLUAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-28T20:06:51.185Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Lit.shader",
               "DocumentMoniker": "D:\\LongLake\\LongLake\\Library\\PackageCache\\com.unity.render-pipelines.universal@cc5029882822\\Shaders\\Lit.shader",
               "RelativeDocumentMoniker": "Library\\PackageCache\\com.unity.render-pipelines.universal@cc5029882822\\Shaders\\Lit.shader",
@@ -91,7 +103,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "3D_Models_license_notice.txt",
               "DocumentMoniker": "C:\\Users\\Adnan\\Documents\\GitHub\\LongLake\\Assets\\1950s Classic Car #6 Variant\\Licenses\\3D_Models_license_notice.txt",
               "ToolTip": "C:\\Users\\Adnan\\Documents\\GitHub\\LongLake\\Assets\\1950s Classic Car #6 Variant\\Licenses\\3D_Models_license_notice.txt",
@@ -100,7 +112,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "WaterFlow.cs",
               "DocumentMoniker": "D:\\LongLake\\LongLake\\Assets\\Scripts\\WaterFlow.cs",
               "RelativeDocumentMoniker": "Assets\\Scripts\\WaterFlow.cs",

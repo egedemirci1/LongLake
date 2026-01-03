@@ -1,90 +1,121 @@
 using UnityEngine;
+using Unity.Netcode;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
     [Header("Movement")]
     public float speed = 5f;
-    public float rotationSpeed = 10f;
+    public float gravity = -9.81f;
     public Transform cameraTransform;
 
-    [Header("Jump & Gravity")]
-    public float gravity = -9.81f;
-    public float jumpHeight = 1.6f; // metre cinsinden zýplama yüksekliði
-    public float groundedStickForce = -2f; // yerde "yapýþma" için
+    [Header("Models & Character Selection")]
+    public GameObject ahuModel;
+    public GameObject yamanModel;
 
-    [Header("Animation (Optional)")]
-    public Animator animator;
+    // Owner seçer, herkes görür (Netcode varsa)
+    public NetworkVariable<int> characterIndex = new NetworkVariable<int>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
 
     private CharacterController controller;
     private Vector3 velocity;
 
-    void Awake()
+    private void Awake()
     {
         controller = GetComponent<CharacterController>();
-
-        // Eðer elle atamadýysan otomatik bulmaya çalýþsýn
-        if (animator == null)
-            animator = GetComponentInChildren<Animator>();
+        // Netcode yokken / editorde test ederken de model ilk haline gelsin
+        UpdateCharacterModel(characterIndex.Value);
     }
 
-    void Update()
+    public override void OnNetworkSpawn()
     {
-        // --- Ground check ---
-        bool isGrounded = controller.isGrounded;
-        if (isGrounded && velocity.y < 0f)
-            velocity.y = groundedStickForce;
+        characterIndex.OnValueChanged += OnCharacterIndexChanged;
+        UpdateCharacterModel(characterIndex.Value);
+    }
 
-        // --- Input ---
-        float h = Input.GetAxis("Horizontal");   // A-D
-        float v = Input.GetAxis("Vertical");     // W-S
+    public override void OnNetworkDespawn()
+    {
+        characterIndex.OnValueChanged -= OnCharacterIndexChanged;
+    }
 
-        // Kamera bazlý yön
-        Vector3 camForward = cameraTransform.forward;
-        Vector3 camRight = cameraTransform.right;
+    private void OnCharacterIndexChanged(int oldVal, int newVal)
+    {
+        UpdateCharacterModel(newVal);
+    }
 
-        camForward.y = 0f;
-        camRight.y = 0f;
+    private void Update()
+    {
+        // Sadece local player input okusun (multiplayer)
+        if (IsSpawned && !IsOwner) return;
 
-        camForward.Normalize();
-        camRight.Normalize();
+        if (controller == null) controller = GetComponent<CharacterController>();
 
-        Vector3 moveDir = (camForward * v + camRight * h);
-        float moveMagnitude = Mathf.Clamp01(moveDir.magnitude);
-        if (moveDir.sqrMagnitude > 0.001f)
-            moveDir.Normalize();
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
 
-        // --- Move & Rotate ---
-        if (moveMagnitude > 0.01f)
+        Vector3 moveDir;
+
+        if (cameraTransform != null)
         {
-            Quaternion targetRot = Quaternion.LookRotation(moveDir);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotationSpeed);
+            Vector3 camForward = cameraTransform.forward;
+            Vector3 camRight = cameraTransform.right;
+
+            camForward.y = 0f;
+            camRight.y = 0f;
+
+            camForward.Normalize();
+            camRight.Normalize();
+
+            moveDir = (camForward * v + camRight * h);
+        }
+        else
+        {
+            moveDir = new Vector3(h, 0f, v);
         }
 
-        controller.Move(moveDir * (speed * moveMagnitude) * Time.deltaTime);
+        if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
 
-        // --- Jump ---
-        if (isGrounded && Input.GetButtonDown("Jump")) // default: Space
+        if (moveDir.sqrMagnitude > 0.0001f)
         {
-            // jumpHeight kadar zýplatacak ilk hýz:
-            // v = sqrt(h * -2 * g)
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                Quaternion.LookRotation(moveDir),
+                Time.deltaTime * 10f
+            );
 
-            // Anim trigger
-            if (animator != null)
-                animator.SetTrigger("Jump");
+            controller.Move(moveDir * speed * Time.deltaTime);
         }
 
-        // --- Gravity ---
+        ApplyGravity();
+    }
+
+    private void ApplyGravity()
+    {
+        if (controller.isGrounded && velocity.y < 0f)
+            velocity.y = -2f;
+
         velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
+    }
 
-        // --- Animator params (recommended) ---
-        if (animator != null)
-        {
-            animator.SetFloat("Speed", moveMagnitude);           // 0-1
-            animator.SetBool("IsGrounded", controller.isGrounded);
-            animator.SetFloat("VerticalVelocity", velocity.y);   // düþüþ/zýplayýþ blend için iyi
-        }
+    private void UpdateCharacterModel(int index)
+    {
+        if (ahuModel) ahuModel.SetActive(index == 0);
+        if (yamanModel) yamanModel.SetActive(index == 1);
+    }
+
+    // CharacterSelectPanel burayý çaðýrýyor
+    public void SelectCharacter(int index)
+    {
+        // Network yokken / spawn olmadan UI test etmek için:
+        // Direkt local deðiþtir (hata vermesin)
+        UpdateCharacterModel(index);
+
+        // Netcode aktif ve bu oyuncu owner ise, herkese yay
+        if (IsSpawned && IsOwner)
+            characterIndex.Value = index;
     }
 }

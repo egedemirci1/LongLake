@@ -1,72 +1,144 @@
+using System.Collections;
 using UnityEngine;
+using Unity.Netcode;
+using TMPro;
 
-public class PlayerInteraction : MonoBehaviour
+public class PlayerInteraction : NetworkBehaviour
 {
-    [Header("References")]
-    [SerializeField] private Camera playerCamera;
+    [Header("Ayarlar")]
+    [SerializeField] private float interactDistance = 4.0f;
+    [SerializeField] private Transform cameraRoot;
 
-    [Header("Settings")]
-    [SerializeField] private float interactDistance = 5f;
-    [SerializeField] private KeyCode interactKey = KeyCode.E;
+    private TMP_Text interactionText;
+    private InventoryManager myInventory;
 
-    // Bu mask, oyuncunun kendi layer'ýný hariç tutar
-    private int interactionMask;
-
-    private void Awake()
+    public override void OnNetworkSpawn()
     {
-        // Kamera atanmadýysa, önce child'larda ara, sonra Camera.main dene
-        if (playerCamera == null)
-        {
-            playerCamera = GetComponentInChildren<Camera>();
+        if (!IsOwner) return;
 
-            if (playerCamera == null)
+        // Inventory root'ta olmayabilir -> child dahil ara
+        myInventory = GetComponentInChildren<InventoryManager>(true);
+
+        if (myInventory == null)
+        {
+            Debug.LogError("<color=red>[Interaction]</color> InventoryManager bulunamadý! " +
+                           "Player prefab/root veya child objelerinde InventoryManager var mý?");
+        }
+    }
+
+    private void Start()
+    {
+        if (!IsOwner) return;
+        StartCoroutine(BindUIUntilFound());
+    }
+
+    private IEnumerator BindUIUntilFound()
+    {
+        float timeout = 5f;
+        float t = 0f;
+
+        while (interactionText == null && t < timeout)
+        {
+            TryBindUI();
+            if (interactionText != null) break;
+
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (interactionText == null)
+        {
+            Debug.LogError("<color=red>[Interaction]</color> UI bulunamadý!");
+            yield break;
+        }
+
+        Debug.Log("<color=green>[Interaction]</color> UI baðlandý -> " + interactionText.gameObject.name);
+        interactionText.text = "";
+        interactionText.gameObject.SetActive(false);
+    }
+
+    private void TryBindUI()
+    {
+        var all = Resources.FindObjectsOfTypeAll<TMP_Text>();
+
+        // 1) Deneme yazan
+        foreach (var txt in all)
+        {
+            if (txt == null) continue;
+            if (!txt.gameObject.scene.IsValid()) continue;
+
+            if (!string.IsNullOrEmpty(txt.text) && txt.text.ToLower().Contains("deneme"))
             {
-                playerCamera = Camera.main;
+                interactionText = txt;
+                return;
             }
         }
 
-        if (playerCamera == null)
+        // 2) InteractionText adlý
+        foreach (var txt in all)
         {
-            Debug.LogWarning($"{nameof(PlayerInteraction)} on {name}: Kamera bulunamadý. Inspector'dan atamayý unutma.");
+            if (txt == null) continue;
+            if (!txt.gameObject.scene.IsValid()) continue;
+
+            if (txt.gameObject.name == "InteractionText")
+            {
+                interactionText = txt;
+                return;
+            }
         }
 
-        // Sadece kendi layer'ýný ignore et, diðer tüm layer'lar raycast'e dahil
-        interactionMask = ~(1 << gameObject.layer);
+        // 3) InteractionUI tag altý
+        GameObject uiRoot = GameObject.FindWithTag("InteractionUI");
+        if (uiRoot != null)
+            interactionText = uiRoot.GetComponentInChildren<TMP_Text>(true);
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(interactKey))
-        {
-            TryInteract();
-        }
+        if (!IsOwner) return;
+        if (interactionText == null) return;
+
+        Vector3 origin = cameraRoot != null ? cameraRoot.position : transform.position + Vector3.up * 1.6f;
+        Vector3 direction = cameraRoot != null ? cameraRoot.forward : transform.forward;
+
+        Debug.DrawRay(origin, direction * interactDistance, Color.magenta);
+        CheckInteraction(origin, direction);
     }
 
-    private void TryInteract()
+    private void CheckInteraction(Vector3 origin, Vector3 direction)
     {
-        if (playerCamera == null)
+        int layerMask = ~(1 << gameObject.layer);
+
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, interactDistance, layerMask))
         {
-            // Awake'de de uyarý veriyoruz ama burasý ekstra güvenlik
-            Debug.LogWarning($"{nameof(PlayerInteraction)} on {name}: playerCamera atanmadýðý için etkileþim çalýþmadý.");
-            return;
-        }
+            IInteractable interactable =
+                hit.collider.GetComponent<IInteractable>() ??
+                hit.collider.GetComponentInParent<IInteractable>();
 
-        // Ekranýn tam ortasýndan ray at
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-
-        // Ýstersen debug için açabilirsin:
-        // Debug.DrawRay(ray.origin, ray.direction * interactDistance, Color.red, 1f);
-
-        if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, interactionMask, QueryTriggerInteraction.Collide))
-        {
-            // Vurduðu objede PickupItem var mý diye bak
-            PickupItem pickup = hit.collider.GetComponent<PickupItem>();
-
-            if (pickup != null)
+            if (interactable != null)
             {
-                pickup.OnPickup();
+                interactionText.gameObject.SetActive(true);
+                interactionText.text = "[E] " + interactable.GetInteractText();
+
+                if (Input.GetKeyDown(KeyCode.E))
+                {
+                    // Spawn timing/child ihtimali için son bir garanti
+                    if (myInventory == null)
+                        myInventory = GetComponentInChildren<InventoryManager>(true);
+
+                    if (myInventory == null)
+                    {
+                        Debug.LogError("<color=red>[Interaction]</color> InventoryManager hâlâ yok. Player'a InventoryManager eklemen lazým.");
+                        return;
+                    }
+
+                    interactable.Interact(myInventory);
+                }
+                return;
             }
-            // Ýstersen burada baþka interface/interaction tiplerini de kontrol edebilirsin
         }
+
+        if (interactionText.gameObject.activeSelf)
+            interactionText.gameObject.SetActive(false);
     }
 }
