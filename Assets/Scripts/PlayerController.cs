@@ -84,6 +84,10 @@ public class PlayerController : NetworkBehaviour
         GroundedCheck();
         JumpAndGravity();
         Move();
+        if (IsOwner && Time.frameCount % 15 == 0) // ~ saniyede 3-4 kez
+        {
+            Debug.Log($"[SpeedDBG] _speed={_speed:F2} target={(Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : walkSpeed):F2} animSpeed={_animator.GetFloat("Speed"):F2}");
+        }
     }
 
     private void LateUpdate()
