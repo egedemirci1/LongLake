@@ -3,7 +3,172 @@ guid: 917bf90db7e61064c8e3ea6596cec062
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Glass
+    second: {fileID: 2100000, guid: a8d313a9ed045c942b00f85399eb1f81, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Glass_material
+    second: {fileID: 2100000, guid: ea11c19cd1ba85441b80498bdf7135ad, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Handle_material
+    second: {fileID: 2100000, guid: 7e9842baba62902468dc7c0d22aa05c4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Marble
+    second: {fileID: 2100000, guid: 32395ef5387941542a001f813ac46ae6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.001
+    second: {fileID: 2100000, guid: b7dd18344d439614d8436d523649687f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Material.004
+    second: {fileID: 2100000, guid: c6e74691de966924e8db770dce6d12ce, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastic
+    second: {fileID: 2100000, guid: 9fa8b5286710a494ea92cb51b521a653, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plastic_Handle_material
+    second: {fileID: 2100000, guid: c3f67551b42f0b647b4e3969c4c09919, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Window_material
+    second: {fileID: 2100000, guid: 3c616c2d7b7563a4e82808e3c200212c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: balkon
+    second: {fileID: 2100000, guid: 9bbd18b84ea163742a13011001bc817e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: balkon2
+    second: {fileID: 2100000, guid: 7958f4706a5885f47a81be5119dc2beb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: balkon3
+    second: {fileID: 2100000, guid: 307b9a16f7cc1ea42853f23cbcc670ec, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cati
+    second: {fileID: 2100000, guid: ef3ce54a3b4667b46b36988343839fde, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: duvar
+    second: {fileID: 2100000, guid: 96a44748e9d48fb4fb43d62e6c1eb3ad, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: hidden_material
+    second: {fileID: 2100000, guid: 4ea22f7ee0bf5e547a7a6b2c0bcae0b8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: kapi-disi
+    second: {fileID: 2100000, guid: cdf2da8aef4c0334597e0cc71a66ad15, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: kapi-ici
+    second: {fileID: 2100000, guid: a622ceb3ad3743249917a0631c6673cc, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pe
+    second: {fileID: 2100000, guid: 85306b3f57c275244b630360b5dfe638, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: pencerezemin
+    second: {fileID: 2100000, guid: cc5ca9e5b54c78547b8a3f9dccb2b171, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: sutun
+    second: {fileID: 2100000, guid: 28b2e70660e4ff04c94e824b9192389f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: zemin
+    second: {fileID: 2100000, guid: 07117c0c6668a3b43a1a8cd99ac95d84, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: damaged_concrete_floor_02_diff_2k
+    second: {fileID: 2800000, guid: 0f0ee55560429fb4cb6c29ac27045ba2, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: damaged_concrete_floor_02_nor_gl_2k
+    second: {fileID: 2800000, guid: f6cd99ec785a5d04c8ad488844eb4cde, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: damaged_concrete_floor_02_rough_2k
+    second: {fileID: 2800000, guid: 77827dd688e54cb47b4b24edb1a0552e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: granite_tile_04_diff_2k
+    second: {fileID: 2800000, guid: 1f6ed4430eb46c64286fa78443eee5fd, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: granite_tile_04_nor_gl_2k
+    second: {fileID: 2800000, guid: e53320eb1d6875b40b0fced2d10f6c1a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: granite_tile_04_rough_2k
+    second: {fileID: 2800000, guid: d855220ee1827064095cd6856d7bf2dc, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: roof_slates_03_diff_2k
+    second: {fileID: 2800000, guid: 95fe309b7e33af548a92f8287c9cf092, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: roof_slates_03_nor_gl_2k
+    second: {fileID: 2800000, guid: 5813e9a91daf779469bd6672fe336172, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: roof_slates_03_rough_2k
+    second: {fileID: 2800000, guid: e77a3841c1b0c7c46bf22625b1393def, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rough_concrete_diff_2k
+    second: {fileID: 2800000, guid: 2d725843f363a994b8ccf5dcfe98af4e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rough_concrete_nor_gl_2k
+    second: {fileID: 2800000, guid: a2946db753a17c8409b7b35a33dd1c8d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: rough_concrete_rough_2k
+    second: {fileID: 2800000, guid: 60f5003c24420bc46bbac4f6d4ac186b, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
