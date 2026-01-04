@@ -18,7 +18,7 @@ public class NetworkLocalSetup : NetworkBehaviour
     [SerializeField] private string gameplaySceneName = "CrashSite_Main";
 
     [Header("Spawn Position")]
-    [SerializeField] private Vector3 startPosition = new Vector3(1427.68f, 110.0f, 960.8365f);
+    [SerializeField] private Vector3 startPosition = new Vector3(1649.1f, 114.95f, 648.5295f);
 
     private bool sceneEventHooked;
 
