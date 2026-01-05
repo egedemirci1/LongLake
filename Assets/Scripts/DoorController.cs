@@ -3,7 +3,7 @@ using Unity.Netcode;
 
 public class DoorController : NetworkBehaviour, IInteractable
 {
-    [Header("Kapý Durumu (Baþlangýç Deðerleri)")]
+    [Header("Kapï¿½ Durumu (Baï¿½langï¿½ï¿½ Deï¿½erleri)")]
     [SerializeField] private bool startOpen = false;
     [SerializeField] private bool startLocked = false;
     public string requiredKeyName = "MutfakAnahtari";
@@ -13,7 +13,7 @@ public class DoorController : NetworkBehaviour, IInteractable
     public float closeRotation = 0.0f;
     public float smooth = 5.0f;
 
-    // Network üzerinden senkronlanan durumlar
+    // Network ï¿½zerinden senkronlanan durumlar
     private NetworkVariable<bool> IsOpen = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -28,12 +28,12 @@ public class DoorController : NetworkBehaviour, IInteractable
 
     private void Awake()
     {
-        // Ýstersen burada local init býrakabilirsin; asýl init server'da yapýlacak.
+        // ï¿½stersen burada local init bï¿½rakabilirsin; asï¿½l init server'da yapï¿½lacak.
     }
 
     public override void OnNetworkSpawn()
     {
-        // Ýlk durumlarý sadece server set etmeli
+        // ï¿½lk durumlarï¿½ sadece server set etmeli
         if (IsServer)
         {
             IsOpen.Value = startOpen;
@@ -43,7 +43,7 @@ public class DoorController : NetworkBehaviour, IInteractable
 
     private void Update()
     {
-        // Her client kapýnýn güncel (network) durumuna göre animasyonu oynatýr
+        // Her client kapï¿½nï¿½n gï¿½ncel (network) durumuna gï¿½re animasyonu oynatï¿½r
         float targetAngle = IsOpen.Value ? openRotation : closeRotation;
         Quaternion target = Quaternion.Euler(0, 0, targetAngle);
         transform.localRotation = Quaternion.Slerp(transform.localRotation, target, Time.deltaTime * smooth);
@@ -52,25 +52,25 @@ public class DoorController : NetworkBehaviour, IInteractable
     // IInteractable
     public void Interact(InventoryManager interactorInventory)
     {
-        // Client tarafýnda input geldiðinde server'a istek at
-        // (Host ise hem client hem server olacaðý için yine güvenli çalýþýr)
+        // Client tarafï¿½nda input geldiï¿½inde server'a istek at
+        // (Host ise hem client hem server olacaï¿½ï¿½ iï¿½in yine gï¿½venli ï¿½alï¿½ï¿½ï¿½r)
         if (!IsSpawned) return;
 
         bool hasKey = (interactorInventory != null && interactorInventory.HasKey(requiredKeyName));
         TryToggleDoorServerRpc(hasKey);
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void TryToggleDoorServerRpc(bool clientClaimsHasKey)
     {
-        // Kilitliyse, anahtar yoksa açma
+        // Kilitliyse, anahtar yoksa aï¿½ma
         if (IsLocked.Value)
         {
             if (clientClaimsHasKey)
             {
                 IsLocked.Value = false;
                 IsOpen.Value = true;
-                Debug.Log($"<b>[KAPI]</b> {requiredKeyName} kullanýldý, kapý açýldý! (Server)");
+                Debug.Log($"<b>[KAPI]</b> {requiredKeyName} kullanï¿½ldï¿½, kapï¿½ aï¿½ï¿½ldï¿½! (Server)");
             }
             else
             {
@@ -79,13 +79,13 @@ public class DoorController : NetworkBehaviour, IInteractable
             return;
         }
 
-        // Kilitli deðilse toggle
+        // Kilitli deï¿½ilse toggle
         IsOpen.Value = !IsOpen.Value;
     }
 
     public string GetInteractText()
     {
-        if (IsLocked.Value) return $"KAPI KÝLÝTLÝ ({requiredKeyName} GEREKLÝ)";
-        return IsOpen.Value ? "KAPIYI KAPAT" : "KAPIYI AÇ";
+        if (IsLocked.Value) return $"KAPI Kï¿½Lï¿½TLï¿½ ({requiredKeyName} GEREKLï¿½)";
+        return IsOpen.Value ? "KAPIYI KAPAT" : "KAPIYI Aï¿½";
     }
 }

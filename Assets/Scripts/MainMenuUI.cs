@@ -12,7 +12,7 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private Button clientButton;
     [SerializeField] private Button quitButton;
 
-    // (Sizde þu an None, sorun deðil. Default Ip/Port kullanýlacak.)
+    // (Currently None in inspector, that's fine. Default IP/Port will be used.)
     [SerializeField] private InputField ipInput;
     [SerializeField] private InputField portInput;
     [SerializeField] private Text statusText;
@@ -39,7 +39,7 @@ public class MainMenuUI : MonoBehaviour
 
         if (networkManager == null)
         {
-            Debug.LogError("[MainMenuUI] NetworkManager.Singleton bulunamadý! Scene'de NetworkManager olmalý.");
+            Debug.LogError("[MainMenuUI] NetworkManager.Singleton not found! Scene must have NetworkManager.");
             return;
         }
 
@@ -48,7 +48,7 @@ public class MainMenuUI : MonoBehaviour
 
         if (unityTransport == null)
         {
-            Debug.LogError("[MainMenuUI] UnityTransport bulunamadý! NetworkManager transport UnityTransport olmalý.");
+            Debug.LogError("[MainMenuUI] UnityTransport not found! NetworkManager transport must be UnityTransport.");
             return;
         }
 
@@ -58,7 +58,7 @@ public class MainMenuUI : MonoBehaviour
         SetStatus($"Ready. ActiveScene={SceneManager.GetActiveScene().name}");
         Debug.Log($"[MainMenuUI] Ready. ActiveScene={SceneManager.GetActiveScene().name}");
 
-        // Client debug ticker (her 1 saniyede bir durum basar; sadece client denemesi varken aktif)
+        // Client debug ticker (prints status every 1 second; only active when client is trying to connect)
         InvokeRepeating(nameof(TickClientDebug), 1f, 1f);
     }
 
@@ -106,8 +106,8 @@ public class MainMenuUI : MonoBehaviour
         if (!ApplyConnectionDataFromUIOrDefaults(out string ip, out ushort port))
             return;
 
-        // Host tarafýnda bind için en güvenlisi: UnityTransport Address=0.0.0.0 (Inspector)
-        // Burada SetConnectionData server bind deðil, connection data içindir. Yine de loglamak faydalý.
+        // For host bind, safest: UnityTransport Address=0.0.0.0 (Inspector)
+        // Here SetConnectionData is not for server bind, it's for connection data. Still useful to log.
         SetStatus($"Starting host... (listen {ip}:{port})");
         Debug.Log($"[MainMenuUI] Transport set to {ip}:{port}");
         Debug.Log("[MainMenuUI] Starting host...");
@@ -120,10 +120,10 @@ public class MainMenuUI : MonoBehaviour
             return;
         }
 
-        // Scene events hook: StartHost sonrasý dene (Awake'te null olabiliyor)
+        // Scene events hook: try after StartHost (can be null in Awake)
         TryHookSceneEventsWithRetry();
 
-        // Sahne yükleme: sadece server/host yapar
+        // Scene loading: only server/host does this
         TryLoadGameplayScene_Server();
     }
 
@@ -131,6 +131,14 @@ public class MainMenuUI : MonoBehaviour
     {
         if (!ApplyConnectionDataFromUIOrDefaults(out string ip, out ushort port))
             return;
+
+        // 0.0.0.0 is invalid target IP on client side, convert to localhost
+        if (ip == "0.0.0.0")
+        {
+            ip = "127.0.0.1";
+            Debug.Log("[MainMenuUI] Client IP 0.0.0.0 detected, converting to 127.0.0.1 (localhost)");
+            unityTransport.SetConnectionData(ip, port);
+        }
 
         SetStatus($"Starting client to {ip}:{port} ...");
         Debug.Log($"[MainMenuUI] Transport set to {ip}:{port}");
@@ -148,10 +156,10 @@ public class MainMenuUI : MonoBehaviour
             return;
         }
 
-        // Scene events hook: StartClient sonrasý dene (Awake'te null olabiliyor)
+        // Scene events hook: try after StartClient (can be null in Awake)
         TryHookSceneEventsWithRetry();
 
-        // 10 sn sonra baðlanmadýysa durumu bas
+        // Print status if not connected after 10 seconds
         Invoke(nameof(LogClientStillConnecting), 10f);
     }
 
@@ -182,7 +190,7 @@ public class MainMenuUI : MonoBehaviour
             return false;
         }
 
-        // Baðlantý toleranslarý (VPN/ZeroTier için)
+        // Connection timeouts (for VPN/ZeroTier)
         unityTransport.ConnectTimeoutMS = 10000;
         unityTransport.DisconnectTimeoutMS = 60000;
         unityTransport.MaxConnectAttempts = 60;
@@ -204,14 +212,14 @@ public class MainMenuUI : MonoBehaviour
         // Build list check
         if (!Application.CanStreamedLevelBeLoaded(gameplaySceneName))
         {
-            Debug.LogError($"[MainMenuUI] Scene '{gameplaySceneName}' build list'te yok veya isim yanlýþ.");
+            Debug.LogError($"[MainMenuUI] Scene '{gameplaySceneName}' not in build list or name is wrong.");
             SetStatus($"Scene missing in build: {gameplaySceneName}");
             return;
         }
 
         if (networkManager.SceneManager == null)
         {
-            Debug.LogError("[MainMenuUI] SceneManager is null even after StartHost. Enable Scene Management açýk mý? Tek NetworkManager mý var?");
+            Debug.LogError("[MainMenuUI] SceneManager is null even after StartHost. Is Enable Scene Management checked? Is there only one NetworkManager?");
             SetStatus("SceneManager null (Enable Scene Management?)");
             return;
         }
@@ -223,8 +231,8 @@ public class MainMenuUI : MonoBehaviour
 
     private void TryHookSceneEventsWithRetry()
     {
-        // SceneManager bazý sürümlerde StartHost/StartClient çaðrýsýndan sonraki frame’de hazýr oluyor
-        // O yüzden 5 kere dene
+        // SceneManager in some versions becomes ready the frame after StartHost/StartClient call
+        // So try 5 times
         const int maxTries = 5;
         StartCoroutine(SceneHookRetryRoutine(maxTries, 0.2f));
     }
@@ -250,7 +258,7 @@ public class MainMenuUI : MonoBehaviour
         var sm = networkManager.SceneManager;
         if (sm == null)
         {
-            Debug.LogWarning("[MainMenuUI] SceneManager null (henüz init olmamýþ olabilir).");
+            Debug.LogWarning("[MainMenuUI] SceneManager null (might not be initialized yet).");
             return false;
         }
 
@@ -289,7 +297,7 @@ public class MainMenuUI : MonoBehaviour
         Debug.Log("[MainMenuUI] Connected. clientId=" + clientId);
         SetStatus("Connected. clientId=" + clientId);
 
-        // Client baðlandýysa "connecting" modundan çýk
+        // Exit "connecting" mode if client connected
         if (!networkManager.IsServer)
             isTryingToConnectClient = false;
     }
@@ -316,7 +324,7 @@ public class MainMenuUI : MonoBehaviour
     {
         if (networkManager == null) return;
         if (!isTryingToConnectClient) return;
-        if (networkManager.IsServer) return; // host için deðil, client debug
+        if (networkManager.IsServer) return; // not for host, client debug only
 
         float elapsed = Time.realtimeSinceStartup - connectStartTime;
 
