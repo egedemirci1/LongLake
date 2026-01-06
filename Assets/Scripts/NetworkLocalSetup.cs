@@ -18,9 +18,13 @@ public class NetworkLocalSetup : NetworkBehaviour
     [SerializeField] private string gameplaySceneName = "CrashSite_Main";
 
     [Header("Spawn Position")]
-    [SerializeField] private Vector3 startPosition = new Vector3(1649.1f, 114.95f, 648.5295f);
+    [SerializeField] private Vector3 startPosition = new Vector3(1611f, 135f, 633f);
+
+    [Header("Character Selection")]
+    [SerializeField] private GameObject selectionPanel; // Auto-found at runtime (CharacterSelector'daki panel)
 
     private bool sceneEventHooked;
+    private bool controlsEnabled = false;
 
     public override void OnNetworkSpawn()
     {
@@ -33,20 +37,28 @@ public class NetworkLocalSetup : NetworkBehaviour
             return;
         }
 
-        // --- MOUSE SORUNUNUN ÇÖZÜMÜ ---
-        // Seçim ekranýnda mouse'un gelmesini saðlar
+        // --- MOUSE SORUNUNUN ï¿½ï¿½Zï¿½Mï¿½ ---
+        // Seï¿½im ekranï¿½nda mouse'un gelmesini saï¿½lar
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
         SetupCameraRig();
-        EnableControlsWithoutInteraction();
+        
+        // Karakter seÃ§im panelini otomatik bul
+        FindSelectionPanel();
+        
+        // BaÅŸlangÄ±Ã§ta kontrolleri devre dÄ±ÅŸÄ± bÄ±rak (karakter seÃ§ilene kadar)
+        DisableControls();
+        SafeDisableInteraction();
+        controlsEnabled = false;
+        
         HookSceneEventsWithRetry();
         TryEnableInteractionIfAlreadyInGameplayScene();
     }
 
     private void SetupCameraRig()
     {
-        // Yön sorunu çözümü: Kamerayý PlayerController'a baðlýyoruz
+        // Yï¿½n sorunu ï¿½ï¿½zï¿½mï¿½: Kamerayï¿½ PlayerController'a baï¿½lï¿½yoruz
         if (playerController != null)
         {
             playerController.cameraTransform = Camera.main.transform;
@@ -67,6 +79,24 @@ public class NetworkLocalSetup : NetworkBehaviour
         if (cc != null) cc.enabled = false;
         transform.position = startPosition;
         if (cc != null) cc.enabled = true;
+    }
+
+    private void FindSelectionPanel()
+    {
+        // EÄŸer manuel atanmamÄ±ÅŸsa, CharacterSelector'dan otomatik bul
+        if (selectionPanel == null)
+        {
+            CharacterSelector selector = FindObjectOfType<CharacterSelector>();
+            if (selector != null && selector.selectionPanel != null)
+            {
+                selectionPanel = selector.selectionPanel;
+                Debug.Log($"[NetworkLocalSetup] Selection panel auto-found: {selectionPanel.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[NetworkLocalSetup] CharacterSelector or selectionPanel not found. Controls will work but panel check will be skipped.");
+            }
+        }
     }
 
     private void EnableControlsWithoutInteraction() { if (playerController) playerController.enabled = true; }
@@ -96,4 +126,36 @@ public class NetworkLocalSetup : NetworkBehaviour
     private void SafeEnableInteraction() { if (playerInteraction) playerInteraction.enabled = true; }
     private void SafeDisableInteraction() { if (playerInteraction) playerInteraction.enabled = false; }
     private void TryEnableInteractionIfAlreadyInGameplayScene() { if (SceneManager.GetActiveScene().name == gameplaySceneName) SafeEnableInteraction(); }
+
+    // CharacterSelector'dan Ã§aÄŸrÄ±lacak - karakter seÃ§ildiÄŸinde kontrolleri aktif et
+    public void EnableControlsAfterCharacterSelection()
+    {
+        if (!IsOwner) return;
+        
+        EnableControlsWithoutInteraction();
+        SafeEnableInteraction();
+        controlsEnabled = true;
+        
+        // Mouse'u kilitle
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void Update()
+    {
+        if (!IsOwner) return;
+        
+        // Karakter seÃ§im paneli aÃ§Ä±ksa kontrolleri devre dÄ±ÅŸÄ± bÄ±rak
+        if (selectionPanel != null && selectionPanel.activeSelf)
+        {
+            if (controlsEnabled)
+            {
+                DisableControls();
+                SafeDisableInteraction();
+                controlsEnabled = false;
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+        }
+    }
 }
