@@ -11,6 +11,7 @@ public class PlayerInteraction : NetworkBehaviour
 
     private TMP_Text interactionText;
     private InventoryManager myInventory;
+    private ItemUsageManager itemUsageManager;
 
     public override void OnNetworkSpawn()
     {
@@ -18,11 +19,12 @@ public class PlayerInteraction : NetworkBehaviour
 
         // Inventory root'ta olmayabilir -> child dahil ara
         myInventory = GetComponentInChildren<InventoryManager>(true);
+        itemUsageManager = GetComponentInChildren<ItemUsageManager>(true);
 
         if (myInventory == null)
         {
-            Debug.LogError("<color=red>[Interaction]</color> InventoryManager bulunamadý! " +
-                           "Player prefab/root veya child objelerinde InventoryManager var mý?");
+            Debug.LogError("<color=red>[Interaction]</color> InventoryManager bulunamadï¿½! " +
+                           "Player prefab/root veya child objelerinde InventoryManager var mï¿½?");
         }
     }
 
@@ -48,11 +50,11 @@ public class PlayerInteraction : NetworkBehaviour
 
         if (interactionText == null)
         {
-            Debug.LogError("<color=red>[Interaction]</color> UI bulunamadý!");
+            Debug.LogError("<color=red>[Interaction]</color> UI bulunamadï¿½!");
             yield break;
         }
 
-        Debug.Log("<color=green>[Interaction]</color> UI baðlandý -> " + interactionText.gameObject.name);
+        Debug.Log("<color=green>[Interaction]</color> UI baï¿½landï¿½ -> " + interactionText.gameObject.name);
         interactionText.text = "";
         interactionText.gameObject.SetActive(false);
     }
@@ -74,7 +76,7 @@ public class PlayerInteraction : NetworkBehaviour
             }
         }
 
-        // 2) InteractionText adlý
+        // 2) InteractionText adlï¿½
         foreach (var txt in all)
         {
             if (txt == null) continue;
@@ -87,7 +89,7 @@ public class PlayerInteraction : NetworkBehaviour
             }
         }
 
-        // 3) InteractionUI tag altý
+        // 3) InteractionUI tag altï¿½
         GameObject uiRoot = GameObject.FindWithTag("InteractionUI");
         if (uiRoot != null)
             interactionText = uiRoot.GetComponentInChildren<TMP_Text>(true);
@@ -103,6 +105,16 @@ public class PlayerInteraction : NetworkBehaviour
 
         Debug.DrawRay(origin, direction * interactDistance, Color.magenta);
         CheckInteraction(origin, direction);
+        
+        // F tuÅŸu ile seÃ§ili consumable'Ä± kullan
+        if (Input.GetKeyDown(KeyCode.F) && myInventory != null && myInventory.HasSelectedItem)
+        {
+            ItemData item = myInventory.SelectedItem;
+            if (item != null && item.isConsumable && itemUsageManager != null)
+            {
+                itemUsageManager.UseConsumable(item);
+            }
+        }
     }
 
     private void CheckInteraction(Vector3 origin, Vector3 direction)
@@ -122,13 +134,13 @@ public class PlayerInteraction : NetworkBehaviour
 
                 if (Input.GetKeyDown(KeyCode.E))
                 {
-                    // Spawn timing/child ihtimali için son bir garanti
+                    // Spawn timing/child ihtimali iï¿½in son bir garanti
                     if (myInventory == null)
                         myInventory = GetComponentInChildren<InventoryManager>(true);
 
                     if (myInventory == null)
                     {
-                        Debug.LogError("<color=red>[Interaction]</color> InventoryManager hâlâ yok. Player'a InventoryManager eklemen lazým.");
+                        Debug.LogError("<color=red>[Interaction]</color> InventoryManager hï¿½lï¿½ yok. Player'a InventoryManager eklemen lazï¿½m.");
                         return;
                     }
 
