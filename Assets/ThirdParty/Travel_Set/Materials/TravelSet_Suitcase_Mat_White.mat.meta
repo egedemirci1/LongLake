@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 097703092ba7b1d46bff002ce6ac4191
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 295248
+  packageName: Travel Set
+  packageVersion: 1.0
+  assetPath: Assets/Travel_Set/Materials/TravelSet_Suitcase_Mat_White.mat
+  uploadId: 689684

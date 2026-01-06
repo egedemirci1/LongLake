@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c1a248f0c023fcc4dabf224cdc6aeb66
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 295248
+  packageName: Travel Set
+  packageVersion: 1.0
+  assetPath: Assets/Travel_Set/Materials/TravelSet_Objects_Mat.mat
+  uploadId: 689684

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4e56f695cacaa7f45a722329ce96c6af
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118471
+  packageName: Carpentry Tools
+  packageVersion: 2.0.0
+  assetPath: Assets/CoolWorks_Studio/Carpentry_Tools/Examples/Carpentry_Tools/LightingData.asset
+  uploadId: 628160

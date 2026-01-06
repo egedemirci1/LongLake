@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 753ff651f45963f4caff3b35e9c3cb71
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 295248
+  packageName: Travel Set
+  packageVersion: 1.0
+  assetPath: Assets/Travel_Set/Materials/TravelSet_Suitcase_Mat_RedBeen.mat
+  uploadId: 689684

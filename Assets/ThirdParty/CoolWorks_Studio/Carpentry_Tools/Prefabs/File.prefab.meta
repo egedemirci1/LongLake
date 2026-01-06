@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 44dca16095177fc48a2c8a38cfabcca7
+timeCreated: 1524608613
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118471
+  packageName: Carpentry Tools
+  packageVersion: 2.0.0
+  assetPath: Assets/CoolWorks_Studio/Carpentry_Tools/Prefabs/File.prefab
+  uploadId: 628160

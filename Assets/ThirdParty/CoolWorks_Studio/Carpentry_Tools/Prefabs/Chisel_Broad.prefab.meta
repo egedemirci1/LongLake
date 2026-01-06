@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: a342d99e47b41314382990be9f28fcfe
+timeCreated: 1524608605
+licenseType: Store
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 118471
+  packageName: Carpentry Tools
+  packageVersion: 2.0.0
+  assetPath: Assets/CoolWorks_Studio/Carpentry_Tools/Prefabs/Chisel_Broad.prefab
+  uploadId: 628160
