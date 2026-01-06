@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Bandaj
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: Bandaj
-  itemIcon: {fileID: 21300000, guid: 862b1f4e571bfdd4c973a50badc0681f, type: 3}
+  itemIcon: {fileID: 21300000, guid: dde5b652d8487734281cf2633bf644de, type: 3}
   itemID: bandaj_01
   itemType: 1
   weaponCategory: 0
