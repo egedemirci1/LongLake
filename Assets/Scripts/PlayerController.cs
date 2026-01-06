@@ -52,10 +52,12 @@ public class PlayerController : NetworkBehaviour
     private float _verticalVelocity;
     private bool _grounded;
     private float _speed;
+    private PlayerStats _playerStats;
 
     private void Awake()
     {
         _controller = GetComponent<CharacterController>();
+        _playerStats = GetComponent<PlayerStats>();
         UpdateCharacterModel(characterIndex.Value);
     }
 
@@ -84,10 +86,6 @@ public class PlayerController : NetworkBehaviour
         GroundedCheck();
         JumpAndGravity();
         Move();
-        if (IsOwner && Time.frameCount % 15 == 0) // ~ saniyede 3-4 kez
-        {
-            Debug.Log($"[SpeedDBG] _speed={_speed:F2} target={(Input.GetKey(KeyCode.LeftShift) ? sprintSpeed : walkSpeed):F2} animSpeed={_animator.GetFloat("Speed"):F2}");
-        }
     }
 
     private void LateUpdate()
@@ -136,7 +134,12 @@ public class PlayerController : NetworkBehaviour
 
         Vector3 inputDir = transform.right * h + transform.forward * v;
 
-        float targetSpeed = (h == 0f && v == 0f) ? 0.0f : (isSprinting ? sprintSpeed : walkSpeed);
+        float baseTargetSpeed = (h == 0f && v == 0f) ? 0.0f : (isSprinting ? sprintSpeed : walkSpeed);
+        
+        // Speed modifier uygula (PlayerStats'tan)
+        float speedModifier = _playerStats != null ? _playerStats.SpeedModifier : 1f;
+        float targetSpeed = baseTargetSpeed * speedModifier;
+        
         _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * speedChangeRate);
 
         Vector3 move = inputDir.normalized * (_speed * Time.deltaTime);

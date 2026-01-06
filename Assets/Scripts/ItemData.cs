@@ -1,9 +1,62 @@
 using UnityEngine;
+using System.Collections.Generic;
+
+public enum ItemType
+{
+    Weapon,
+    Consumable,
+    Material,
+    Tool
+}
+
+public enum WeaponCategory
+{
+    Melee,
+    Ranged
+}
+
+public enum ConsumableEffectType
+{
+    Heal,
+    StaminaBoost,
+    StatBoost,
+    StatusEffect
+}
 
 [CreateAssetMenu(fileName = "Yeni Esya", menuName = "Envanter/Esya")]
 public class ItemData : ScriptableObject
 {
-    public string itemName;   // Ekranda görünecek isim (Örn: TRIPOD)
-    public Sprite itemIcon;   // Slotun üstünde görünecek resim
-    public string itemID;     // Kodun tanıyacağı ID (Örn: tripod_01)
+    [Header("Basic Info")]
+    public string itemName;   // Ekranda gÃ¶rÃ¼necek isim (Ã¶rn: TRIPOD)
+    public Sprite itemIcon;   // Slotun Ã¼stÃ¼nde gÃ¶rÃ¼necek resim
+    public string itemID;     // Kodun tanÄ±yacaÄŸÄ± ID (Ã¶rn: tripod_01)
+    public ItemType itemType = ItemType.Material;
+    
+    [Header("Weapon Properties")]
+    public WeaponCategory weaponCategory = WeaponCategory.Melee;
+    public int tier = 1; // 1, 2, 3 veya 0 (tier yok)
+    public float meleeDamage = 0f;
+    public int durability = -1; // -1 = sÄ±nÄ±rsÄ±z
+    
+    [Header("Crafting")]
+    public bool isCraftable = false;
+    public CraftingRecipe craftingRecipe; // ScriptableObject
+    
+    [Header("Consumable Properties")]
+    public bool isConsumable = false;
+    public List<ConsumableEffect> consumableEffects = new List<ConsumableEffect>();
+    
+    [Header("Material Properties")]
+    public bool isMaterial = false;
+}
+
+[System.Serializable]
+public class ConsumableEffect
+{
+    public ConsumableEffectType effectType;
+    public float value; // YÃ¼zde veya sabit deÄŸer
+    public float duration; // Saniye cinsinden (0 = anÄ±nda)
+    public float sideEffectValue; // Yan etki deÄŸeri
+    public float sideEffectDuration; // Yan etki sÃ¼resi
+    public float sideEffectChance; // Yan etki ihtimali (0-1)
 }

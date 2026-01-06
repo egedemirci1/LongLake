@@ -2,23 +2,97 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
+using System;
 
 public class InventoryManager : NetworkBehaviour
 {
     [Header("Player-specific UI (not assigned in prefab, bound at runtime)")]
     public GameObject hotbarObject;
+    public GameObject mainInventoryObject; // Ana envanter paneli
     public TextMeshProUGUI[] nameTexts;
     public Image[] iconImages;
+    public Image[] slotFrames; // Slot frame'leri
 
     public List<ItemData> items = new List<ItemData>();
+    
+    [Header("Selection")]
+    [SerializeField] private int selectedSlotIndex = -1; // Seçili slot (-1 = hiçbiri seçili değil)
+    
+    // Seçili eşyaya erişim için property
+    public ItemData SelectedItem => (selectedSlotIndex >= 0 && selectedSlotIndex < items.Count) ? items[selectedSlotIndex] : null;
+    public int SelectedSlotIndex => selectedSlotIndex;
+    public bool HasSelectedItem => SelectedItem != null;
+    
+    // Event: Seçim değiştiğinde çağrılır (ItemData, slotIndex)
+    public event Action<ItemData, int> OnItemSelected;
+    public event Action OnItemDeselected;
 
     // UI path in scene (according to your hierarchy)
     private const string HotbarPath = "InteractionUI/Envanter_Sistemi/Hotbar";
+    private const string MainInventoryPath = "InteractionUI/Envanter_Sistemi/MainInventory"; // Ana envanter path'i (UI yapınıza göre değiştirin)
 
     public bool HasKey(string keyID)
     {
         return items.Exists(item => item != null && item.itemID == keyID);
+    }
+
+    // Item management methods
+    public int CountItem(string itemID)
+    {
+        if (!IsOwner) return 0;
+        return items.Count(item => item != null && item.itemID == itemID);
+    }
+
+    public bool HasItem(string itemID)
+    {
+        if (!IsOwner) return false;
+        return items.Exists(item => item != null && item.itemID == itemID);
+    }
+
+    public void RemoveItem(string itemID, int quantity = 1)
+    {
+        if (!IsOwner) return;
+        
+        for (int i = 0; i < quantity; i++)
+        {
+            int index = items.FindIndex(item => item != null && item.itemID == itemID);
+            if (index >= 0)
+            {
+                // Seçili item siliniyorsa seçimi kaldır
+                if (selectedSlotIndex == index)
+                {
+                    selectedSlotIndex = -1;
+                    OnItemDeselected?.Invoke();
+                }
+                else if (selectedSlotIndex > index)
+                {
+                    // Seçili slot'tan önceki bir item silindi, index'i düşür
+                    selectedSlotIndex--;
+                }
+                
+                items.RemoveAt(index);
+                UpdateUI();
+            }
+            else
+            {
+                Debug.LogWarning($"[Inventory] Item {itemID} not found to remove!");
+                break;
+            }
+        }
+    }
+
+    public void ReduceItemDurability(string itemID, int amount)
+    {
+        if (!IsOwner) return;
+        
+        // Durability sistemi için (ileride eklenebilir)
+        // Şimdilik sadece log
+        Debug.Log($"[Inventory] Item {itemID} durability reduced by {amount}");
+        
+        // TODO: ItemData'ya currentDurability field'ı eklenip burada güncellenebilir
+        // Eğer durability 0'a düşerse item'ı kaldır veya kırık versiyonuna çevir
     }
 
     public override void OnNetworkSpawn()
@@ -33,7 +107,10 @@ public class InventoryManager : NetworkBehaviour
         BindUIRuntime(); // BindUIRuntime already calls UpdateUI() at the end
 
         if (hotbarObject != null)
-            hotbarObject.SetActive(true); // You can set to false and use I key to toggle
+            hotbarObject.SetActive(true); // Hotbar her zaman görünür
+        
+        if (mainInventoryObject != null)
+            mainInventoryObject.SetActive(false); // Ana envanter başlangıçta kapalı
     }
 
     private void Update()
@@ -46,8 +123,95 @@ public class InventoryManager : NetworkBehaviour
             BindUIRuntime();
         }
 
-        if (Input.GetKeyDown(KeyCode.I) && hotbarObject != null)
-            hotbarObject.SetActive(!hotbarObject.activeSelf);
+        // I tuşu ile ana envanteri aç/kapat
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            if (mainInventoryObject != null)
+            {
+                mainInventoryObject.SetActive(!mainInventoryObject.activeSelf);
+            }
+        }
+
+        // 1-2-3-4-5 tuşlarıyla slot seçme
+        HandleSlotSelection();
+    }
+
+    private void HandleSlotSelection()
+    {
+        // Alpha1 = 1, Alpha2 = 2, vb.
+        for (int i = 0; i < 5; i++)
+        {
+            KeyCode key = KeyCode.Alpha1 + i;
+            if (Input.GetKeyDown(key))
+            {
+                Debug.Log($"<color=cyan>[Inventory]</color> Key {i + 1} (Alpha{i + 1}) pressed! Calling SelectSlot({i})...");
+                SelectSlot(i);
+                break;
+            }
+        }
+    }
+
+    private void SelectSlot(int slotIndex)
+    {
+        // Slot geçerli mi kontrol et
+        if (slotIndex < 0 || slotIndex >= 5)
+        {
+            Debug.LogWarning($"[Inventory] Invalid slot index: {slotIndex}");
+            return;
+        }
+        
+        int oldSelected = selectedSlotIndex;
+        Debug.Log($"<color=blue>[Inventory]</color> SelectSlot CALLED: slotIndex={slotIndex + 1}, oldSelected={(oldSelected >= 0 ? (oldSelected + 1).ToString() : "NONE")}, items.Count={items.Count}, selectedSlotIndex BEFORE={selectedSlotIndex}");
+        
+        // Eşya var mı kontrol et
+        bool hasItem = slotIndex < items.Count;
+        bool itemNotNull = hasItem && items[slotIndex] != null;
+        Debug.Log($"[Inventory] Check: slotIndex < items.Count? {hasItem}, items[{slotIndex}] != null? {itemNotNull}");
+        
+        if (hasItem && itemNotNull)
+        {
+            Debug.Log($"[Inventory] Item exists: {items[slotIndex].itemName}");
+            Debug.Log($"[Inventory] Comparison: selectedSlotIndex ({selectedSlotIndex}) == slotIndex ({slotIndex})? {selectedSlotIndex == slotIndex}");
+            
+            // Aynı slot'a tekrar basılırsa seçimi kaldır (toggle)
+            if (selectedSlotIndex == slotIndex)
+            {
+                Debug.Log($"[Inventory] ⚠️ Same slot pressed, DESELECTING...");
+                selectedSlotIndex = -1;
+                OnItemDeselected?.Invoke();
+                Debug.Log($"<color=yellow>[Inventory]</color> ❌ Slot {slotIndex + 1} DESELECTED (toggle off). selectedSlotIndex is now: {selectedSlotIndex}");
+            }
+            else
+            {
+                Debug.Log($"[Inventory] ➡️ Different slot, SELECTING...");
+                // Farklı bir slot seçildi - her zaman seç (toggle değil, direkt seç)
+                // Önceki seçimi kaldır (eğer varsa)
+                if (oldSelected >= 0 && oldSelected != slotIndex)
+                {
+                    Debug.Log($"[Inventory] Previous selection (slot {oldSelected + 1}) will be deselected.");
+                    OnItemDeselected?.Invoke();
+                }
+                
+                selectedSlotIndex = slotIndex;
+                OnItemSelected?.Invoke(items[slotIndex], slotIndex);
+                Debug.Log($"<color=green>[Inventory]</color> ✅ Slot {slotIndex + 1} SELECTED: {items[slotIndex].itemName}. selectedSlotIndex changed from {oldSelected} to {selectedSlotIndex}");
+            }
+        }
+        else
+        {
+            // Boş slot seçildi, seçimi kaldır
+            Debug.Log($"<color=red>[Inventory]</color> ⚠️ Slot {slotIndex + 1} is empty or out of range! hasItem={hasItem}, itemNotNull={itemNotNull}");
+            if (selectedSlotIndex >= 0)
+            {
+                selectedSlotIndex = -1;
+                OnItemDeselected?.Invoke();
+                Debug.Log($"<color=yellow>[Inventory]</color> Selection cleared. selectedSlotIndex is now: {selectedSlotIndex}");
+            }
+        }
+        
+        // UI'ı her zaman güncelle (highlight border'ları güncellemek için)
+        Debug.Log($"[Inventory] Calling UpdateUI(). Current selectedSlotIndex: {selectedSlotIndex}");
+        UpdateUI();
     }
 
     private void BindUIRuntime()
@@ -77,9 +241,27 @@ public class InventoryManager : NetworkBehaviour
 
         hotbarObject = hotbarGO;
 
-        // 2) Find slots in order: Slot_1..Slot_5
+        // 2) Find main inventory (optional - eğer yoksa null kalır)
+        GameObject mainInvGO = GameObject.Find(MainInventoryPath);
+        if (mainInvGO == null)
+        {
+            // Alternative: find by "MainInventory" or "InventoryPanel" name
+            var all = Resources.FindObjectsOfTypeAll<Transform>();
+            foreach (var tr in all)
+            {
+                if (tr != null && (tr.name == "MainInventory" || tr.name == "InventoryPanel"))
+                {
+                    mainInvGO = tr.gameObject;
+                    break;
+                }
+            }
+        }
+        mainInventoryObject = mainInvGO;
+
+        // 3) Find slots in order: Slot_1..Slot_5
         nameTexts = new TextMeshProUGUI[5];
         iconImages = new Image[5];
+        slotFrames = new Image[5]; // Slot frame'leri için
 
         for (int i = 0; i < 5; i++)
         {
@@ -121,6 +303,13 @@ public class InventoryManager : NetworkBehaviour
                 }
             }
 
+            // Slot frame'ini al
+            slotFrames[i] = slot.GetComponent<Image>();
+            if (slotFrames[i] == null)
+            {
+                Debug.LogWarning($"[Inventory] {slotName} has no Image component for frame!");
+            }
+
             // Initialize text and icon (will be updated by UpdateUI)
             if (nameTexts[i] != null) nameTexts[i].text = "";
             if (iconImages[i] != null)
@@ -130,10 +319,10 @@ public class InventoryManager : NetworkBehaviour
             }
             
             // Ensure Slot's Image component (frame/background) is always enabled and visible
-            Image slotFrameImage = slot.GetComponent<Image>();
-            if (slotFrameImage != null)
+            if (slotFrames[i] != null)
             {
-                slotFrameImage.enabled = true; // Always keep frame/background visible
+                slotFrames[i].enabled = true; // Always keep frame/background visible
+                slotFrames[i].color = Color.white; // Normal renk (highlight border kullanacağız)
             }
         }
 
@@ -173,6 +362,11 @@ public class InventoryManager : NetworkBehaviour
 
         for (int i = 0; i < 5; i++)
         {
+            // Slot seçim durumunu log'la (highlight'ı siz Unity Editor'da yöneteceksiniz)
+            if (i == selectedSlotIndex && i < items.Count && items[i] != null)
+            {
+                Debug.Log($"<color=cyan>[Inventory]</color> UpdateUI: Slot {i + 1} is SELECTED (selectedSlotIndex={selectedSlotIndex})");
+            }
 
             if (i < items.Count && items[i] != null)
             {

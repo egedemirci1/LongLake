@@ -50,6 +50,8 @@ GameObject:
   - component: {fileID: 2582573296541823452}
   - component: {fileID: 6593367035505083130}
   - component: {fileID: 4393512149331668265}
+  - component: {fileID: 4091092867922829358}
+  - component: {fileID: 8543246890496498083}
   m_Layer: 8
   m_Name: PlayerCapsule
   m_TagString: Player
@@ -318,9 +320,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
   ShowTopMostFoldoutHeaderGroup: 1
   hotbarObject: {fileID: 0}
+  mainInventoryObject: {fileID: 0}
   nameTexts: []
   iconImages: []
+  slotFrames: []
   items: []
+  selectedSlotIndex: -1
 --- !u!114 &6593367035505083130
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -370,6 +375,36 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   TransitionStateInfoList: []
   m_Animator: {fileID: 8455384764382973966}
+--- !u!114 &4091092867922829358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8616685848737228372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca24e37391d34b747a0688ee427f3d82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxHealth: 100
+  maxStamina: 100
+  staminaRegenRate: 10
+  staminaDrainRate: 15
+--- !u!114 &8543246890496498083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8616685848737228372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02d388d71f647a1489c73cd00ecbcfc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemUsageManager
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &9043937595515856
 PrefabInstance:
   m_ObjectHideFlags: 0

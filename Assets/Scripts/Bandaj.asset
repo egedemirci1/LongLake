@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3b31c92e3c45f741b28fbe5db8e6340, type: 3}
+  m_Name: Bandaj
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: Bandaj
+  itemIcon: {fileID: 21300000, guid: dde5b652d8487734281cf2633bf644de, type: 3}
+  itemID: bandaj_01
+  itemType: 1
+  weaponCategory: 0
+  tier: 1
+  meleeDamage: 0
+  durability: -1
+  isCraftable: 0
+  craftingRecipe: {fileID: 0}
+  isConsumable: 1
+  consumableEffects: []
+  isMaterial: 0
