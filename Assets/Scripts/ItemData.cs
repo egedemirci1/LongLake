@@ -3,24 +3,33 @@ using System.Collections.Generic;
 
 public enum ItemType
 {
-    Weapon,
+    Generic,
+    MeleeWeapon,
     Consumable,
     Material,
-    Tool
+    Key
 }
 
 public enum WeaponCategory
 {
-    Melee,
-    Ranged
+    None,
+    Blunt,
+    Sharp,
+    Tool
 }
 
 public enum ConsumableEffectType
 {
+    None,
     Heal,
     StaminaBoost,
-    StatBoost,
-    StatusEffect
+    PowerBoost,
+    NightVision,
+    SpeedBoost,
+    Poison,
+    Fatigue,
+    Dizziness,
+    Burp
 }
 
 [CreateAssetMenu(fileName = "Yeni Esya", menuName = "Envanter/Esya")]
@@ -30,14 +39,18 @@ public class ItemData : ScriptableObject
     public string itemName;   // Ekranda görünecek isim (örn: TRIPOD)
     public Sprite itemIcon;   // Slotun üstünde görünecek resim
     public string itemID;     // Kodun tanıyacağı ID (örn: tripod_01)
-    public ItemType itemType = ItemType.Material;
+    public ItemType itemType;
     
+    [Header("World Representation")]
+    [Tooltip("Yere atıldığında görünecek 3D prefab (ItemPickUp component'li olmalı). Eğer boşsa, fallback prefab kullanılır.")]
+    public GameObject worldPrefab; // Yere atıldığında spawn edilecek prefab
+
     [Header("Weapon Properties")]
-    public WeaponCategory weaponCategory = WeaponCategory.Melee;
-    public int tier = 1; // 1, 2, 3 veya 0 (tier yok)
-    public float meleeDamage = 0f;
-    public int durability = -1; // -1 = sınırsız
-    
+    public WeaponCategory weaponCategory;
+    public int tier; // Tier 1, 2, 3
+    public float meleeDamage;
+    public int durability = -1; // -1 means infinite durability
+
     [Header("Crafting")]
     public bool isCraftable = false;
     public CraftingRecipe craftingRecipe; // ScriptableObject
@@ -48,6 +61,9 @@ public class ItemData : ScriptableObject
     
     [Header("Material Properties")]
     public bool isMaterial = false;
+
+    [Header("Stack Properties")]
+    public int maxStackSize = 1; // 1 = stack edilemez, >1 = stack edilebilir (örn: Çivi için 99)
 }
 
 [System.Serializable]

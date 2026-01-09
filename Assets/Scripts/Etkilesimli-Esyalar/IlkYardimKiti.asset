@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3b31c92e3c45f741b28fbe5db8e6340, type: 3}
+  m_Name: IlkYardimKiti
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemName: "\u0130lk Yard\u0131m Kiti"
+  itemIcon: {fileID: 21300000, guid: 46df78177c931a346981fc25f48f9d63, type: 3}
+  itemID: ilkyardim_01
+  itemType: 2
+  worldPrefab: {fileID: 5396988188536389404, guid: a878263a8b8f3ef4d9b4989733883f3a, type: 3}
+  weaponCategory: 0
+  tier: 0
+  meleeDamage: 0
+  durability: -1
+  isCraftable: 0
+  craftingRecipe: {fileID: 0}
+  isConsumable: 1
+  consumableEffects: []
+  isMaterial: 0
+  maxStackSize: 3

@@ -6,10 +6,10 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Levels/MainMenu.unity
+    path: Assets/Sahneler/Levels/MainMenu.unity
     guid: 0ebe36fd88da09a498afd09a82e68aaa
   - enabled: 1
-    path: Assets/Scenes/Levels/CrashSite_Main.unity
+    path: Assets/Sahneler/Levels/CrashSite_Main.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

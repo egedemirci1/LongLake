@@ -1,20 +1,22 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[CreateAssetMenu(fileName = "Yeni Recipe", menuName = "Envanter/Crafting Recipe")]
+[CreateAssetMenu(fileName = "Yeni Crafting Tarifi", menuName = "Envanter/Crafting Tarifi")]
 public class CraftingRecipe : ScriptableObject
 {
     public ItemData resultItem;
     public List<CraftingIngredient> requiredIngredients = new List<CraftingIngredient>();
+
+    [Header("Tool Requirements (Optional)")]
     public bool requiresTool = false;
-    public string requiredToolID; // Örn: "hammer_01" - çekiç gerekiyorsa
-    public int toolDurabilityCost = 0; // Kullanılan aletin durability'si azalır
+    public string requiredToolID; // e.g., "hammer_01"
+    public int toolDurabilityCost = 0;
 }
 
 [System.Serializable]
 public class CraftingIngredient
 {
     public ItemData item;
-    public int quantity = 1;
+    public int quantity;
 }
 

@@ -19,6 +19,13 @@ public class CameraOrbit : MonoBehaviour
 
     void LateUpdate()
     {
+        // Envanter aÃ§Ä±ksa kamera orbit kapanmalÄ±
+        InventoryManager inventoryManager = FindFirstObjectByType<InventoryManager>();
+        if (inventoryManager != null && inventoryManager.mainInventoryObject != null && inventoryManager.mainInventoryObject.activeSelf)
+        {
+            return;
+        }
+
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
@@ -26,12 +33,12 @@ public class CameraOrbit : MonoBehaviour
         pitch -= mouseY;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
-        // Kamerayý döndür
+        // KamerayÄ± dÃ¶ndÃ¼r
         transform.position = target.position;
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
         transform.rotation = rotation;
 
-        // Kamerayý uzaklaþtýr (TPS)
+        // KamerayÄ± uzaklaÅŸtÄ±r (TPS)
         transform.Translate(Vector3.back * distance);
     }
 }

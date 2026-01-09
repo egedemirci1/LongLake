@@ -86,7 +86,7 @@ public class NetworkLocalSetup : NetworkBehaviour
         // Eğer manuel atanmamışsa, CharacterSelector'dan otomatik bul
         if (selectionPanel == null)
         {
-            CharacterSelector selector = FindObjectOfType<CharacterSelector>();
+            CharacterSelector selector = FindFirstObjectByType<CharacterSelector>();
             if (selector != null && selector.selectionPanel != null)
             {
                 selectionPanel = selector.selectionPanel;

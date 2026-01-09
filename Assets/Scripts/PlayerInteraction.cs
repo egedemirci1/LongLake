@@ -11,7 +11,6 @@ public class PlayerInteraction : NetworkBehaviour
 
     private TMP_Text interactionText;
     private InventoryManager myInventory;
-    private ItemUsageManager itemUsageManager;
 
     public override void OnNetworkSpawn()
     {
@@ -19,7 +18,6 @@ public class PlayerInteraction : NetworkBehaviour
 
         // Inventory root'ta olmayabilir -> child dahil ara
         myInventory = GetComponentInChildren<InventoryManager>(true);
-        itemUsageManager = GetComponentInChildren<ItemUsageManager>(true);
 
         if (myInventory == null)
         {
@@ -105,16 +103,6 @@ public class PlayerInteraction : NetworkBehaviour
 
         Debug.DrawRay(origin, direction * interactDistance, Color.magenta);
         CheckInteraction(origin, direction);
-        
-        // F tuşu ile seçili consumable'ı kullan
-        if (Input.GetKeyDown(KeyCode.F) && myInventory != null && myInventory.HasSelectedItem)
-        {
-            ItemData item = myInventory.SelectedItem;
-            if (item != null && item.isConsumable && itemUsageManager != null)
-            {
-                itemUsageManager.UseConsumable(item);
-            }
-        }
     }
 
     private void CheckInteraction(Vector3 origin, Vector3 direction)
