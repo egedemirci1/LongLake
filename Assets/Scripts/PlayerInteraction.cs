@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using TMPro;
@@ -21,8 +22,8 @@ public class PlayerInteraction : NetworkBehaviour
 
         if (myInventory == null)
         {
-            Debug.LogError("<color=red>[Interaction]</color> InventoryManager bulunamad�! " +
-                           "Player prefab/root veya child objelerinde InventoryManager var m�?");
+            Debug.LogError("<color=red>[Interaction]</color> InventoryManager bulunamadı! " +
+                           "Player prefab/root veya child objelerinde InventoryManager var mı?");
         }
     }
 
@@ -48,11 +49,11 @@ public class PlayerInteraction : NetworkBehaviour
 
         if (interactionText == null)
         {
-            Debug.LogError("<color=red>[Interaction]</color> UI bulunamad�!");
+            Debug.LogError("<color=red>[Interaction]</color> UI bulunamadı!");
             yield break;
         }
 
-        Debug.Log("<color=green>[Interaction]</color> UI ba�land� -> " + interactionText.gameObject.name);
+        Debug.Log("<color=green>[Interaction]</color> UI bağlandı -> " + interactionText.gameObject.name);
         interactionText.text = "";
         interactionText.gameObject.SetActive(false);
     }
@@ -74,7 +75,7 @@ public class PlayerInteraction : NetworkBehaviour
             }
         }
 
-        // 2) InteractionText adl�
+        // 2) InteractionText adlı
         foreach (var txt in all)
         {
             if (txt == null) continue;
@@ -87,7 +88,7 @@ public class PlayerInteraction : NetworkBehaviour
             }
         }
 
-        // 3) InteractionUI tag alt�
+        // 3) InteractionUI tag altı
         GameObject uiRoot = GameObject.FindWithTag("InteractionUI");
         if (uiRoot != null)
             interactionText = uiRoot.GetComponentInChildren<TMP_Text>(true);
@@ -109,7 +110,20 @@ public class PlayerInteraction : NetworkBehaviour
     {
         int layerMask = ~(1 << gameObject.layer);
 
-        if (Physics.Raycast(origin, direction, out RaycastHit hit, interactDistance, layerMask))
+        // RaycastAll kullan - tüm collider'ları kontrol et (çekmece + içindeki kitap için)
+        RaycastHit[] hits = Physics.RaycastAll(origin, direction, interactDistance, layerMask);
+        
+        if (hits.Length == 0)
+        {
+            if (interactionText.gameObject.activeSelf)
+                interactionText.gameObject.SetActive(false);
+            return;
+        }
+        
+        // Önce tüm IInteractable'ları bul
+        List<(RaycastHit hit, IInteractable interactable, float priority)> interactables = new List<(RaycastHit, IInteractable, float)>();
+        
+        foreach (RaycastHit hit in hits)
         {
             IInteractable interactable =
                 hit.collider.GetComponent<IInteractable>() ??
@@ -117,28 +131,67 @@ public class PlayerInteraction : NetworkBehaviour
 
             if (interactable != null)
             {
-                interactionText.gameObject.SetActive(true);
-                interactionText.text = "[E] " + interactable.GetInteractText();
-
-                if (Input.GetKeyDown(KeyCode.E))
+                float priority = 0f; // Varsayılan öncelik
+                
+                // ItemPickUp'lara öncelik ver, AMA sadece çekmece açıksa
+                if (interactable is ItemPickUp)
                 {
-                    // Spawn timing/child ihtimali i�in son bir garanti
-                    if (myInventory == null)
-                        myInventory = GetComponentInChildren<InventoryManager>(true);
-
-                    if (myInventory == null)
+                    // Bu hit'in parent'ında CabinetController var mı kontrol et
+                    CabinetController cabinet = hit.collider.GetComponentInParent<CabinetController>();
+                    if (cabinet != null)
                     {
-                        Debug.LogError("<color=red>[Interaction]</color> InventoryManager h�l� yok. Player'a InventoryManager eklemen laz�m.");
-                        return;
+                        // Çekmece açıksa kitaba öncelik ver
+                        if (cabinet.IsOpenState)
+                        {
+                            priority = 1f; // Yüksek öncelik (çekmece açık, kitap alınabilir)
+                        }
+                        // Çekmece kapalıysa öncelik 0 (çekmece önce seçilmeli)
                     }
-
-                    interactable.Interact(myInventory);
+                    else
+                    {
+                        // Çekmecenin içinde değilse direkt öncelik ver
+                        priority = 1f;
+                    }
                 }
-                return;
+                
+                interactables.Add((hit, interactable, priority));
             }
         }
+        
+        if (interactables.Count == 0)
+        {
+            if (interactionText.gameObject.activeSelf)
+                interactionText.gameObject.SetActive(false);
+            return;
+        }
+        
+        // Önce önceliğe göre, sonra mesafeye göre sırala
+        interactables.Sort((x, y) => 
+        {
+            int priorityCompare = y.priority.CompareTo(x.priority); // Yüksek öncelik önce
+            if (priorityCompare != 0) return priorityCompare;
+            return x.hit.distance.CompareTo(y.hit.distance); // Aynı öncelikte mesafeye göre
+        });
+        
+        // İlk (en yüksek öncelikli) IInteractable'ı kullan
+        var (selectedHit, selectedInteractable, _) = interactables[0];
+        
+        interactionText.gameObject.SetActive(true);
+        interactionText.text = "[E] " + selectedInteractable.GetInteractText();
 
-        if (interactionText.gameObject.activeSelf)
-            interactionText.gameObject.SetActive(false);
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            // Spawn timing/child ihtimali için son bir garanti
+            if (myInventory == null)
+                myInventory = GetComponentInChildren<InventoryManager>(true);
+
+            if (myInventory == null)
+            {
+                Debug.LogError("<color=red>[Interaction]</color> InventoryManager hâlâ yok. Player'a InventoryManager eklemen lazım.");
+                return;
+            }
+
+            selectedInteractable.Interact(myInventory);
+        }
     }
 }

@@ -35,11 +35,7 @@ public class CabinetController : NetworkBehaviour, IInteractable
     [Header("Rotate Settings (for Rotate type)")]
     [SerializeField] private Vector3 rotationAxis = Vector3.up; // Which axis to rotate around
     [SerializeField] private float openRotation = 90.0f;
-    [SerializeField] private float closeRotation = 0.0f;
     [SerializeField] private float rotateSpeed = 5.0f;
-
-    [Header("Animation Settings")]
-    [SerializeField] private float smooth = 5.0f;
 
     [Header("Collider Settings")]
     [SerializeField] private Collider interactionCollider; // Auto-found if null
@@ -184,5 +180,8 @@ public class CabinetController : NetworkBehaviour, IInteractable
         
         return IsOpen.Value ? "Çekmeceyi Kapat" : "Çekmeceyi Aç";
     }
+    
+    // Public getter for IsOpen state (for other scripts to check)
+    public bool IsOpenState => IsOpen.Value;
 }
 

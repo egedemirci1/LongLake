@@ -50,8 +50,6 @@ GameObject:
   - component: {fileID: 2582573296541823452}
   - component: {fileID: 6593367035505083130}
   - component: {fileID: 4393512149331668265}
-  - component: {fileID: 4091092867922829358}
-  - component: {fileID: 8543246890496498083}
   m_Layer: 8
   m_Name: PlayerCapsule
   m_TagString: Player
@@ -95,7 +93,7 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1.8
+  m_Height: 1.7
   m_Radius: 0.2
   m_SlopeLimit: 45
   m_StepOffset: 0.35
@@ -289,7 +287,9 @@ MonoBehaviour:
   vcam: {fileID: 1560541428597581281}
   cameraRoot: {fileID: 4135013735270702863}
   gameplaySceneName: CrashSite_Main
-  startPosition: {x: 1598, y: 121, z: 636}
+  spawnPositions:
+  - {x: 1758.02, y: 111, z: 528}
+  - {x: 1758.72, y: 111, z: 523}
   selectionPanel: {fileID: 0}
 --- !u!114 &2050461967792612107
 MonoBehaviour:
@@ -325,6 +325,22 @@ MonoBehaviour:
   iconImages: []
   slotFrames: []
   items: []
+  hotbarSlots: 0000000000000000000000000000000000000000
+  inventorySlotIcons: []
+  inventorySlotNames: []
+  inventorySlotFrames: []
+  craftingInputIcons: []
+  craftingInputNames: []
+  craftingInputFrames: []
+  craftingOutputIcon: {fileID: 0}
+  craftingOutputName: {fileID: 0}
+  craftingOutputFrame: {fileID: 0}
+  craftingInputItems:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  craftingOutputItem: {fileID: 0}
+  fallbackItemPickUpPrefab: {fileID: 0}
   selectedSlotIndex: -1
 --- !u!114 &6593367035505083130
 MonoBehaviour:
@@ -375,36 +391,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   TransitionStateInfoList: []
   m_Animator: {fileID: 8455384764382973966}
---- !u!114 &4091092867922829358
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8616685848737228372}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca24e37391d34b747a0688ee427f3d82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
-  ShowTopMostFoldoutHeaderGroup: 1
-  maxHealth: 100
-  maxStamina: 100
-  staminaRegenRate: 10
-  staminaDrainRate: 15
---- !u!114 &8543246890496498083
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8616685848737228372}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 02d388d71f647a1489c73cd00ecbcfc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ItemUsageManager
-  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &9043937595515856
 PrefabInstance:
   m_ObjectHideFlags: 0

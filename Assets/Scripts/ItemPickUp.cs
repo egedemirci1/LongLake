@@ -77,6 +77,20 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
             return;
         }
 
+        // Özel kontrol: Notebook ve Backpack gibi tek item'lar için envanter kontrolü
+        // Eğer envanterde zaten bu item varsa, alma işlemini engelle
+        if (itemToGive.itemID == "notebook" && interactorInventory.HasItem("notebook"))
+        {
+            Debug.LogWarning("<color=yellow>[ItemPickUp]</color> You already have a notebook! You can only carry one notebook.");
+            return;
+        }
+        
+        if (itemToGive.itemID == "backpack" && interactorInventory.HasItem("backpack"))
+        {
+            Debug.LogWarning("<color=yellow>[ItemPickUp]</color> You already have a backpack! You can only carry one backpack.");
+            return;
+        }
+
         // Get client ID (interactorInventory's owner)
         ulong clientId = interactorInventory.OwnerClientId;
         
@@ -93,6 +107,32 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
             Debug.LogWarning($"[ItemPickUp] Client {clientId} tried to pick up item but it's already taken. Denied.");
             // Notify client of failure (optional, can silently deny)
             return;
+        }
+
+        // Server-side validation: Notebook ve Backpack kontrolü
+        if (itemToGive != null)
+        {
+            var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (playerObject != null)
+            {
+                var inventoryManager = playerObject.GetComponentInChildren<InventoryManager>();
+                if (inventoryManager != null)
+                {
+                    // Notebook kontrolü
+                    if (itemToGive.itemID == "notebook" && inventoryManager.HasItem("notebook"))
+                    {
+                        Debug.LogWarning($"[ItemPickUp] Client {clientId} already has a notebook. Request denied.");
+                        return;
+                    }
+                    
+                    // Backpack kontrolü
+                    if (itemToGive.itemID == "backpack" && inventoryManager.HasItem("backpack"))
+                    {
+                        Debug.LogWarning($"[ItemPickUp] Client {clientId} already has a backpack. Request denied.");
+                        return;
+                    }
+                }
+            }
         }
 
         // Mark item (prevents other clients from taking it)

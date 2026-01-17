@@ -224,7 +224,36 @@ public class MainMenuUI : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[MainMenuUI] Loading gameplay scene via Netcode: {gameplaySceneName}");
+        // Loading screen'i göster ve coroutine ile scene yükle
+        StartCoroutine(LoadSceneWithLoadingScreen());
+    }
+
+    private System.Collections.IEnumerator LoadSceneWithLoadingScreen()
+    {
+        // Canvas'ı bul ve direkt child'ı olan "Panel" GameObject'ini gizle
+        Canvas canvas = FindFirstObjectByType<Canvas>();
+        if (canvas != null)
+        {
+            Transform panelTransform = canvas.transform.Find("Panel");
+            if (panelTransform != null)
+            {
+                panelTransform.gameObject.SetActive(false);
+            }
+        }
+
+        // Loading screen'i göster
+        if (LoadingScreenManager.Instance != null)
+        {
+            LoadingScreenManager.Instance.ShowLoadingScreenForScene(gameplaySceneName, "Bölüm 1: Uzungöl Tatili");
+        }
+
+        // UI'nin render edilmesi için bekle
+        Canvas.ForceUpdateCanvases();
+        yield return null;
+        yield return null;
+        yield return new WaitForEndOfFrame();
+        yield return new WaitForSeconds(0.2f);
+
         SetStatus($"Loading: {gameplaySceneName}");
         networkManager.SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
     }
@@ -282,6 +311,12 @@ public class MainMenuUI : MonoBehaviour
     {
         Debug.Log($"[MainMenuUI] Netcode scene load completed: {sceneName} mode={mode} completed={clientsCompleted?.Count ?? 0} timedOut={clientsTimedOut?.Count ?? 0}");
         SetStatus($"Loaded: {sceneName}");
+        
+        // Loading screen'i kapat
+        if (LoadingScreenManager.Instance != null)
+        {
+            LoadingScreenManager.Instance.HideLoadingScreen();
+        }
     }
 
     // ---- Netcode callbacks ----

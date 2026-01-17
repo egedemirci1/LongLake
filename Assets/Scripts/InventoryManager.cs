@@ -202,8 +202,9 @@ public class InventoryManager : NetworkBehaviour
 
         BindUIRuntime(); // BindUIRuntime already calls UpdateUI() at the end
 
+        // Hotbar başlangıçta kapalı - backpack alınca açılacak
         if (hotbarObject != null)
-            hotbarObject.SetActive(true); // Hotbar her zaman görünür
+            hotbarObject.SetActive(false);
         
         if (mainInventoryObject != null)
             mainInventoryObject.SetActive(false); // Ana envanter başlangıçta kapalı
@@ -219,9 +220,16 @@ public class InventoryManager : NetworkBehaviour
             BindUIRuntime();
         }
 
-        // I tuşu ile ana envanteri aç/kapat
+        // I tuşu ile ana envanteri aç/kapat (sadece backpack varsa)
         if (Input.GetKeyDown(KeyCode.I))
         {
+            // Backpack kontrolü - backpack yoksa envanter açılmaz
+            if (!HasItem("backpack"))
+            {
+                Debug.LogWarning("[Inventory] You need a backpack to open inventory!");
+                return;
+            }
+            
             if (mainInventoryObject != null)
             {
                 bool isOpening = !mainInventoryObject.activeSelf;
@@ -998,6 +1006,13 @@ public class InventoryManager : NetworkBehaviour
                     Debug.Log($"<color=green>[Inventory]</color> Item automatically assigned to hotbar slot {i + 1}");
                     break;
                 }
+            }
+            
+            // Backpack alınca hotbar'ı aç
+            if (newItem.itemID == "backpack" && hotbarObject != null)
+            {
+                hotbarObject.SetActive(true);
+                Debug.Log("[Inventory] Backpack acquired! Hotbar unlocked.");
             }
             
             // Bind UI if not bound

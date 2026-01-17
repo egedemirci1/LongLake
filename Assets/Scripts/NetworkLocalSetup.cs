@@ -17,8 +17,12 @@ public class NetworkLocalSetup : NetworkBehaviour
     [Header("Scene")]
     [SerializeField] private string gameplaySceneName = "CrashSite_Main";
 
-    [Header("Spawn Position")]
-    [SerializeField] private Vector3 startPosition = new Vector3(1611f, 135f, 633f);
+    [Header("Spawn Positions")]
+    [SerializeField] private Vector3[] spawnPositions = new Vector3[]
+    {
+        new Vector3(1611f, 135f, 633f), // Player 1 (Host/Server veya Client ID 0)
+        new Vector3(1650f, 135f, 650f)  // Player 2 (Client ID 1)
+    };
 
     [Header("Character Selection")]
     [SerializeField] private GameObject selectionPanel; // Auto-found at runtime (CharacterSelector'daki panel)
@@ -77,8 +81,41 @@ public class NetworkLocalSetup : NetworkBehaviour
     {
         var cc = GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;
-        transform.position = startPosition;
+        
+        // Her oyuncu için farklı spawn pozisyonu hesapla
+        Vector3 spawnPos = GetSpawnPosition();
+        transform.position = spawnPos;
+        
         if (cc != null) cc.enabled = true;
+    }
+    
+    private Vector3 GetSpawnPosition()
+    {
+        // Client ID'ye göre spawn pozisyonu seç
+        ulong clientId = OwnerClientId;
+        
+        // Client ID'yi index'e çevir (0, 1, 2, ...)
+        int index = (int)clientId;
+        
+        // Eğer index spawn positions array'inin dışındaysa, son pozisyonu kullan
+        if (index < 0 || index >= spawnPositions.Length)
+        {
+            // Son pozisyonu kullan veya ilk pozisyonu kullan
+            if (spawnPositions.Length > 0)
+            {
+                int fallbackIndex = spawnPositions.Length - 1;
+                Debug.LogWarning($"[NetworkLocalSetup] Client ID {clientId} (index {index}) out of range. Using spawn position {fallbackIndex}.");
+                return spawnPositions[fallbackIndex];
+            }
+            else
+            {
+                // Fallback: varsayılan pozisyon
+                Debug.LogError("[NetworkLocalSetup] No spawn positions defined! Using default position.");
+                return new Vector3(1611f, 135f, 633f);
+            }
+        }
+        
+        return spawnPositions[index];
     }
 
     private void FindSelectionPanel()
@@ -155,6 +192,16 @@ public class NetworkLocalSetup : NetworkBehaviour
                 controlsEnabled = false;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+            }
+        }
+        // Panel kapalıysa VE kontroller aktifse cursor'u kilitle
+        else if (controlsEnabled)
+        {
+            // Kontroller aktifse cursor'un lock olduğundan emin ol
+            if (Cursor.lockState != CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
         }
     }
