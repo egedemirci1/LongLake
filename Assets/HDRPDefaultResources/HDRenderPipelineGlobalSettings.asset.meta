@@ -6,3 +6,10 @@ NativeFormatImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 121175
+  packageName: 'Book Of The Dead: Environment'
+  packageVersion: 
+  assetPath: Assets/HDRPDefaultResources/HDRenderPipelineGlobalSettings.asset
+  uploadId: 0
