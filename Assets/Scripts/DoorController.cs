@@ -143,24 +143,19 @@ public class DoorController : NetworkBehaviour, IInteractable
 
     /// <summary>
     /// True when enough players are connected and every connected player is within nearbyRadius.
+    /// Client-safe: does not use GetPlayerNetworkObject (server-only for remote clients).
     /// </summary>
     private bool AreAllPlayersNearby()
     {
         if (!requireAllPlayersNearby)
             return true;
 
-        var nm = NetworkManager.Singleton;
-        if (nm == null || nm.SpawnManager == null)
-            return false;
-
         int playerCount = 0;
-        foreach (ulong clientId in nm.ConnectedClientsIds)
+        foreach (var pc in FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
-            var playerObject = nm.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerObject == null)
-                return false;
+            if (!pc.IsSpawned) continue;
 
-            if (!IsWithinNearbyRadius(playerObject.transform.position))
+            if (!IsWithinNearbyRadius(pc.transform.position))
                 return false;
 
             playerCount++;
