@@ -215,19 +215,14 @@ public class PlayerController : NetworkBehaviour
     public static bool IsCharacterIndexTaken(int index, ulong exceptClientId = ulong.MaxValue)
     {
         if (index < 0) return false;
-        if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
-            return false;
+        if (NetworkManager.Singleton == null) return false;
 
-        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        // Client'ta GetPlayerNetworkObject(other) yasak — tüm spawn olmuş PlayerController'lara bak.
+        foreach (var pc in FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
-            if (clientId == exceptClientId) continue;
-
-            var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerObject == null) continue;
-
-            var pc = playerObject.GetComponent<PlayerController>();
-            // -1 = henüz seçilmedi; sadece gerçek seçimler "taken" sayılır
-            if (pc != null && pc.characterIndex.Value >= 0 && pc.characterIndex.Value == index)
+            if (!pc.IsSpawned) continue;
+            if (pc.OwnerClientId == exceptClientId) continue;
+            if (pc.characterIndex.Value >= 0 && pc.characterIndex.Value == index)
                 return true;
         }
 
