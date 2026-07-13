@@ -107,9 +107,7 @@ public class MainMenuUI : MonoBehaviour
         ushort port = ResolvePort();
 
         // Host always listens on all interfaces (LAN + ZeroTier).
-        unityTransport.ConnectTimeoutMS = 10000;
-        unityTransport.DisconnectTimeoutMS = 60000;
-        unityTransport.MaxConnectAttempts = 60;
+        ApplyTransportTuning();
         unityTransport.SetConnectionData("0.0.0.0", port, "0.0.0.0");
 
         SetStatus($"Starting host... (listen 0.0.0.0:{port})");
@@ -206,13 +204,20 @@ public class MainMenuUI : MonoBehaviour
             return false;
         }
 
-        // Connection timeouts (for VPN/ZeroTier)
+        ApplyTransportTuning();
+        unityTransport.SetConnectionData(ip, port);
+        return true;
+    }
+
+    private void ApplyTransportTuning()
+    {
+        // ZeroTier / Editor burst traffic can fill the default 128 receive queue.
+        if (unityTransport.MaxPacketQueueSize < 512)
+            unityTransport.MaxPacketQueueSize = 512;
+
         unityTransport.ConnectTimeoutMS = 10000;
         unityTransport.DisconnectTimeoutMS = 60000;
         unityTransport.MaxConnectAttempts = 60;
-
-        unityTransport.SetConnectionData(ip, port);
-        return true;
     }
 
     // ---- Scene management ----
