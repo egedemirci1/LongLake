@@ -22,6 +22,7 @@ public class MainMenuUI : MonoBehaviour
     [SerializeField] private UnityTransport unityTransport;
 
     [Header("Defaults")]
+    [Tooltip("Client connects here when Address in UnityTransport is 0.0.0.0 / empty. Use host ZeroTier IP.")]
     [SerializeField] private string defaultIp = "10.171.156.166";
     [SerializeField] private ushort defaultPort = 7777;
 
@@ -103,13 +104,16 @@ public class MainMenuUI : MonoBehaviour
 
     public void StartHost()
     {
-        if (!ApplyConnectionDataFromUIOrDefaults(out string ip, out ushort port))
-            return;
+        ushort port = ResolvePort();
 
-        // For host bind, safest: UnityTransport Address=0.0.0.0 (Inspector)
-        // Here SetConnectionData is not for server bind, it's for connection data. Still useful to log.
-        SetStatus($"Starting host... (listen {ip}:{port})");
-        Debug.Log($"[MainMenuUI] Transport set to {ip}:{port}");
+        // Host always listens on all interfaces (LAN + ZeroTier).
+        unityTransport.ConnectTimeoutMS = 10000;
+        unityTransport.DisconnectTimeoutMS = 60000;
+        unityTransport.MaxConnectAttempts = 60;
+        unityTransport.SetConnectionData("0.0.0.0", port, "0.0.0.0");
+
+        SetStatus($"Starting host... (listen 0.0.0.0:{port})");
+        Debug.Log($"[MainMenuUI] Host listen 0.0.0.0:{port}");
         Debug.Log("[MainMenuUI] Starting host...");
 
         bool ok = networkManager.StartHost();
@@ -129,19 +133,10 @@ public class MainMenuUI : MonoBehaviour
 
     public void StartClient()
     {
-        if (!ApplyConnectionDataFromUIOrDefaults(out string ip, out ushort port))
+        if (!ApplyClientConnectionData(out string ip, out ushort port))
             return;
 
-        // 0.0.0.0 is invalid target IP on client side, convert to localhost
-        if (ip == "0.0.0.0")
-        {
-            ip = "127.0.0.1";
-            Debug.Log("[MainMenuUI] Client IP 0.0.0.0 detected, converting to 127.0.0.1 (localhost)");
-            unityTransport.SetConnectionData(ip, port);
-        }
-
         SetStatus($"Starting client to {ip}:{port} ...");
-        Debug.Log($"[MainMenuUI] Transport set to {ip}:{port}");
         Debug.Log($"[MainMenuUI] Starting client to {ip}:{port}");
 
         isTryingToConnectClient = true;
@@ -165,28 +160,49 @@ public class MainMenuUI : MonoBehaviour
 
     // ---- Connection data ----
 
-    private bool ApplyConnectionDataFromUIOrDefaults(out string ip, out ushort port)
+    private ushort ResolvePort()
     {
-        ip = defaultIp;
-        port = defaultPort;
+        if (portInput != null && !string.IsNullOrWhiteSpace(portInput.text))
+        {
+            if (ushort.TryParse(portInput.text.Trim(), out ushort uiPort))
+                return uiPort;
+        }
+
+        // Prefer Inspector UnityTransport port if it looks intentional.
+        ushort transportPort = unityTransport.ConnectionData.Port;
+        if (transportPort != 0)
+            return transportPort;
+
+        return defaultPort;
+    }
+
+    private bool ApplyClientConnectionData(out string ip, out ushort port)
+    {
+        port = ResolvePort();
+
+        // Priority: UI input → UnityTransport Address (set in Inspector) → defaultIp
+        ip = null;
 
         if (ipInput != null && !string.IsNullOrWhiteSpace(ipInput.text))
             ip = ipInput.text.Trim();
 
-        if (portInput != null && !string.IsNullOrWhiteSpace(portInput.text))
+        if (string.IsNullOrWhiteSpace(ip))
         {
-            if (!ushort.TryParse(portInput.text.Trim(), out port))
+            string transportAddress = unityTransport.ConnectionData.Address;
+            if (!string.IsNullOrWhiteSpace(transportAddress) &&
+                transportAddress != "0.0.0.0")
             {
-                Debug.LogError("[MainMenuUI] Invalid port in UI input.");
-                SetStatus("Invalid port (example: 7777)");
-                return false;
+                ip = transportAddress.Trim();
             }
         }
 
         if (string.IsNullOrWhiteSpace(ip))
+            ip = defaultIp;
+
+        if (string.IsNullOrWhiteSpace(ip) || ip == "0.0.0.0")
         {
-            Debug.LogError("[MainMenuUI] IP empty.");
-            SetStatus("IP is empty");
+            Debug.LogError("[MainMenuUI] Client needs host IP. Set UnityTransport Address to host ZeroTier IP (e.g. 10.171.156.166).");
+            SetStatus("Set host IP on UnityTransport Address");
             return false;
         }
 

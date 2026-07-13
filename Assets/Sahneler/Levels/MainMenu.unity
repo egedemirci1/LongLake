@@ -774,8 +774,8 @@ MonoBehaviour:
   statusText: {fileID: 0}
   networkManager: {fileID: 1445102123}
   unityTransport: {fileID: 1445102124}
-  defaultIp: 0.0.0.0
-  defaultPort: 7778
+  defaultIp: 10.171.156.166
+  defaultPort: 7777
   gameplaySceneName: CrashSite_Main
 --- !u!114 &1445102123
 MonoBehaviour:
