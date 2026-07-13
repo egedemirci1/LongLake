@@ -9,6 +9,7 @@ public class GameAudio : MonoBehaviour
 
     [Header("Clips (optional overrides)")]
     [SerializeField] private AudioClip itemPickupClip;
+    [SerializeField] private AudioClip doorKnockClip;
 
     private AudioSource _source;
 
@@ -39,6 +40,8 @@ public class GameAudio : MonoBehaviour
 
         if (itemPickupClip == null)
             itemPickupClip = Resources.Load<AudioClip>("SFX/item-pickup");
+        if (doorKnockClip == null)
+            doorKnockClip = Resources.Load<AudioClip>("SFX/door-knock");
     }
 
     private void OnDestroy()
@@ -52,6 +55,11 @@ public class GameAudio : MonoBehaviour
         PlayOneShot(itemPickupClip);
     }
 
+    public void PlayDoorKnock()
+    {
+        PlayOneShot(doorKnockClip);
+    }
+
     public void PlayOneShot(AudioClip clip, float volume = 1f)
     {
         if (clip == null || _source == null) return;
@@ -62,5 +70,11 @@ public class GameAudio : MonoBehaviour
     {
         if (Instance != null)
             Instance.PlayItemPickup();
+    }
+
+    public static void PlayKnock()
+    {
+        if (Instance != null)
+            Instance.PlayDoorKnock();
     }
 }

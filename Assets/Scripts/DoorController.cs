@@ -21,6 +21,12 @@ public class DoorController : NetworkBehaviour, IInteractable
     [SerializeField] private string waitingForPartnerPrompt = "Diğer oyuncu da yakında olmalı";
     [SerializeField] private bool completeQuestOnKnock = true;
 
+    [Header("Knock Animation")]
+    [Tooltip("Local Z rotation after a successful knock.")]
+    [SerializeField] private float knockOpenZRotation = -110f;
+    [Tooltip("SmoothDamp time — higher = slower / softer open.")]
+    [SerializeField] private float knockAnimSmoothTime = 0.55f;
+
     [Header("Co-op Proximity")]
     [Tooltip("All connected players must stand near the door to knock.")]
     [SerializeField] private bool requireAllPlayersNearby = true;
@@ -45,6 +51,10 @@ public class DoorController : NetworkBehaviour, IInteractable
         NetworkVariableWritePermission.Server
     );
 
+    private float _targetLocalZ;
+    private float _currentLocalZ;
+    private float _knockZVelocity;
+
     public override void OnNetworkSpawn()
     {
         if (IsServer)
@@ -53,15 +63,62 @@ public class DoorController : NetworkBehaviour, IInteractable
             IsLocked.Value = startLocked;
             hasBeenKnocked.Value = false;
         }
+
+        hasBeenKnocked.OnValueChanged += OnHasBeenKnockedChanged;
+
+        _currentLocalZ = transform.localEulerAngles.z;
+        // Normalize to signed range for SmoothDampAngle
+        if (_currentLocalZ > 180f) _currentLocalZ -= 360f;
+
+        if (knockOnlyForQuest)
+        {
+            _targetLocalZ = hasBeenKnocked.Value ? knockOpenZRotation : closeRotation;
+            if (hasBeenKnocked.Value)
+            {
+                _currentLocalZ = knockOpenZRotation;
+                ApplyLocalZ(_currentLocalZ);
+            }
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        hasBeenKnocked.OnValueChanged -= OnHasBeenKnockedChanged;
+    }
+
+    private void OnHasBeenKnockedChanged(bool previous, bool current)
+    {
+        if (!knockOnlyForQuest) return;
+
+        _targetLocalZ = current ? knockOpenZRotation : closeRotation;
+
+        // Play knock SFX on all peers when the knock first succeeds (network-synced via NV).
+        if (current && !previous)
+            GameAudio.PlayKnock();
     }
 
     private void Update()
     {
-        if (knockOnlyForQuest) return;
+        if (knockOnlyForQuest)
+        {
+            _currentLocalZ = Mathf.SmoothDampAngle(
+                _currentLocalZ,
+                _targetLocalZ,
+                ref _knockZVelocity,
+                knockAnimSmoothTime
+            );
+            ApplyLocalZ(_currentLocalZ);
+            return;
+        }
 
         float targetAngle = IsOpen.Value ? openRotation : closeRotation;
         Quaternion target = Quaternion.Euler(0, 0, targetAngle);
         transform.localRotation = Quaternion.Slerp(transform.localRotation, target, Time.deltaTime * smooth);
+    }
+
+    private void ApplyLocalZ(float zDegrees)
+    {
+        transform.localRotation = Quaternion.Euler(0f, 0f, zDegrees);
     }
 
     public void Interact(InventoryManager interactorInventory)
