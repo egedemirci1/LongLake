@@ -373,7 +373,7 @@ MonoBehaviour:
   modelA: {fileID: 9158004522263205057}
   modelB: {fileID: 4547217596053644598}
   characterIndex:
-    m_InternalValue: 0
+    m_InternalValue: -1
   netSpeed:
     m_InternalValue: 0
 --- !u!114 &4393512149331668265

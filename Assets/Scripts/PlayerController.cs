@@ -211,7 +211,7 @@ public class PlayerController : NetworkBehaviour
 
     public bool HasSelectedCharacter => characterIndex.Value >= 0;
 
-    /// <summary>True if any spawned player already owns this character index.</summary>
+    /// <summary>True if any spawned player already owns this character index (selected = value &gt;= 0).</summary>
     public static bool IsCharacterIndexTaken(int index, ulong exceptClientId = ulong.MaxValue)
     {
         if (index < 0) return false;
@@ -226,7 +226,8 @@ public class PlayerController : NetworkBehaviour
             if (playerObject == null) continue;
 
             var pc = playerObject.GetComponent<PlayerController>();
-            if (pc != null && pc.characterIndex.Value == index)
+            // -1 = henüz seçilmedi; sadece gerçek seçimler "taken" sayılır
+            if (pc != null && pc.characterIndex.Value >= 0 && pc.characterIndex.Value == index)
                 return true;
         }
 
