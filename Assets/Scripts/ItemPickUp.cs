@@ -15,14 +15,10 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        
-        // Hide if already picked up (late join case)
-        if (isPickedUp.Value)
-        {
-            SetVisibility(false);
-        }
 
-        // Update visibility when state changes
+        if (isPickedUp.Value)
+            SetVisibility(false);
+
         isPickedUp.OnValueChanged += OnPickedUpChanged;
     }
 
@@ -35,19 +31,15 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
     private void OnPickedUpChanged(bool oldValue, bool newValue)
     {
         if (newValue)
-        {
             SetVisibility(false);
-        }
     }
 
     private void SetVisibility(bool visible)
     {
-        // Disable collider (prevents interaction)
         var collider = GetComponent<Collider>();
         if (collider != null)
             collider.enabled = visible;
 
-        // Hide visually (optional)
         var renderers = GetComponentsInChildren<Renderer>();
         foreach (var renderer in renderers)
         {
@@ -70,97 +62,59 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
             return;
         }
 
-        // Client-side validation: early exit if already picked up
         if (isPickedUp.Value)
-        {
-            Debug.LogWarning("<color=yellow>[ItemPickUp]</color> Item already picked up, request denied.");
             return;
-        }
 
-        // Özel kontrol: Notebook ve Backpack gibi tek item'lar için envanter kontrolü
-        // Eğer envanterde zaten bu item varsa, alma işlemini engelle
-        if (itemToGive.itemID == "notebook" && interactorInventory.HasItem("notebook"))
-        {
-            Debug.LogWarning("<color=yellow>[ItemPickUp]</color> You already have a notebook! You can only carry one notebook.");
+        if (IsUniqueItemBlocked(interactorInventory))
             return;
-        }
-        
-        if (itemToGive.itemID == "backpack" && interactorInventory.HasItem("backpack"))
-        {
-            Debug.LogWarning("<color=yellow>[ItemPickUp]</color> You already have a backpack! You can only carry one backpack.");
-            return;
-        }
 
-        // Get client ID (interactorInventory's owner)
-        ulong clientId = interactorInventory.OwnerClientId;
-        
-        // Send request to server (DON'T do client-side AddItem, server will handle it)
-        RequestPickUpServerRpc(clientId);
+        RequestPickUpServerRpc(interactorInventory.OwnerClientId);
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void RequestPickUpServerRpc(ulong clientId)
     {
-        // Server-side duplicate check
         if (isPickedUp.Value)
         {
             Debug.LogWarning($"[ItemPickUp] Client {clientId} tried to pick up item but it's already taken. Denied.");
-            // Notify client of failure (optional, can silently deny)
             return;
         }
 
-        // Server-side validation: Notebook ve Backpack kontrolü
         if (itemToGive != null)
         {
             var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (playerObject != null)
             {
                 var inventoryManager = playerObject.GetComponentInChildren<InventoryManager>();
-                if (inventoryManager != null)
+                if (inventoryManager != null && IsUniqueItemBlocked(inventoryManager))
                 {
-                    // Notebook kontrolü
-                    if (itemToGive.itemID == "notebook" && inventoryManager.HasItem("notebook"))
-                    {
-                        Debug.LogWarning($"[ItemPickUp] Client {clientId} already has a notebook. Request denied.");
-                        return;
-                    }
-                    
-                    // Backpack kontrolü
-                    if (itemToGive.itemID == "backpack" && inventoryManager.HasItem("backpack"))
-                    {
-                        Debug.LogWarning($"[ItemPickUp] Client {clientId} already has a backpack. Request denied.");
-                        return;
-                    }
+                    Debug.LogWarning($"[ItemPickUp] Client {clientId} already has '{itemToGive.itemID}'. Request denied.");
+                    return;
                 }
             }
         }
 
-        // Mark item (prevents other clients from taking it)
         isPickedUp.Value = true;
 
-        // Tell client to add item
+        // Shared quest progress (crash-site bags count toward opening quest)
+        if (itemToGive != null && QuestManager.Instance != null)
+            QuestManager.Instance.NotifyQuestItemCollectedServer(itemToGive.itemID);
+
         AddItemToClientClientRpc(clientId);
 
-        // Despawn item
         var no = GetComponent<NetworkObject>();
         if (no != null && no.IsSpawned)
-        {
             no.Despawn();
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
     [ClientRpc]
     private void AddItemToClientClientRpc(ulong targetClientId)
     {
-        // Only add item to target client
         if (NetworkManager.Singleton.LocalClientId != targetClientId)
             return;
 
-        // Find InventoryManager (local player's)
         var inventoryManager = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject()
             ?.GetComponentInChildren<InventoryManager>();
 
@@ -170,16 +124,50 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
             return;
         }
 
-        // Add item
         inventoryManager.AddItem(itemToGive);
+        GameAudio.PlayPickup();
         Debug.Log($"<color=green>[ItemPickUp]</color> Item '{itemToGive.itemName}' added to inventory.");
     }
 
     public string GetInteractText()
     {
         if (isPickedUp.Value)
-            return ""; // Don't show interaction text if already picked up
-        
-        return itemToGive != null ? itemToGive.itemName : "Item";
+            return string.Empty;
+
+        if (itemToGive == null)
+            return "Item";
+
+        // Hide prompt if local player already carries this unique item
+        var localInventory = GetLocalInventory();
+        if (localInventory != null && IsUniqueItemBlocked(localInventory))
+            return string.Empty;
+
+        return itemToGive.itemName;
+    }
+
+    /// <summary>
+    /// Notebook and backpack are one-per-player. Having one blocks picking another.
+    /// </summary>
+    private bool IsUniqueItemBlocked(InventoryManager inventory)
+    {
+        if (inventory == null || itemToGive == null)
+            return false;
+
+        string id = itemToGive.itemID;
+        if (id == "notebook" && inventory.HasItem("notebook"))
+            return true;
+        if (id == "backpack" && inventory.HasItem("backpack"))
+            return true;
+
+        return false;
+    }
+
+    private static InventoryManager GetLocalInventory()
+    {
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
+            return null;
+
+        var localPlayer = NetworkManager.Singleton.SpawnManager.GetLocalPlayerObject();
+        return localPlayer != null ? localPlayer.GetComponentInChildren<InventoryManager>(true) : null;
     }
 }

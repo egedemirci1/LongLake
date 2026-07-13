@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be5e8d9acb065b141bfc13cc80ce50c8, type: 3}
-  m_Name: Quest_FirstMission
+  m_Name: Quest_SecondMission
   m_EditorClassIdentifier: Assembly-CSharp::QuestData
-  questID: quest_001
-  questTitle: "Kaza Alan\u0131n\u0131 Ara\u015Ft\u0131r"
-  questDescription: "Kaza alan\u0131ndaki 2 s\u0131rt \xE7antas\u0131n\u0131 toplay\u0131n (her oyuncu bir \xE7anta)."
+  questID: quest_002
+  questTitle: "Yard\u0131m Ara"
+  questDescription: "Oduncu kul\xFCbesine birlikte gidin ve kap\u0131y\u0131 \xE7al\u0131n (ikiniz de yak\u0131n olmal\u0131)."
   initialStatus: 0

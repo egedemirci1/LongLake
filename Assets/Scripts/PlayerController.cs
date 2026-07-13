@@ -33,12 +33,15 @@ public class PlayerController : NetworkBehaviour
     // BlendTree param adi "Speed" olmali
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
-    // Netcode
+    // Netcode — -1 = henüz seçilmedi; server yazar (aynı karakter iki kez alınmasın)
     public NetworkVariable<int> characterIndex = new NetworkVariable<int>(
-        0,
+        -1,
         NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Owner
+        NetworkVariableWritePermission.Server
     );
+
+    /// <summary>Local owner: (success, characterIndex). Fired after server accepts/rejects select.</summary>
+    public static event System.Action<bool, int> OnLocalCharacterSelectResult;
 
     // Remote yurume/kosma icin speed sync
     public NetworkVariable<float> netSpeed = new NetworkVariable<float>(
@@ -119,9 +122,8 @@ public class PlayerController : NetworkBehaviour
             return;
         }
 
-        // Görev paneli açıksa kamera dönmesin
-        QuestManager questManager = GetComponent<QuestManager>();
-        if (questManager != null && questManager.IsPanelOpen)
+        // Görev paneli açıksa kamera dönmesin (shared QuestManager)
+        if (QuestManager.Instance != null && QuestManager.Instance.IsPanelOpen)
         {
             return;
         }
@@ -200,17 +202,71 @@ public class PlayerController : NetworkBehaviour
         if (modelA != null) modelA.SetActive(index == 0);
         if (modelB != null) modelB.SetActive(index == 1);
 
-        GameObject activeModel = (index == 0) ? modelA : modelB;
+        GameObject activeModel = (index == 0) ? modelA : (index == 1 ? modelB : null);
         _animator = (activeModel != null) ? activeModel.GetComponent<Animator>() : null;
 
         if (_animator != null)
             _animator.SetFloat(SpeedHash, netSpeed.Value);
     }
 
-    // UI'dan cagirilir
+    public bool HasSelectedCharacter => characterIndex.Value >= 0;
+
+    /// <summary>True if any spawned player already owns this character index.</summary>
+    public static bool IsCharacterIndexTaken(int index, ulong exceptClientId = ulong.MaxValue)
+    {
+        if (index < 0) return false;
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null)
+            return false;
+
+        foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+        {
+            if (clientId == exceptClientId) continue;
+
+            var playerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (playerObject == null) continue;
+
+            var pc = playerObject.GetComponent<PlayerController>();
+            if (pc != null && pc.characterIndex.Value == index)
+                return true;
+        }
+
+        return false;
+    }
+
+    // UI'dan cagirilir — server onaylar
     public void SelectCharacter(int index)
     {
         if (!IsOwner) return;
+        if (index < 0 || index > 1) return;
+        RequestSelectCharacterServerRpc(index);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+    private void RequestSelectCharacterServerRpc(int index)
+    {
+        if (index < 0 || index > 1) return;
+
+        // Already selected this character — treat as success (idempotent)
+        if (characterIndex.Value == index)
+        {
+            NotifySelectResultClientRpc(true, index);
+            return;
+        }
+
+        if (IsCharacterIndexTaken(index, OwnerClientId))
+        {
+            Debug.LogWarning($"[PlayerController] Character {index} already taken. Denied for client {OwnerClientId}.");
+            NotifySelectResultClientRpc(false, index);
+            return;
+        }
+
         characterIndex.Value = index;
+        NotifySelectResultClientRpc(true, index);
+    }
+
+    [Rpc(SendTo.Owner)]
+    private void NotifySelectResultClientRpc(bool success, int index)
+    {
+        OnLocalCharacterSelectResult?.Invoke(success, index);
     }
 }

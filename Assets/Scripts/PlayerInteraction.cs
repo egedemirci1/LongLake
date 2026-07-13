@@ -175,9 +175,17 @@ public class PlayerInteraction : NetworkBehaviour
         
         // İlk (en yüksek öncelikli) IInteractable'ı kullan
         var (selectedHit, selectedInteractable, _) = interactables[0];
-        
+
+        string prompt = selectedInteractable.GetInteractText();
+        if (string.IsNullOrEmpty(prompt))
+        {
+            if (interactionText.gameObject.activeSelf)
+                interactionText.gameObject.SetActive(false);
+            return;
+        }
+
         interactionText.gameObject.SetActive(true);
-        interactionText.text = "[E] " + selectedInteractable.GetInteractText();
+        interactionText.text = "[E] " + prompt;
 
         if (Input.GetKeyDown(KeyCode.E))
         {

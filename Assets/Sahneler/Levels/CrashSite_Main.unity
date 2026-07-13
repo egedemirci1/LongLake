@@ -1069,12 +1069,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
+  m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -17215,6 +17215,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!64 &421044237
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -17256,6 +17260,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!64 &421044239
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -17816,6 +17824,76 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 1
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
+  completeQuestOnKnock: 1
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
+--- !u!1001 &440213040
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1832246663}
+    m_Modifications:
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -104.83569
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -2.2577744
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -212.67487
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4555176454548381575, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+      propertyPath: m_Name
+      value: PlasticSignalBollard (6)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+--- !u!4 &440213041 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1593300303407019094, guid: 34022bcfac40ad346bb28a79eb0633a6, type: 3}
+  m_PrefabInstance: {fileID: 440213040}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &442742457
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -22277,6 +22355,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!64 &645663936
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -26667,6 +26749,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!64 &734013241
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -34515,6 +34601,88 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3122995795626633594, guid: de9100bbf110b884f9f1b1d8b6b33537, type: 3}
   m_PrefabInstance: {fileID: 871424104}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &880000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 880000002}
+  - component: {fileID: 880000003}
+  - component: {fileID: 880000004}
+  m_Layer: 0
+  m_Name: QuestSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &880000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &880000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2843601235
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &880000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec8c7d234145b6f41bc80dc83fc49a0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuestManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  availableQuests:
+  - {fileID: 11400000, guid: caa094cf01ba796429befc50bd0f63d6, type: 2}
+  - {fileID: 11400000, guid: 86cdef7e150945bd9b0ee0217c8ba92b, type: 2}
+  openingQuestIndex: 0
+  crashBagItemId: backpack
+  bagsRequired: 2
+  questPanelObject: {fileID: 0}
+  currentQuestTitleText: {fileID: 0}
+  currentQuestDescriptionText: {fileID: 0}
+  hudTitleText: {fileID: 0}
+  hudDescriptionText: {fileID: 0}
 --- !u!64 &898494891
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -40456,6 +40624,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!64 &1124251984
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -45539,6 +45711,14 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
+  completeQuestOnKnock: 1
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!1001 &1295269749
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -47799,6 +47979,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!64 &1400942356
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -52056,6 +52240,18 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 400455775718939944, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400455775718939944, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400455775718939944, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       propertyPath: m_Name
       value: oduncu
@@ -55964,6 +56160,10 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 0
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  completeQuestOnKnock: 1
 --- !u!1 &1689058208
 GameObject:
   m_ObjectHideFlags: 0
@@ -63952,6 +64152,14 @@ MonoBehaviour:
   openRotation: 90
   closeRotation: 0
   smooth: 5
+  knockOnlyForQuest: 1
+  requiredQuestId: quest_002
+  knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
+  completeQuestOnKnock: 1
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &2029505514
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -67752,3 +67960,4 @@ SceneRoots:
   - {fileID: 983394075}
   - {fileID: 648779156}
   - {fileID: 1654047736}
+  - {fileID: 880000002}

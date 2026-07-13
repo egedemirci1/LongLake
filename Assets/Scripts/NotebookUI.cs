@@ -25,9 +25,6 @@ public class NotebookUI : MonoBehaviour
     
     private void Start()
     {
-        Debug.Log("[NotebookUI] Start() called!");
-        
-        // Notebook başlangıçta kapalı
         if (notebookPanelObject != null)
             notebookPanelObject.SetActive(false);
         
@@ -48,20 +45,7 @@ public class NotebookUI : MonoBehaviour
             }
         }
         
-        // QuestManager'ı otomatik bul (Player'da olmalı)
-        if (questManager == null)
-            questManager = GetComponentInParent<QuestManager>();
-        
-        if (questManager == null)
-        {
-            // Daha geniş arama
-            questManager = FindFirstObjectByType<QuestManager>();
-        }
-        
-        if (questManager == null)
-        {
-            Debug.LogWarning("[NotebookUI] QuestManager not found! Notebook will not be able to display quests.");
-        }
+        ResolveQuestManager();
         
         // InventoryManager'ı otomatik bul (Local Player'da olmalı)
         if (inventoryManager == null)
@@ -84,14 +68,42 @@ public class NotebookUI : MonoBehaviour
         }
     }
     
+    private void OnDestroy()
+    {
+        if (questManager != null)
+            questManager.OnQuestStateChanged -= OnSharedQuestStateChanged;
+    }
+
+    private void ResolveQuestManager()
+    {
+        if (questManager == null)
+            questManager = QuestManager.Instance;
+
+        if (questManager == null)
+            questManager = FindFirstObjectByType<QuestManager>();
+
+        if (questManager != null)
+        {
+            questManager.OnQuestStateChanged -= OnSharedQuestStateChanged;
+            questManager.OnQuestStateChanged += OnSharedQuestStateChanged;
+        }
+        else
+        {
+            Debug.LogWarning("[NotebookUI] QuestManager not found! Notebook will not be able to display quests.");
+        }
+    }
+
+    private void OnSharedQuestStateChanged()
+    {
+        if (isNotebookOpen)
+            UpdateQuestEntries();
+    }
+
     private void Update()
     {
-        // Debug: İlk birkaç frame'de çalışıp çalışmadığını kontrol et
-        if (Time.frameCount <= 5)
-        {
-            Debug.Log($"[NotebookUI] Update() çalışıyor! Frame: {Time.frameCount}");
-        }
-        
+        if (questManager == null)
+            ResolveQuestManager();
+
         // InventoryManager'ı tekrar ara (eğer Start()'ta bulunamadıysa - network spawn gecikmesi için)
         if (inventoryManager == null)
         {
@@ -102,10 +114,6 @@ public class NotebookUI : MonoBehaviour
                 if (localPlayer != null)
                 {
                     inventoryManager = localPlayer.GetComponentInChildren<InventoryManager>(true);
-                    if (inventoryManager != null)
-                    {
-                        Debug.Log("[NotebookUI] InventoryManager found in Update()!");
-                    }
                 }
             }
             
@@ -119,24 +127,11 @@ public class NotebookUI : MonoBehaviour
         // L tuşu ile notebook aç/kapat (sadece envanterde notebook varsa)
         if (Input.GetKeyDown(KeyCode.L))
         {
-            Debug.Log("[NotebookUI] L tuşuna basıldı!");
-            
             if (inventoryManager == null)
-            {
-                Debug.LogWarning("[NotebookUI] L tuşu: InventoryManager hala null!");
                 return;
-            }
-            
-            // Envanterde notebook var mı kontrol et
+
             if (HasNotebook())
-            {
-                Debug.Log("[NotebookUI] Notebook bulundu, açılıyor...");
                 ToggleNotebook();
-            }
-            else
-            {
-                Debug.Log("[NotebookUI] Envanterde not defteri yok!");
-            }
         }
         
         // Notebook açıkken ESC ile kapat
@@ -154,9 +149,7 @@ public class NotebookUI : MonoBehaviour
             return false;
         }
         
-        // Envanterde notebook var mı kontrol et
         bool hasItem = inventoryManager.HasItem(notebookItemID);
-        Debug.Log($"[NotebookUI] HasNotebook check: {hasItem} (ItemID: {notebookItemID})");
         return hasItem;
     }
     
