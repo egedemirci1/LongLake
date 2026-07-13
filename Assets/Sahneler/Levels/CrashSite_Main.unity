@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0.70825917, g: 0.82003134, b: 0.8679245, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.02
@@ -451,6 +451,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (33)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -546,6 +550,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (17)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6315,6 +6323,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (27)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -8384,6 +8396,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (7)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -12460,6 +12476,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (26)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -12667,6 +12687,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -17218,7 +17242,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &421044237
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -17263,7 +17293,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &421044239
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -17829,6 +17865,8 @@ MonoBehaviour:
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
   waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -18536,6 +18574,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -18689,6 +18731,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (23)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -19482,6 +19528,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSelector
   selectionPanel: {fileID: 520410382}
+  ahuButton: {fileID: 0}
+  yamanButton: {fileID: 0}
+  statusText: {fileID: 0}
 --- !u!114 &520410386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20185,6 +20234,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -21249,6 +21302,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (22)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -22274,6 +22331,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (25)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -22358,7 +22419,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &645663936
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -22483,6 +22550,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (15)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -26752,7 +26823,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &734013241
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -29881,6 +29958,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (14)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -30682,6 +30763,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (21)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -31051,6 +31136,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (28)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -35832,6 +35921,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (6)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -36378,6 +36471,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (18)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -37046,6 +37143,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (9)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -38008,6 +38109,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -38346,6 +38451,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (31)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -38469,6 +38578,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (4)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -40004,6 +40117,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (11)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -40627,7 +40744,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &1124251984
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -45716,6 +45839,8 @@ MonoBehaviour:
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
   waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -46521,6 +46646,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (13)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -47021,6 +47150,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (16)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -47982,7 +48115,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!64 &1400942356
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -48110,6 +48249,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (29)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -50826,6 +50969,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (34)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -50988,6 +51135,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (8)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -52157,6 +52308,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (20)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -54128,6 +54283,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -54189,6 +54348,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (12)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -54434,6 +54597,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (19)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -56163,7 +56330,13 @@ MonoBehaviour:
   knockOnlyForQuest: 0
   requiredQuestId: quest_002
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
+  waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
+  requireAllPlayersNearby: 1
+  minimumPlayersRequired: 2
+  nearbyRadius: 6
 --- !u!1 &1689058208
 GameObject:
   m_ObjectHideFlags: 0
@@ -56305,6 +56478,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (10)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -58097,6 +58274,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Street_Light_A_07 (24)
       objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -59655,6 +59836,7 @@ Transform:
   - {fileID: 1456331634}
   - {fileID: 272034036}
   - {fileID: 1970124220}
+  - {fileID: 440213041}
   m_Father: {fileID: 1032799734}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1834399159
@@ -64157,6 +64339,8 @@ MonoBehaviour:
   knockPrompt: "Kap\u0131y\u0131 \xC7al"
   waitingForPartnerPrompt: "Di\u011Fer oyuncu da yak\u0131nda olmal\u0131"
   completeQuestOnKnock: 1
+  knockOpenZRotation: -110
+  knockAnimSmoothTime: 0.55
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -64911,6 +65095,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (30)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -66108,6 +66296,10 @@ PrefabInstance:
     - target: {fileID: 6378449235217430560, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
       propertyPath: m_Name
       value: Street_Light_A_07 (32)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7591702428474046196, guid: 9a2fd93daa07d0744bfe08bca4004887, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
