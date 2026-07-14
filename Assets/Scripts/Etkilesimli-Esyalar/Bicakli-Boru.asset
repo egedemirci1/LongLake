@@ -17,6 +17,14 @@ MonoBehaviour:
   itemID: sivriboru_01
   itemType: 1
   worldPrefab: {fileID: 7657935839373515318, guid: 395394c3b0f79e345aadf23700707381, type: 3}
+  heldPrefab: {fileID: 0}
+  heldLocalPosition: {x: 0.09, y: 0.13, z: 0.04}
+  heldLocalEulerAngles: {x: 242.5, y: 169.4, z: -84.3}
+  heldLocalScale: {x: 1, y: 1, z: 1}
+  useSeparateAhuHeldPose: 1
+  heldLocalPositionAhu: {x: 0.09, y: 0.1, z: 0.04}
+  heldLocalEulerAnglesAhu: {x: 227.5, y: 176.3, z: -85.4}
+  heldLocalScaleAhu: {x: 1, y: 1, z: 1}
   weaponCategory: 0
   tier: 0
   meleeDamage: 0

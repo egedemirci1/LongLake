@@ -269,7 +269,7 @@ public class InventoryManager : NetworkBehaviour
         }
     }
 
-    private void SelectSlot(int slotIndex)
+    public void SelectSlot(int slotIndex)
     {
         // Slot geçerli mi kontrol et (hotbar slot index)
         if (slotIndex < 0 || slotIndex >= HOTBAR_SIZE)
@@ -998,15 +998,21 @@ public class InventoryManager : NetworkBehaviour
             Debug.Log($"<color=green>[Inventory]</color> Item added to inventory slot {addedIndex}: {newItem.itemName} (x1) (ID: {newItem.itemID}). Total slots: {items.Count}");
             
             // Eğer hotbar'da boş slot varsa, yeni eklenen item'ı ilk boş hotbar slot'una ata
+            int assignedHotbar = -1;
             for (int i = 0; i < HOTBAR_SIZE; i++)
             {
                 if (hotbarSlots[i] == -1) // Boş hotbar slot bulundu
                 {
                     hotbarSlots[i] = addedIndex;
+                    assignedHotbar = i;
                     Debug.Log($"<color=green>[Inventory]</color> Item automatically assigned to hotbar slot {i + 1}");
                     break;
                 }
             }
+
+            // Melee silahlar ele geçsin diye hotbar'da otomatik seç
+            if (assignedHotbar >= 0 && newItem.itemType == ItemType.MeleeWeapon)
+                SelectSlot(assignedHotbar);
             
             // Backpack alınca hotbar'ı aç
             if (newItem.itemID == "backpack" && hotbarObject != null)

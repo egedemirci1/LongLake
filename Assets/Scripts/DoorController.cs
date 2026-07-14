@@ -26,6 +26,8 @@ public class DoorController : NetworkBehaviour, IInteractable
     [SerializeField] private float knockOpenZRotation = -110f;
     [Tooltip("SmoothDamp time — higher = slower / softer open.")]
     [SerializeField] private float knockAnimSmoothTime = 0.55f;
+    [Tooltip("Seconds to wait after knock SFX before the door starts opening.")]
+    [SerializeField] private float knockOpenDelaySeconds = 4.5f;
 
     [Header("Co-op Proximity")]
     [Tooltip("All connected players must stand near the door to knock.")]
@@ -51,6 +53,13 @@ public class DoorController : NetworkBehaviour, IInteractable
         NetworkVariableWritePermission.Server
     );
 
+    /// <summary>True when the knock door should animate open (after delay).</summary>
+    private NetworkVariable<bool> knockDoorOpened = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     private float _targetLocalZ;
     private float _currentLocalZ;
     private float _knockZVelocity;
@@ -62,9 +71,11 @@ public class DoorController : NetworkBehaviour, IInteractable
             IsOpen.Value = startOpen;
             IsLocked.Value = startLocked;
             hasBeenKnocked.Value = false;
+            knockDoorOpened.Value = false;
         }
 
         hasBeenKnocked.OnValueChanged += OnHasBeenKnockedChanged;
+        knockDoorOpened.OnValueChanged += OnKnockDoorOpenedChanged;
 
         _currentLocalZ = transform.localEulerAngles.z;
         // Normalize to signed range for SmoothDampAngle
@@ -72,8 +83,8 @@ public class DoorController : NetworkBehaviour, IInteractable
 
         if (knockOnlyForQuest)
         {
-            _targetLocalZ = hasBeenKnocked.Value ? knockOpenZRotation : closeRotation;
-            if (hasBeenKnocked.Value)
+            _targetLocalZ = knockDoorOpened.Value ? knockOpenZRotation : closeRotation;
+            if (knockDoorOpened.Value)
             {
                 _currentLocalZ = knockOpenZRotation;
                 ApplyLocalZ(_currentLocalZ);
@@ -84,17 +95,22 @@ public class DoorController : NetworkBehaviour, IInteractable
     public override void OnNetworkDespawn()
     {
         hasBeenKnocked.OnValueChanged -= OnHasBeenKnockedChanged;
+        knockDoorOpened.OnValueChanged -= OnKnockDoorOpenedChanged;
     }
 
     private void OnHasBeenKnockedChanged(bool previous, bool current)
     {
         if (!knockOnlyForQuest) return;
 
-        _targetLocalZ = current ? knockOpenZRotation : closeRotation;
-
-        // Play knock SFX on all peers when the knock first succeeds (network-synced via NV).
+        // Knock immediately plays SFX; door open waits for knockDoorOpened (delay).
         if (current && !previous)
             GameAudio.PlayKnock();
+    }
+
+    private void OnKnockDoorOpenedChanged(bool previous, bool current)
+    {
+        if (!knockOnlyForQuest) return;
+        _targetLocalZ = current ? knockOpenZRotation : closeRotation;
     }
 
     private void Update()
@@ -142,10 +158,20 @@ public class DoorController : NetworkBehaviour, IInteractable
         if (!CanKnock()) return;
 
         hasBeenKnocked.Value = true;
-        Debug.Log($"<b>[KAPI]</b> Kapı çalındı (herkes yakında). Quest={requiredQuestId}");
+        Debug.Log($"<b>[KAPI]</b> Kapı çalındı (herkes yakında). Quest={requiredQuestId}. Açılış {knockOpenDelaySeconds:0.#}s sonra.");
 
         if (completeQuestOnKnock && QuestManager.Instance != null)
             QuestManager.Instance.CompleteCurrentQuestIfIdServer(requiredQuestId);
+
+        StartCoroutine(OpenKnockDoorAfterDelayServer());
+    }
+
+    private System.Collections.IEnumerator OpenKnockDoorAfterDelayServer()
+    {
+        yield return new WaitForSeconds(knockOpenDelaySeconds);
+        if (!IsSpawned || !IsServer) yield break;
+        knockDoorOpened.Value = true;
+        Debug.Log("<b>[KAPI]</b> Kapı açılıyor (gecikme bitti).");
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]

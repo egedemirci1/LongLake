@@ -17,6 +17,14 @@ MonoBehaviour:
   itemID: miniksopa_01
   itemType: 1
   worldPrefab: {fileID: 8779645001873663773, guid: d9a253c5ba3b34e41818a376e754a479, type: 3}
+  heldPrefab: {fileID: 0}
+  heldLocalPosition: {x: 0.11, y: 0.18, z: 0.03}
+  heldLocalEulerAngles: {x: 214, y: 156, z: -57.6}
+  heldLocalScale: {x: 1, y: 1, z: 1}
+  useSeparateAhuHeldPose: 1
+  heldLocalPositionAhu: {x: 0.08, y: 0.12, z: 0.03}
+  heldLocalEulerAnglesAhu: {x: 214, y: 164.9, z: -57.6}
+  heldLocalScaleAhu: {x: 1, y: 1, z: 1}
   weaponCategory: 0
   tier: 0
   meleeDamage: 0

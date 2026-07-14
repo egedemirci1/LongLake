@@ -56,6 +56,10 @@ public class PlayerController : NetworkBehaviour
     private bool _grounded;
     private float _speed;
 
+    public bool IsGrounded => _grounded;
+    /// <summary>Local speed for owner; synced netSpeed for remotes.</summary>
+    public float CurrentMoveSpeed => IsOwner ? _speed : netSpeed.Value;
+
     private void Awake()
     {
         _controller = GetComponent<CharacterController>();

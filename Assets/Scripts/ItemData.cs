@@ -45,6 +45,22 @@ public class ItemData : ScriptableObject
     [Tooltip("Yere atıldığında görünecek 3D prefab (ItemPickUp component'li olmalı). Eğer boşsa, fallback prefab kullanılır.")]
     public GameObject worldPrefab; // Yere atıldığında spawn edilecek prefab
 
+    [Header("Held / Equip Visual")]
+    [Tooltip("Optional. If empty, worldPrefab mesh is reused in-hand (pickup scripts stripped).")]
+    public GameObject heldPrefab;
+
+    [Header("Held Pose — Yaman (characterIndex 1)")]
+    public Vector3 heldLocalPosition = new Vector3(0.05f, -0.02f, 0.02f);
+    public Vector3 heldLocalEulerAngles = new Vector3(0f, 90f, -90f);
+    public Vector3 heldLocalScale = Vector3.one;
+
+    [Header("Held Pose — Ahu (characterIndex 0)")]
+    [Tooltip("Calibrate while playing as Ahu. Until set, falls back to Yaman pose.")]
+    public bool useSeparateAhuHeldPose = false;
+    public Vector3 heldLocalPositionAhu;
+    public Vector3 heldLocalEulerAnglesAhu;
+    public Vector3 heldLocalScaleAhu = Vector3.one;
+
     [Header("Weapon Properties")]
     public WeaponCategory weaponCategory;
     public int tier; // Tier 1, 2, 3
@@ -64,6 +80,36 @@ public class ItemData : ScriptableObject
 
     [Header("Stack Properties")]
     public int maxStackSize = 1; // 1 = stack edilemez, >1 = stack edilebilir (örn: Çivi için 99)
+
+    public GameObject GetHeldVisualPrefab()
+    {
+        if (heldPrefab != null) return heldPrefab;
+        return worldPrefab;
+    }
+
+    public bool CanHoldInHand =>
+        itemType == ItemType.MeleeWeapon && GetHeldVisualPrefab() != null;
+
+    /// <summary>characterIndex: 0 = Ahu, 1 = Yaman (and any other uses Yaman pose).</summary>
+    public void GetHeldPose(int characterIndex, out Vector3 position, out Vector3 eulerAngles, out Vector3 scale)
+    {
+        bool ahu = characterIndex == 0 && useSeparateAhuHeldPose;
+        if (ahu)
+        {
+            position = heldLocalPositionAhu;
+            eulerAngles = heldLocalEulerAnglesAhu;
+            scale = heldLocalScaleAhu;
+        }
+        else
+        {
+            position = heldLocalPosition;
+            eulerAngles = heldLocalEulerAngles;
+            scale = heldLocalScale;
+        }
+
+        if (scale.sqrMagnitude < 0.0001f)
+            scale = Vector3.one;
+    }
 }
 
 [System.Serializable]

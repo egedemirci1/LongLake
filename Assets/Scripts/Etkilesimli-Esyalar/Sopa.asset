@@ -17,6 +17,14 @@ MonoBehaviour:
   itemID: sopa_01
   itemType: 1
   worldPrefab: {fileID: 8872595739847089547, guid: 65edb7f892873564ab6ac24b8df34de7, type: 3}
+  heldPrefab: {fileID: 0}
+  heldLocalPosition: {x: -0.42, y: -0.09, z: 0.18}
+  heldLocalEulerAngles: {x: 214.4, y: 180, z: -57.9}
+  heldLocalScale: {x: 1, y: 1, z: 1}
+  useSeparateAhuHeldPose: 1
+  heldLocalPositionAhu: {x: -0.42, y: -0.06, z: 0.18}
+  heldLocalEulerAnglesAhu: {x: 221.4, y: 179.3, z: -62.9}
+  heldLocalScaleAhu: {x: 1, y: 1, z: 1}
   weaponCategory: 0
   tier: 0
   meleeDamage: 0

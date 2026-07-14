@@ -376,6 +376,51 @@ MonoBehaviour:
     m_InternalValue: -1
   netSpeed:
     m_InternalValue: 0
+--- !u!114 &4393512149331668266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8616685848737228372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c4e9a2b1f5846d0a8e3c5b7d9f01234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeldItemVisual
+  ShowTopMostFoldoutHeaderGroup: 1
+  handBoneName: RightHand
+  handOverride: {fileID: 0}
+  itemDatabase: {fileID: 11400000, guid: 9e6a1c4d3b7a68f2c0a5e7d9f1b23456, type: 2}
+  extraCatalog: []
+--- !u!114 &4393512149331668267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8616685848737228372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f8a1c2d4e5b67890abcdef123456789, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FootstepAudio
+  ShowTopMostFoldoutHeaderGroup: 1
+  walkClip: {fileID: 0}
+  walkClipRight: {fileID: 0}
+  resourcesPath: SFX/walk
+  pairGap: 0.3
+  stridePause: 0.22
+  sprintPairGap: 0.22
+  sprintStridePause: 0.12
+  minSpeedToStep: 1.5
+  sprintSpeedThreshold: 6.5
+  gapJitter: 0.04
+  leftPitch: 1.02
+  rightPitch: 0.94
+  leftVolume: 0.42
+  rightVolume: 0.36
+  maxDistance: 18
 --- !u!114 &4393512149331668265
 MonoBehaviour:
   m_ObjectHideFlags: 0

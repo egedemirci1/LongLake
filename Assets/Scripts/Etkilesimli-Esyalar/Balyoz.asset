@@ -17,6 +17,14 @@ MonoBehaviour:
   itemID: balyoz_01
   itemType: 1
   worldPrefab: {fileID: 5321018201348410593, guid: f3676eb27090cd641be6597933810388, type: 3}
+  heldPrefab: {fileID: 0}
+  heldLocalPosition: {x: 0.25, y: 0.24, z: 0.04}
+  heldLocalEulerAngles: {x: 214, y: 169.9, z: -68.3}
+  heldLocalScale: {x: 1, y: 1, z: 1}
+  useSeparateAhuHeldPose: 1
+  heldLocalPositionAhu: {x: 0.15, y: 0.12, z: 0.03}
+  heldLocalEulerAnglesAhu: {x: 181.2, y: 193.9, z: -72.1}
+  heldLocalScaleAhu: {x: 1, y: 1, z: 1}
   weaponCategory: 0
   tier: 0
   meleeDamage: 0
