@@ -37094,6 +37094,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ismail
       objectReference: {fileID: 0}
+    - target: {fileID: 81755441845863387, guid: 4a2849b77f5015f4a9371aa774cac62c, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 9056710d38427d3419c418ec8872c5c5, type: 2}
     - target: {fileID: 7606597654758158236, guid: 4a2849b77f5015f4a9371aa774cac62c, type: 3}
       propertyPath: m_LocalPosition.x
       value: -9.86853
@@ -52615,6 +52619,10 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8391222552659086748, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: -7454577034988418296, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       propertyPath: m_LocalRotation.w

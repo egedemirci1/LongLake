@@ -131,6 +131,17 @@ public class PlayerInteraction : NetworkBehaviour
 
             if (interactable != null)
             {
+                // Linecast ile arada duvar/engel olup olmadığını kontrol et
+                if (Physics.Linecast(origin, hit.point, out RaycastHit wallHit, layerMask, QueryTriggerInteraction.Ignore))
+                {
+                    if (wallHit.collider != hit.collider && 
+                        !wallHit.collider.transform.IsChildOf(hit.collider.transform) && 
+                        !hit.collider.transform.IsChildOf(wallHit.collider.transform))
+                    {
+                        continue; // Arada engel var, etkileşimi engelle
+                    }
+                }
+
                 float priority = 0f; // Varsayılan öncelik
                 
                 // ItemPickUp'lara öncelik ver, AMA sadece çekmece açıksa
