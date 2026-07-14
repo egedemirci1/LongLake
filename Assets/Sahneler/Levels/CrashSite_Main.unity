@@ -37090,14 +37090,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1718199301}
     m_Modifications:
+    - target: {fileID: 81755441845863387, guid: 4a2849b77f5015f4a9371aa774cac62c, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 1edd8a2b1d33d994e9693d9677c71be0, type: 2}
     - target: {fileID: 4100531783061169287, guid: 4a2849b77f5015f4a9371aa774cac62c, type: 3}
       propertyPath: m_Name
       value: ismail
       objectReference: {fileID: 0}
-    - target: {fileID: 81755441845863387, guid: 4a2849b77f5015f4a9371aa774cac62c, type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: 9056710d38427d3419c418ec8872c5c5, type: 2}
     - target: {fileID: 7606597654758158236, guid: 4a2849b77f5015f4a9371aa774cac62c, type: 3}
       propertyPath: m_LocalPosition.x
       value: -9.86853
