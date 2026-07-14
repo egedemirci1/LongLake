@@ -29,6 +29,9 @@ public class MainMenuUI : MonoBehaviour
     [Header("Scene")]
     [SerializeField] private string gameplaySceneName = "CrashSite_Main";
 
+    [Header("Audio")]
+    [SerializeField] private MainMenuMusic menuMusic;
+
     private bool callbacksRegistered;
     private bool sceneEventsHooked;
     private bool isTryingToConnectClient;
@@ -37,6 +40,7 @@ public class MainMenuUI : MonoBehaviour
     private void Awake()
     {
         if (networkManager == null) networkManager = NetworkManager.Singleton;
+        if (menuMusic == null) menuMusic = FindFirstObjectByType<MainMenuMusic>();
 
         if (networkManager == null)
         {
@@ -106,6 +110,9 @@ public class MainMenuUI : MonoBehaviour
     {
         ushort port = ResolvePort();
 
+        if (menuMusic != null)
+            menuMusic.FadeOut();
+
         // Host always listens on all interfaces (LAN + ZeroTier).
         ApplyTransportTuning();
         unityTransport.SetConnectionData("0.0.0.0", port, "0.0.0.0");
@@ -133,6 +140,9 @@ public class MainMenuUI : MonoBehaviour
     {
         if (!ApplyClientConnectionData(out string ip, out ushort port))
             return;
+
+        if (menuMusic != null)
+            menuMusic.FadeOut();
 
         SetStatus($"Starting client to {ip}:{port} ...");
         Debug.Log($"[MainMenuUI] Starting client to {ip}:{port}");
@@ -416,6 +426,9 @@ public class MainMenuUI : MonoBehaviour
 
     private void QuitGame()
     {
+        if (menuMusic != null)
+            menuMusic.FadeOut();
+
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
