@@ -51,6 +51,7 @@ public class PlayerController : NetworkBehaviour
     );
 
     private CharacterController _controller;
+    private PlayerStamina _stamina;
     private float _cinemachineTargetPitch;
     private float _verticalVelocity;
     private bool _grounded;
@@ -63,6 +64,7 @@ public class PlayerController : NetworkBehaviour
     private void Awake()
     {
         _controller = GetComponent<CharacterController>();
+        _stamina = GetComponent<PlayerStamina>();
         UpdateCharacterModel(characterIndex.Value);
     }
 
@@ -155,11 +157,16 @@ public class PlayerController : NetworkBehaviour
     {
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
-        bool isSprinting = Input.GetKey(KeyCode.LeftShift);
+        bool moving = Mathf.Abs(h) + Mathf.Abs(v) > 0.01f;
+        bool wantSprint = Input.GetKey(KeyCode.LeftShift);
+        bool isSprinting = moving && wantSprint && _stamina != null && _stamina.CanSprint;
+
+        if (_stamina != null)
+            _stamina.SetSprinting(isSprinting);
 
         Vector3 inputDir = transform.right * h + transform.forward * v;
 
-        float targetSpeed = (h == 0f && v == 0f) ? 0.0f : (isSprinting ? sprintSpeed : walkSpeed);
+        float targetSpeed = !moving ? 0.0f : (isSprinting ? sprintSpeed : walkSpeed);
         _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * speedChangeRate);
 
         Vector3 move = inputDir.normalized * (_speed * Time.deltaTime);

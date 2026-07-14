@@ -49,6 +49,9 @@ GameObject:
   - component: {fileID: 2050461967792612107}
   - component: {fileID: 2582573296541823452}
   - component: {fileID: 6593367035505083130}
+  - component: {fileID: 4393512149331668266}
+  - component: {fileID: 4393512149331668267}
+  - component: {fileID: 4393512149331668268}
   - component: {fileID: 4393512149331668265}
   m_Layer: 8
   m_Name: PlayerCapsule
@@ -421,6 +424,24 @@ MonoBehaviour:
   leftVolume: 0.42
   rightVolume: 0.36
   maxDistance: 18
+--- !u!114 &4393512149331668268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8616685848737228372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1d2e3f4a5b60718293a4b5c6d7e8f90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStamina
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxStamina: 100
+  drainPerSecond: 22
+  regenPerSecond: 10
+  regenDelayAfterEmpty: 0.75
+  recoverSprintThreshold: 5
 --- !u!114 &4393512149331668265
 MonoBehaviour:
   m_ObjectHideFlags: 0
