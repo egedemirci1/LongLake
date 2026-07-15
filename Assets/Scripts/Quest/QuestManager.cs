@@ -56,7 +56,6 @@ public class QuestManager : NetworkBehaviour
     private float hudIntroStart = -1f;
     private bool hudFlashActive;
 
-    private static Sprite roundedSprite;
     private static readonly Color AccentColor = new Color(0.95f, 0.77f, 0.32f, 1f);   // kehribar (hotbar seçim rengi)
     private static readonly Color CompleteColor = new Color(0.45f, 0.85f, 0.45f, 1f); // görev tamamlandı yeşili
     private const float HudIntroDuration = 0.25f;
@@ -691,49 +690,5 @@ public class QuestManager : NetworkBehaviour
         return tmp;
     }
 
-    /// <summary>
-    /// Runtime'da 9-slice yuvarlak köşeli sprite üretir
-    /// (editör dışı çalıştığı için builtin UISprite kullanılamıyor).
-    /// </summary>
-    private static Sprite GetRoundedSprite()
-    {
-        if (roundedSprite != null) return roundedSprite;
-
-        const int size = 32;
-        const float radius = 10f;
-
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
-        {
-            hideFlags = HideFlags.HideAndDontSave,
-            wrapMode = TextureWrapMode.Clamp
-        };
-
-        var pixels = new Color32[size * size];
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                // Köşe merkezine olan mesafeden kenar yumuşatmalı alfa hesapla.
-                float dx = Mathf.Max(0f, Mathf.Max(radius - x - 0.5f, x + 0.5f - (size - radius)));
-                float dy = Mathf.Max(0f, Mathf.Max(radius - y - 0.5f, y + 0.5f - (size - radius)));
-                float dist = Mathf.Sqrt(dx * dx + dy * dy);
-                float alpha = Mathf.Clamp01(radius - dist + 0.5f);
-                pixels[y * size + x] = new Color32(255, 255, 255, (byte)(alpha * 255f));
-            }
-        }
-
-        tex.SetPixels32(pixels);
-        tex.Apply();
-
-        roundedSprite = Sprite.Create(
-            tex,
-            new Rect(0f, 0f, size, size),
-            new Vector2(0.5f, 0.5f),
-            100f,
-            0,
-            SpriteMeshType.FullRect,
-            new Vector4(12f, 12f, 12f, 12f));
-        roundedSprite.hideFlags = HideFlags.HideAndDontSave;
-        return roundedSprite;
-    }
+    private static Sprite GetRoundedSprite() => RuntimeUiSprites.GetRoundedSprite(10);
 }
