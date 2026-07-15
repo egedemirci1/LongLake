@@ -13,6 +13,15 @@ public class PlayerInteraction : NetworkBehaviour
     private TMP_Text interactionText;
     private InventoryManager myInventory;
 
+    // Prompt paneli (tuş rozeti + metin). Yoksa çıplak metne düşer.
+    private GameObject promptRoot;
+    private CanvasGroup promptGroup;
+    private RectTransform promptRect;
+    private Vector2 promptBasePosition;
+    private const float FadeDuration = 0.12f;
+    private const float SlideOffset = 10f;
+    private float showTime = -1f;
+
     public override void OnNetworkSpawn()
     {
         if (!IsOwner) return;
@@ -53,9 +62,46 @@ public class PlayerInteraction : NetworkBehaviour
             yield break;
         }
 
+        // Panel varsa (InteractionPrompt) onu yönet; yoksa çıplak metni.
+        promptGroup = interactionText.GetComponentInParent<CanvasGroup>(true);
+        promptRoot = promptGroup != null ? promptGroup.gameObject : interactionText.gameObject;
+        promptRect = promptRoot.GetComponent<RectTransform>();
+        if (promptRect != null)
+            promptBasePosition = promptRect.anchoredPosition;
+
         Debug.Log("<color=green>[Interaction]</color> UI bağlandı -> " + interactionText.gameObject.name);
         interactionText.text = "";
-        interactionText.gameObject.SetActive(false);
+        promptRoot.SetActive(false);
+    }
+
+    private void ShowPrompt(string text)
+    {
+        interactionText.text = text;
+
+        if (!promptRoot.activeSelf)
+        {
+            promptRoot.SetActive(true);
+            showTime = Time.unscaledTime;
+        }
+    }
+
+    private void HidePrompt()
+    {
+        if (promptRoot != null && promptRoot.activeSelf)
+            promptRoot.SetActive(false);
+        showTime = -1f;
+    }
+
+    /// <summary>Prompt açılırken kısa fade-in ve hafif yukarı kayma.</summary>
+    private void AnimatePrompt()
+    {
+        if (promptGroup == null || showTime < 0f || !promptRoot.activeSelf)
+            return;
+
+        float t = Mathf.Clamp01((Time.unscaledTime - showTime) / FadeDuration);
+        promptGroup.alpha = t;
+        if (promptRect != null)
+            promptRect.anchoredPosition = promptBasePosition + Vector2.down * (SlideOffset * (1f - t));
     }
 
     private void TryBindUI()
@@ -104,14 +150,14 @@ public class PlayerInteraction : NetworkBehaviour
 
         Debug.DrawRay(origin, direction * interactDistance, Color.magenta);
         CheckInteraction(origin, direction);
+        AnimatePrompt();
     }
 
     private void CheckInteraction(Vector3 origin, Vector3 direction)
     {
         if (DialogueManager.IsDialogueOpen)
         {
-            if (interactionText != null && interactionText.gameObject.activeSelf)
-                interactionText.gameObject.SetActive(false);
+            HidePrompt();
             return;
         }
 
@@ -122,8 +168,7 @@ public class PlayerInteraction : NetworkBehaviour
         
         if (hits.Length == 0)
         {
-            if (interactionText.gameObject.activeSelf)
-                interactionText.gameObject.SetActive(false);
+            HidePrompt();
             return;
         }
         
@@ -141,12 +186,8 @@ public class PlayerInteraction : NetworkBehaviour
                 // Linecast ile arada duvar/engel olup olmadığını kontrol et
                 if (Physics.Linecast(origin, hit.point, out RaycastHit wallHit, layerMask, QueryTriggerInteraction.Ignore))
                 {
-                    if (wallHit.collider != hit.collider && 
-                        !wallHit.collider.transform.IsChildOf(hit.collider.transform) && 
-                        !hit.collider.transform.IsChildOf(wallHit.collider.transform))
-                    {
+                    if (IsBlockingObstacle(wallHit.collider, hit.collider, interactable))
                         continue; // Arada engel var, etkileşimi engelle
-                    }
                 }
 
                 float priority = 0f; // Varsayılan öncelik
@@ -178,8 +219,7 @@ public class PlayerInteraction : NetworkBehaviour
         
         if (interactables.Count == 0)
         {
-            if (interactionText.gameObject.activeSelf)
-                interactionText.gameObject.SetActive(false);
+            HidePrompt();
             return;
         }
         
@@ -197,13 +237,11 @@ public class PlayerInteraction : NetworkBehaviour
         string prompt = selectedInteractable.GetInteractText();
         if (string.IsNullOrEmpty(prompt))
         {
-            if (interactionText.gameObject.activeSelf)
-                interactionText.gameObject.SetActive(false);
+            HidePrompt();
             return;
         }
 
-        interactionText.gameObject.SetActive(true);
-        interactionText.text = "[E] " + prompt;
+        ShowPrompt(prompt);
 
         if (Input.GetKeyDown(KeyCode.E))
         {
@@ -219,5 +257,35 @@ public class PlayerInteraction : NetworkBehaviour
 
             selectedInteractable.Interact(myInventory);
         }
+    }
+
+    /// <summary>
+    /// Hedefle aramızdaki collider gerçek bir engel mi?
+    /// Etkileşimsiz her collider (duvar, bina gövdesi) engeldir — hedefin ebeveyni olsa bile.
+    /// Etkileşimli bir collider ise yalnızca hedefle ilişkiliyse (aynı obje ya da
+    /// çekmece-kitap gibi ebeveyn/çocuk etkileşimlisi) engel sayılmaz.
+    /// </summary>
+    private static bool IsBlockingObstacle(Collider obstacle, Collider target, IInteractable targetInteractable)
+    {
+        if (obstacle == target)
+            return false;
+
+        IInteractable obstacleInteractable =
+            obstacle.GetComponent<IInteractable>() ??
+            obstacle.GetComponentInParent<IInteractable>();
+
+        // Duvar/bina gibi etkileşimsiz collider'lar her zaman engeller.
+        if (obstacleInteractable == null)
+            return true;
+
+        // Aynı etkileşimli objenin başka bir collider'ı.
+        if (ReferenceEquals(obstacleInteractable, targetInteractable))
+            return false;
+
+        // Çekmece içindeki kitap gibi hiyerarşik olarak ilişkili etkileşimliler engellemez.
+        if (obstacle.transform.IsChildOf(target.transform) || target.transform.IsChildOf(obstacle.transform))
+            return false;
+
+        return true;
     }
 }
