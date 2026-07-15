@@ -108,6 +108,13 @@ public class PlayerInteraction : NetworkBehaviour
 
     private void CheckInteraction(Vector3 origin, Vector3 direction)
     {
+        if (DialogueManager.IsDialogueOpen)
+        {
+            if (interactionText != null && interactionText.gameObject.activeSelf)
+                interactionText.gameObject.SetActive(false);
+            return;
+        }
+
         int layerMask = ~(1 << gameObject.layer);
 
         // RaycastAll kullan - tüm collider'ları kontrol et (çekmece + içindeki kitap için)

@@ -127,6 +127,9 @@ public class NotebookUI : MonoBehaviour
         // L tuşu ile notebook aç/kapat (sadece envanterde notebook varsa)
         if (Input.GetKeyDown(KeyCode.L))
         {
+            if (DialogueManager.IsDialogueOpen)
+                return;
+
             if (inventoryManager == null)
                 return;
 

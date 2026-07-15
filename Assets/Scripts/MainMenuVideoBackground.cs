@@ -59,6 +59,11 @@ public class MainMenuVideoBackground : MonoBehaviour
         videoPlayer.prepareCompleted += OnPrepared;
         videoPlayer.started += OnStarted;
         videoPlayer.errorReceived += OnError;
+
+        // Keep poster frame visible until playback starts (and while editing / before Play).
+        if (placeholderImage != null)
+            placeholderImage.enabled = true;
+
         videoPlayer.Prepare();
     }
 

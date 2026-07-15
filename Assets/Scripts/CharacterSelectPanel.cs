@@ -25,8 +25,51 @@ public class CharacterSelector : MonoBehaviour
         PlayerController.OnLocalCharacterSelectResult -= OnSelectResult;
     }
 
+    private void Start()
+    {
+        // Lobby'de seçildiyse CrashSite panelini atla.
+        if (TrySkipIfAlreadySelected())
+            return;
+    }
+
+    private bool TrySkipIfAlreadySelected()
+    {
+        if (NetworkManager.Singleton == null ||
+            NetworkManager.Singleton.LocalClient == null ||
+            NetworkManager.Singleton.LocalClient.PlayerObject == null)
+            return false;
+
+        var pc = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<PlayerController>();
+        if (pc == null || !pc.HasSelectedCharacter)
+            return false;
+
+        if (selectionPanel != null)
+            selectionPanel.SetActive(false);
+
+        var setup = NetworkManager.Singleton.LocalClient.PlayerObject.GetComponent<NetworkLocalSetup>();
+        if (setup != null)
+            setup.EnableControlsAfterCharacterSelection();
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
+        var quests = QuestManager.Instance != null
+            ? QuestManager.Instance
+            : FindFirstObjectByType<QuestManager>();
+        if (quests != null)
+            quests.RequestStartOpeningQuest();
+
+        return true;
+    }
+
     private void Update()
     {
+        // Scene load timing: player may spawn a frame after Start.
+        if (selectionPanel != null && selectionPanel.activeSelf && TrySkipIfAlreadySelected())
+            return;
+
         if (selectionPanel == null || !selectionPanel.activeSelf) return;
         RefreshButtonStates();
     }

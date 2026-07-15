@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : NetworkBehaviour
@@ -89,6 +90,7 @@ public class PlayerController : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (DialogueManager.IsDialogueOpen) return;
 
         GroundedCheck();
         JumpAndGravity();
@@ -98,6 +100,7 @@ public class PlayerController : NetworkBehaviour
     private void LateUpdate()
     {
         if (!IsOwner) return;
+        if (DialogueManager.IsDialogueOpen) return;
         CameraRotation();
     }
 
@@ -210,14 +213,25 @@ public class PlayerController : NetworkBehaviour
 
     private void UpdateCharacterModel(int index)
     {
-        if (modelA != null) modelA.SetActive(index == 0);
-        if (modelB != null) modelB.SetActive(index == 1);
+        // index -1 (henüz seçilmedi) → modelA placeholder olarak açık kalır.
+        // NetworkAnimator'ün animator'ü hep aktif bir objede olmalı; yoksa Netcode
+        // update döngüsü her frame "Animator is not playing" uyarısı basar.
+        bool showA = index == 0 || index < 0;
+        bool showB = index == 1;
+        if (modelA != null) modelA.SetActive(showA);
+        if (modelB != null) modelB.SetActive(showB);
 
-        GameObject activeModel = (index == 0) ? modelA : (index == 1 ? modelB : null);
+        GameObject activeModel = showA ? modelA : (showB ? modelB : null);
         _animator = (activeModel != null) ? activeModel.GetComponent<Animator>() : null;
 
         if (_animator != null)
             _animator.SetFloat(SpeedHash, netSpeed.Value);
+
+        // NetworkAnimator prefab'ta modelA'nın Animator'üne bağlı; Yaman seçilirse
+        // aktif modelin animator'üne yeniden bağla (iki model aynı controller'ı kullanıyor).
+        var netAnimator = GetComponent<NetworkAnimator>();
+        if (netAnimator != null && _animator != null && netAnimator.Animator != _animator)
+            netAnimator.Animator = _animator;
     }
 
     public bool HasSelectedCharacter => characterIndex.Value >= 0;

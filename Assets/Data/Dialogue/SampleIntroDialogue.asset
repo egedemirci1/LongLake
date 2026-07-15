@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a11b22c33d44e55f66778899aabbcc01, type: 3}
+  m_Name: SampleIntroDialogue
+  sequenceId: sample_intro
+  startNodeId: n1
+  nodes:
+  - id: n1
+    speaker: Oduncu
+    text: "Ho\u015F geldiniz. Bu yollar art\u0131k g\u00FCvenli de\u011Fil."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n2
+  - id: n2
+    speaker: Oduncu
+    text: "Ne ar\u0131yorsunuz burada?"
+    voiceClip: {fileID: 0}
+    choices:
+    - label: "Yard\u0131m ar\u0131yoruz"
+      nextNodeId: n3_help
+    - label: "Sadece ge\u00E7iyoruz"
+      nextNodeId: n3_pass
+    nextNodeId: 
+  - id: n3_help
+    speaker: Oduncu
+    text: "O zaman dikkatli olun. Geceleri sesler art\u0131yor."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: 
+  - id: n3_pass
+    speaker: Oduncu
+    text: "\u00D6yleyse yolunuz a\u00E7\u0131k... umar\u0131m."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: 
+  completeQuestId: 
