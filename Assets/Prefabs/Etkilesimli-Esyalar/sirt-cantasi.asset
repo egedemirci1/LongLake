@@ -13,10 +13,18 @@ MonoBehaviour:
   m_Name: sirt-cantasi
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
   itemName: "S\u0131rt \xC7antas\u0131"
-  itemIcon: {fileID: 0}
+  itemIcon: {fileID: 21300000, guid: 6006cf0b6289cb74fab4e71909ef7154, type: 3}
   itemID: backpack
   itemType: 0
   worldPrefab: {fileID: 0}
+  heldPrefab: {fileID: 0}
+  heldLocalPosition: {x: 0.05, y: -0.02, z: 0.02}
+  heldLocalEulerAngles: {x: 0, y: 90, z: -90}
+  heldLocalScale: {x: 1, y: 1, z: 1}
+  useSeparateAhuHeldPose: 0
+  heldLocalPositionAhu: {x: 0, y: 0, z: 0}
+  heldLocalEulerAnglesAhu: {x: 0, y: 0, z: 0}
+  heldLocalScaleAhu: {x: 1, y: 1, z: 1}
   weaponCategory: 0
   tier: 0
   meleeDamage: 0
