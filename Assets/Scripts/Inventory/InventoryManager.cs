@@ -69,6 +69,11 @@ public class InventoryManager : NetworkBehaviour
     
     [Header("Selection")]
     [SerializeField] private int selectedSlotIndex = -1; // Seçili hotbar slot (-1 = hiçbiri seçili değil)
+
+    // Hotbar slot görsel durumları
+    private static readonly Color FrameEmptyColor = new Color(0.06f, 0.07f, 0.09f, 0.45f);   // boş: koyu, soluk
+    private static readonly Color FrameFilledColor = new Color(0.13f, 0.15f, 0.19f, 0.85f);  // dolu: koyu, belirgin
+    private static readonly Color FrameSelectedColor = new Color(0.95f, 0.77f, 0.32f, 0.95f); // seçili: kehribar vurgu
     
     // Seçili eşyaya erişim için property (hotbar slot'undan)
     public ItemData SelectedItem
@@ -466,9 +471,13 @@ public class InventoryManager : NetworkBehaviour
             if (slotFrames[i] != null)
             {
                 slotFrames[i].enabled = true; // Always keep frame/background visible
-                slotFrames[i].color = Color.white; // Normal renk
+                slotFrames[i].color = FrameEmptyColor;
             }
         }
+
+        // Görünürlük kuralı: hotbar sadece çanta alındıysa görünür.
+        // (Bind ne zaman gerçekleşirse gerçekleşsin sahnedeki başlangıç durumuna güvenme.)
+        hotbarObject.SetActive(HasItem("backpack"));
 
         Debug.Log("<color=green>[Inventory]</color> Hotbar UI runtime bound.");
         Debug.Log($"[Inventory] Hotbar binding summary: nameTexts={nameTexts.Count(t => t != null)}/{HOTBAR_SIZE}, iconImages={iconImages.Count(i => i != null)}/{HOTBAR_SIZE}");
@@ -633,7 +642,7 @@ public class InventoryManager : NetworkBehaviour
                     if (frameImage == null)
                     {
                         frameImage = slot.gameObject.AddComponent<Image>();
-                        frameImage.color = Color.white;
+                        frameImage.color = FrameEmptyColor;
                         Debug.Log($"[Inventory] Main inventory slot {i + 1}: Created Image component for frame");
                     }
                     inventorySlotFrames[i] = frameImage;
@@ -643,7 +652,7 @@ public class InventoryManager : NetworkBehaviour
                 if (inventorySlotFrames[i] != null)
                 {
                     inventorySlotFrames[i].enabled = true;
-                    inventorySlotFrames[i].color = Color.white;
+                    inventorySlotFrames[i].color = FrameEmptyColor;
                     if (inventorySlotFrames[i].gameObject != null)
                     {
                         inventorySlotFrames[i].gameObject.SetActive(true);
@@ -784,7 +793,7 @@ public class InventoryManager : NetworkBehaviour
                     if (frameImage == null)
                     {
                         frameImage = slot.gameObject.AddComponent<Image>();
-                        frameImage.color = Color.white;
+                        frameImage.color = FrameEmptyColor;
                         Debug.Log($"[Inventory] Crafting input slot {i + 1}: Created Image component for frame");
                     }
                     craftingInputFrames[i] = frameImage;
@@ -794,7 +803,7 @@ public class InventoryManager : NetworkBehaviour
                 if (craftingInputFrames[i] != null)
                 {
                     craftingInputFrames[i].enabled = true;
-                    craftingInputFrames[i].color = Color.white;
+                    craftingInputFrames[i].color = FrameEmptyColor;
                     if (craftingInputFrames[i].gameObject != null)
                     {
                         craftingInputFrames[i].gameObject.SetActive(true);
@@ -879,7 +888,7 @@ public class InventoryManager : NetworkBehaviour
                 if (frameImage == null)
                 {
                     frameImage = outputSlot.gameObject.AddComponent<Image>();
-                    frameImage.color = Color.white;
+                    frameImage.color = FrameEmptyColor;
                     Debug.Log("[Inventory] Crafting output slot: Created Image component for frame");
                 }
                 craftingOutputFrame = frameImage;
@@ -889,7 +898,7 @@ public class InventoryManager : NetworkBehaviour
             if (craftingOutputFrame != null)
             {
                 craftingOutputFrame.enabled = true;
-                craftingOutputFrame.color = Color.white;
+                craftingOutputFrame.color = FrameEmptyColor;
                 if (craftingOutputFrame.gameObject != null)
                 {
                     craftingOutputFrame.gameObject.SetActive(true);
@@ -1061,6 +1070,7 @@ public class InventoryManager : NetworkBehaviour
         for (int i = 0; i < HOTBAR_SIZE; i++)
         {
             int inventoryIndex = hotbarSlots[i]; // Ana envanterdeki item index'i
+            bool isSelected = selectedSlotIndex == i;
 
             // Hotbar slot'unda item var mı?
             if (inventoryIndex >= 0 && inventoryIndex < items.Count && items[inventoryIndex] != null && !items[inventoryIndex].IsEmpty)
@@ -1070,8 +1080,8 @@ public class InventoryManager : NetworkBehaviour
                 
                 if (nameTexts[i] != null)
                 {
-                    // Quantity göster: her zaman (x1), (x2), (x5) şeklinde
-                    nameTexts[i].text = $"{item.itemName} (x{slot.quantity})";
+                    // Miktarı sadece 1'den fazlaysa göster
+                    nameTexts[i].text = slot.quantity > 1 ? $"{item.itemName} x{slot.quantity}" : item.itemName;
                 }
 
                 if (iconImages[i] != null)
@@ -1092,16 +1102,22 @@ public class InventoryManager : NetworkBehaviour
                         }
                     }
                 }
+
+                if (slotFrames[i] != null)
+                    slotFrames[i].color = isSelected ? FrameSelectedColor : FrameFilledColor;
             }
             else
             {
-                // Boş hotbar slot
-                if (nameTexts[i] != null) nameTexts[i].text = "Boş";
+                // Boş hotbar slot: yazı yok, ikon gizli, çerçeve soluk
+                if (nameTexts[i] != null) nameTexts[i].text = "";
                 if (iconImages[i] != null)
                 {
                     iconImages[i].sprite = null;
                     iconImages[i].color = new Color(1, 1, 1, 0);
                 }
+
+                if (slotFrames[i] != null)
+                    slotFrames[i].color = FrameEmptyColor;
             }
         }
 
@@ -1111,13 +1127,6 @@ public class InventoryManager : NetworkBehaviour
         {
             for (int i = 0; i < MAX_INVENTORY_SIZE; i++)
             {
-                // Frame'i her zaman görünür tut (hotbar'daki gibi) - TÜM slot'lar için
-                if (inventorySlotFrames[i] != null)
-                {
-                    inventorySlotFrames[i].enabled = true;
-                    inventorySlotFrames[i].color = Color.white;
-                }
-                
                 if (i < items.Count && items[i] != null && !items[i].IsEmpty)
                 {
                     InventorySlot slot = items[i];
@@ -1125,8 +1134,8 @@ public class InventoryManager : NetworkBehaviour
                     
                     if (inventorySlotNames[i] != null)
                     {
-                        // Quantity göster: her zaman (x1), (x2), (x5) şeklinde
-                        inventorySlotNames[i].text = $"{item.itemName} (x{slot.quantity})";
+                        // Miktarı sadece 1'den fazlaysa göster
+                        inventorySlotNames[i].text = slot.quantity > 1 ? $"{item.itemName} x{slot.quantity}" : item.itemName;
                     }
                     
                     if (inventorySlotIcons[i] != null)
@@ -1141,22 +1150,6 @@ public class InventoryManager : NetworkBehaviour
                             if (inventorySlotIcons[i].gameObject != null)
                             {
                                 inventorySlotIcons[i].gameObject.SetActive(true);
-                                // Parent'ları aktif etme - sadece icon GameObject'ini aktif et
-                            }
-                            
-                            // RectTransform size kontrolü
-                            RectTransform iconRect = inventorySlotIcons[i].GetComponent<RectTransform>();
-                            if (iconRect != null)
-                            {
-                                if (iconRect.sizeDelta.x == 0 || iconRect.sizeDelta.y == 0)
-                                {
-                                    iconRect.sizeDelta = new Vector2(50, 50);
-                                }
-                                // Anchor ve pivot ayarları
-                                iconRect.anchorMin = new Vector2(0.5f, 0.5f);
-                                iconRect.anchorMax = new Vector2(0.5f, 0.5f);
-                                iconRect.pivot = new Vector2(0.5f, 0.5f);
-                                iconRect.anchoredPosition = Vector2.zero;
                             }
                         }
                         else
@@ -1168,11 +1161,17 @@ public class InventoryManager : NetworkBehaviour
                     {
                         Debug.LogWarning($"[Inventory] UpdateUI: Main inventory slot {i + 1} icon is NULL! Item: {item.itemName}");
                     }
+
+                    if (inventorySlotFrames[i] != null)
+                    {
+                        inventorySlotFrames[i].enabled = true;
+                        inventorySlotFrames[i].color = FrameFilledColor;
+                    }
                 }
                 else
                 {
-                    // Boş inventory slot - hotbar'daki gibi görünür tut
-                    if (inventorySlotNames[i] != null) inventorySlotNames[i].text = "Boş";
+                    // Boş inventory slot: yazı yok, ikon gizli, çerçeve soluk
+                    if (inventorySlotNames[i] != null) inventorySlotNames[i].text = "";
                     if (inventorySlotIcons[i] != null)
                     {
                         inventorySlotIcons[i].sprite = null;
@@ -1184,11 +1183,10 @@ public class InventoryManager : NetworkBehaviour
                         }
                     }
                     
-                    // Frame'i her zaman görünür tut (hotbar'daki gibi beyaz kare)
                     if (inventorySlotFrames[i] != null)
                     {
                         inventorySlotFrames[i].enabled = true;
-                        inventorySlotFrames[i].color = Color.white;
+                        inventorySlotFrames[i].color = FrameEmptyColor;
                         if (inventorySlotFrames[i].gameObject != null)
                         {
                             inventorySlotFrames[i].gameObject.SetActive(true);
@@ -1527,18 +1525,20 @@ public class InventoryManager : NetworkBehaviour
         {
             for (int i = 0; i < 3; i++)
             {
-                // Frame'i her zaman görünür tut (envanterdeki gibi) - TÜM slot'lar için
+                bool hasInput = craftingInputItems[i] != null;
+
+                // Çerçeve her zaman görünür; rengi dolu/boş durumuna göre
                 if (craftingInputFrames != null && craftingInputFrames.Length > i && craftingInputFrames[i] != null)
                 {
                     craftingInputFrames[i].enabled = true;
-                    craftingInputFrames[i].color = Color.white;
+                    craftingInputFrames[i].color = hasInput ? FrameFilledColor : FrameEmptyColor;
                     if (craftingInputFrames[i].gameObject != null)
                     {
                         craftingInputFrames[i].gameObject.SetActive(true);
                     }
                 }
                 
-                if (craftingInputItems[i] != null)
+                if (hasInput)
                 {
                     ItemData item = craftingInputItems[i];
                     if (craftingInputNames[i] != null)
@@ -1548,11 +1548,15 @@ public class InventoryManager : NetworkBehaviour
                         craftingInputIcons[i].sprite = item.itemIcon;
                         craftingInputIcons[i].color = Color.white;
                         craftingInputIcons[i].enabled = true;
+                        if (craftingInputIcons[i].gameObject != null)
+                        {
+                            craftingInputIcons[i].gameObject.SetActive(true);
+                        }
                     }
                 }
                 else
                 {
-                    // Boş crafting input slot - envanterdeki gibi görünür tut
+                    // Boş crafting input slot
                     if (craftingInputNames[i] != null) craftingInputNames[i].text = "";
                     if (craftingInputIcons[i] != null)
                     {
@@ -1564,17 +1568,6 @@ public class InventoryManager : NetworkBehaviour
                             craftingInputIcons[i].gameObject.SetActive(false);
                         }
                     }
-                    
-                    // Frame'i her zaman görünür tut (envanterdeki gibi beyaz kare)
-                    if (craftingInputFrames != null && craftingInputFrames.Length > i && craftingInputFrames[i] != null)
-                    {
-                        craftingInputFrames[i].enabled = true;
-                        craftingInputFrames[i].color = Color.white;
-                        if (craftingInputFrames[i].gameObject != null)
-                        {
-                            craftingInputFrames[i].gameObject.SetActive(true);
-                        }
-                    }
                 }
             }
         }
@@ -1582,18 +1575,20 @@ public class InventoryManager : NetworkBehaviour
         // Update crafting output slot
         if (craftingOutputIcon != null && craftingOutputName != null)
         {
-            // Frame'i her zaman görünür tut (envanterdeki gibi)
+            bool hasOutput = craftingOutputItem != null;
+
+            // Çerçeve her zaman görünür; rengi dolu/boş durumuna göre
             if (craftingOutputFrame != null)
             {
                 craftingOutputFrame.enabled = true;
-                craftingOutputFrame.color = Color.white;
+                craftingOutputFrame.color = hasOutput ? FrameFilledColor : FrameEmptyColor;
                 if (craftingOutputFrame.gameObject != null)
                 {
                     craftingOutputFrame.gameObject.SetActive(true);
                 }
             }
             
-            if (craftingOutputItem != null)
+            if (hasOutput)
             {
                 if (craftingOutputName != null)
                     craftingOutputName.text = craftingOutputItem.itemName;
@@ -1602,11 +1597,15 @@ public class InventoryManager : NetworkBehaviour
                     craftingOutputIcon.sprite = craftingOutputItem.itemIcon;
                     craftingOutputIcon.color = Color.white;
                     craftingOutputIcon.enabled = true;
+                    if (craftingOutputIcon.gameObject != null)
+                    {
+                        craftingOutputIcon.gameObject.SetActive(true);
+                    }
                 }
             }
             else
             {
-                // Boş crafting output slot - envanterdeki gibi görünür tut
+                // Boş crafting output slot
                 if (craftingOutputName != null) craftingOutputName.text = "";
                 if (craftingOutputIcon != null)
                 {
@@ -1616,17 +1615,6 @@ public class InventoryManager : NetworkBehaviour
                     if (craftingOutputIcon.gameObject != null)
                     {
                         craftingOutputIcon.gameObject.SetActive(false);
-                    }
-                }
-                
-                // Frame'i her zaman görünür tut (envanterdeki gibi beyaz kare)
-                if (craftingOutputFrame != null)
-                {
-                    craftingOutputFrame.enabled = true;
-                    craftingOutputFrame.color = Color.white;
-                    if (craftingOutputFrame.gameObject != null)
-                    {
-                        craftingOutputFrame.gameObject.SetActive(true);
                     }
                 }
             }

@@ -23,6 +23,8 @@ public class NetworkLocalSetup : NetworkBehaviour
 
     private bool sceneEventHooked;
     private bool controlsEnabled = false;
+    private InventoryManager inventoryManager;
+    private NotebookUI notebookUI;
 
     public override void OnNetworkSpawn()
     {
@@ -33,10 +35,16 @@ public class NetworkLocalSetup : NetworkBehaviour
             return;
         }
 
-        // --- MOUSE SORUNUNUN ��Z�M� ---
-        // Se�im ekran�nda mouse'un gelmesini sa�lar
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        inventoryManager = GetComponent<InventoryManager>();
+
+        // Lobby'de (main menu) spawn olunduysa mouse görünür olmalı.
+        // Gameplay sahnesinde ise EnterGameplay zaten kilitleyecek; burada gösterip
+        // hemen kilitlemek başlangıçta imlecin yanıp sönmesine yol açıyordu.
+        if (SceneManager.GetActiveScene().name != gameplaySceneName)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
 
         SetupCameraRig();
 
@@ -154,8 +162,8 @@ public class NetworkLocalSetup : NetworkBehaviour
     {
         if (!IsOwner || !controlsEnabled) return;
 
-        // Diyalog vb. cursor'u serbest bırakabilir; ona karışma.
-        if (DialogueManager.IsDialogueOpen) return;
+        // Açık bir UI paneli cursor'u serbest bırakmışsa ona karışma.
+        if (AnyUiWantsCursor()) return;
 
         // Kontroller aktifse cursor'un lock olduğundan emin ol
         if (Cursor.lockState != CursorLockMode.Locked)
@@ -163,5 +171,23 @@ public class NetworkLocalSetup : NetworkBehaviour
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+    }
+
+    /// <summary>Cursor'u serbest bırakması gereken bir UI (diyalog, envanter, not defteri, görev paneli) açık mı?</summary>
+    private bool AnyUiWantsCursor()
+    {
+        if (DialogueManager.IsDialogueOpen) return true;
+
+        if (inventoryManager == null) inventoryManager = GetComponent<InventoryManager>();
+        if (inventoryManager != null && inventoryManager.mainInventoryObject != null &&
+            inventoryManager.mainInventoryObject.activeSelf)
+            return true;
+
+        if (notebookUI == null) notebookUI = FindFirstObjectByType<NotebookUI>();
+        if (notebookUI != null && notebookUI.IsNotebookOpen) return true;
+
+        if (QuestManager.Instance != null && QuestManager.Instance.IsPanelOpen) return true;
+
+        return false;
     }
 }
