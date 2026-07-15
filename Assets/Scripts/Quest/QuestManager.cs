@@ -46,6 +46,23 @@ public class QuestManager : NetworkBehaviour
     private GameObject runtimeHudRoot;
     private GameObject runtimePanelRoot;
 
+    // HUD görev kartı elemanları (runtime'da kurulur)
+    private TextMeshProUGUI hudEyebrowText;
+    private TextMeshProUGUI hudProgressText;
+    private Image hudAccentBar;
+    private CanvasGroup hudGroup;
+    private RectTransform hudRect;
+    private Vector2 hudBasePosition;
+    private float hudIntroStart = -1f;
+    private bool hudFlashActive;
+
+    private static Sprite roundedSprite;
+    private static readonly Color AccentColor = new Color(0.95f, 0.77f, 0.32f, 1f);   // kehribar (hotbar seçim rengi)
+    private static readonly Color CompleteColor = new Color(0.45f, 0.85f, 0.45f, 1f); // görev tamamlandı yeşili
+    private const float HudIntroDuration = 0.25f;
+    private const float HudIntroSlide = 24f;
+    private const float CompletionFlashSeconds = 1.4f;
+
     /// <summary>Fires on every client when active or completed quests change.</summary>
     public event Action OnQuestStateChanged;
 
@@ -101,6 +118,8 @@ public class QuestManager : NetworkBehaviour
 
         if (isPanelOpen && Input.GetKeyDown(KeyCode.Escape))
             CloseQuestPanel();
+
+        AnimateHudIntro();
     }
 
     // ---- Opening quest (shared, once) ----
@@ -305,6 +324,12 @@ public class QuestManager : NetworkBehaviour
     private void OnCurrentQuestChanged(int oldValue, int newValue)
     {
         RefreshAllUi();
+
+        // Yeni görev başladığında kart soldan kayarak belirsin
+        // (tamamlanma flaşı sürüyorsa intro'yu coroutine tetikler).
+        if (newValue >= 0 && !hudFlashActive)
+            PlayHudIntro();
+
         OnQuestStateChanged?.Invoke();
     }
 
@@ -316,6 +341,16 @@ public class QuestManager : NetworkBehaviour
 
     private void OnCompletedQuestsChanged(NetworkListEvent<int> changeEvent)
     {
+        // Tamamlanan görevin adını yakalayıp kısa bir yeşil "tamamlandı" flaşı göster.
+        if (changeEvent.Type == NetworkListEvent<int>.EventType.Add &&
+            availableQuests != null &&
+            changeEvent.Value >= 0 && changeEvent.Value < availableQuests.Length &&
+            availableQuests[changeEvent.Value] != null &&
+            isActiveAndEnabled)
+        {
+            StartCoroutine(PlayQuestCompletedFlash(availableQuests[changeEvent.Value]));
+        }
+
         RefreshAllUi();
         OnQuestStateChanged?.Invoke();
     }
@@ -329,12 +364,18 @@ public class QuestManager : NetworkBehaviour
 
     private string BuildQuestDescription(QuestData quest)
     {
+        return quest == null ? string.Empty : quest.questDescription;
+    }
+
+    /// <summary>İlerleme bilgisini açıklamadan ayrı, kendi satırı olarak üretir (yoksa boş).</summary>
+    private string BuildProgressText(QuestData quest)
+    {
         if (quest == null) return string.Empty;
 
         if (currentQuestIndex.Value == openingQuestIndex)
-            return $"{quest.questDescription}\nSırt çantası: {bagsCollected.Value}/{bagsRequired}";
+            return $"Sırt çantası   <color=#F2C452>{bagsCollected.Value} / {bagsRequired}</color>";
 
-        return quest.questDescription;
+        return string.Empty;
     }
 
     private void UpdateCurrentQuestDisplay()
@@ -352,12 +393,22 @@ public class QuestManager : NetworkBehaviour
 
         if (currentQuestTitleText != null)
             currentQuestTitleText.text = quest.questTitle;
+
         if (currentQuestDescriptionText != null)
-            currentQuestDescriptionText.text = BuildQuestDescription(quest);
+        {
+            string desc = BuildQuestDescription(quest);
+            string progress = BuildProgressText(quest);
+            if (!string.IsNullOrEmpty(progress))
+                desc += "\n\n" + progress;
+            currentQuestDescriptionText.text = desc;
+        }
     }
 
     private void UpdateHud()
     {
+        // Tamamlanma flaşı sırasında kartı coroutine yönetir.
+        if (hudFlashActive) return;
+
         QuestData quest = GetCurrentQuest();
         bool show = quest != null;
 
@@ -366,10 +417,85 @@ public class QuestManager : NetworkBehaviour
 
         if (!show) return;
 
+        if (hudEyebrowText != null)
+        {
+            hudEyebrowText.text = "GÖREV";
+            hudEyebrowText.color = AccentColor;
+        }
+
+        if (hudAccentBar != null)
+            hudAccentBar.color = AccentColor;
+
         if (hudTitleText != null)
             hudTitleText.text = quest.questTitle;
         if (hudDescriptionText != null)
             hudDescriptionText.text = BuildQuestDescription(quest);
+
+        if (hudProgressText != null)
+        {
+            string progress = BuildProgressText(quest);
+            hudProgressText.gameObject.SetActive(!string.IsNullOrEmpty(progress));
+            hudProgressText.text = progress;
+        }
+    }
+
+    // ---- HUD animasyonları ----
+
+    private void PlayHudIntro()
+    {
+        if (hudGroup == null) return;
+        hudIntroStart = Time.unscaledTime;
+        hudGroup.alpha = 0f;
+    }
+
+    private void AnimateHudIntro()
+    {
+        if (hudGroup == null || hudIntroStart < 0f) return;
+
+        float t = Mathf.Clamp01((Time.unscaledTime - hudIntroStart) / HudIntroDuration);
+        float eased = 1f - (1f - t) * (1f - t);
+
+        hudGroup.alpha = eased;
+        if (hudRect != null)
+            hudRect.anchoredPosition = hudBasePosition + Vector2.left * (HudIntroSlide * (1f - eased));
+
+        if (t >= 1f)
+            hudIntroStart = -1f;
+    }
+
+    private System.Collections.IEnumerator PlayQuestCompletedFlash(QuestData completedQuest)
+    {
+        EnsureUiExists();
+        if (runtimeHudRoot == null || completedQuest == null) yield break;
+
+        hudFlashActive = true;
+        hudIntroStart = -1f;
+
+        runtimeHudRoot.SetActive(true);
+        if (hudGroup != null) hudGroup.alpha = 1f;
+        if (hudRect != null) hudRect.anchoredPosition = hudBasePosition;
+
+        if (hudEyebrowText != null)
+        {
+            hudEyebrowText.text = "GÖREV TAMAMLANDI";
+            hudEyebrowText.color = CompleteColor;
+        }
+        if (hudAccentBar != null)
+            hudAccentBar.color = CompleteColor;
+        if (hudTitleText != null)
+            hudTitleText.text = completedQuest.questTitle;
+        if (hudDescriptionText != null)
+            hudDescriptionText.text = string.Empty;
+        if (hudProgressText != null)
+            hudProgressText.gameObject.SetActive(false);
+
+        yield return new WaitForSeconds(CompletionFlashSeconds);
+
+        hudFlashActive = false;
+        UpdateHud();
+
+        if (GetCurrentQuest() != null)
+            PlayHudIntro();
     }
 
     private void EnsureUiExists()
@@ -408,22 +534,70 @@ public class QuestManager : NetworkBehaviour
         runtimeHudRoot = new GameObject("ActiveQuestHud", typeof(RectTransform));
         runtimeHudRoot.transform.SetParent(canvas.transform, false);
 
-        var root = runtimeHudRoot.GetComponent<RectTransform>();
-        // Left strip (~32% width): stays on-screen when aspect ratio changes
-        root.anchorMin = new Vector2(0f, 1f);
-        root.anchorMax = new Vector2(0.32f, 1f);
-        root.pivot = new Vector2(0f, 1f);
-        root.offsetMin = new Vector2(16f, -120f);
-        root.offsetMax = new Vector2(-16f, -16f);
+        hudRect = runtimeHudRoot.GetComponent<RectTransform>();
+        hudRect.anchorMin = new Vector2(0f, 1f);
+        hudRect.anchorMax = new Vector2(0f, 1f);
+        hudRect.pivot = new Vector2(0f, 1f);
+        hudRect.anchoredPosition = new Vector2(20f, -20f);
+        hudRect.sizeDelta = new Vector2(340f, 100f); // yükseklik ContentSizeFitter ile içerige uyar
+        hudBasePosition = hudRect.anchoredPosition;
 
         var bg = runtimeHudRoot.AddComponent<Image>();
-        bg.color = new Color(0f, 0f, 0f, 0.55f);
+        bg.sprite = GetRoundedSprite();
+        bg.type = Image.Type.Sliced;
+        bg.color = new Color(0.05f, 0.06f, 0.08f, 0.78f);
         bg.raycastTarget = false;
 
-        hudTitleText = CreateTmp(runtimeHudRoot.transform, "HudTitle", new Vector2(12f, -8f), 22, FontStyles.Bold, 36f);
-        hudDescriptionText = CreateTmp(runtimeHudRoot.transform, "HudDesc", new Vector2(12f, -44f), 16, FontStyles.Normal, 70f);
+        var layout = runtimeHudRoot.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(18, 14, 10, 12);
+        layout.spacing = 4f;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        var fitter = runtimeHudRoot.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        hudGroup = runtimeHudRoot.AddComponent<CanvasGroup>();
+        hudGroup.blocksRaycasts = false;
+        hudGroup.interactable = false;
+
+        hudAccentBar = CreateAccentBar(runtimeHudRoot.transform);
+
+        hudEyebrowText = CreateLayoutTmp(runtimeHudRoot.transform, "HudEyebrow", 11, FontStyles.Bold, AccentColor);
+        hudEyebrowText.characterSpacing = 10f;
+        hudEyebrowText.text = "GÖREV";
+
+        hudTitleText = CreateLayoutTmp(runtimeHudRoot.transform, "HudTitle", 20, FontStyles.Bold, Color.white);
+        hudDescriptionText = CreateLayoutTmp(runtimeHudRoot.transform, "HudDesc", 14, FontStyles.Normal, new Color(1f, 1f, 1f, 0.72f));
+        hudProgressText = CreateLayoutTmp(runtimeHudRoot.transform, "HudProgress", 14, FontStyles.Bold, new Color(1f, 1f, 1f, 0.9f));
+        hudProgressText.gameObject.SetActive(false);
 
         runtimeHudRoot.SetActive(false);
+    }
+
+    /// <summary>Panelin sol kenarına layout dışı ince vurgu şeridi ekler.</summary>
+    private static Image CreateAccentBar(Transform parent)
+    {
+        var go = new GameObject("Accent", typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0f, 0f);
+        rt.anchorMax = new Vector2(0f, 1f);
+        rt.pivot = new Vector2(0f, 0.5f);
+        rt.anchoredPosition = new Vector2(6f, 0f);
+        rt.sizeDelta = new Vector2(4f, -20f);
+
+        var image = go.AddComponent<Image>();
+        image.sprite = GetRoundedSprite();
+        image.type = Image.Type.Sliced;
+        image.color = AccentColor;
+        image.raycastTarget = false;
+
+        go.AddComponent<LayoutElement>().ignoreLayout = true;
+        return image;
     }
 
     private static void EnsureCanvasScalesWithScreen(Canvas canvas)
@@ -453,15 +627,27 @@ public class QuestManager : NetworkBehaviour
         root.anchorMin = new Vector2(0.5f, 0.5f);
         root.anchorMax = new Vector2(0.5f, 0.5f);
         root.pivot = new Vector2(0.5f, 0.5f);
-        root.sizeDelta = new Vector2(520f, 220f);
+        root.sizeDelta = new Vector2(560f, 250f);
 
         var bg = runtimePanelRoot.AddComponent<Image>();
-        bg.color = new Color(0.08f, 0.08f, 0.1f, 0.92f);
+        bg.sprite = GetRoundedSprite();
+        bg.type = Image.Type.Sliced;
+        bg.color = new Color(0.06f, 0.07f, 0.09f, 0.94f);
 
-        currentQuestTitleText = CreateTmp(runtimePanelRoot.transform, "PanelTitle", new Vector2(24f, -24f), 28, FontStyles.Bold);
-        currentQuestDescriptionText = CreateTmp(runtimePanelRoot.transform, "PanelDesc", new Vector2(24f, -70f), 18, FontStyles.Normal);
-        var hint = CreateTmp(runtimePanelRoot.transform, "Hint", new Vector2(24f, -170f), 14, FontStyles.Italic);
+        CreateAccentBar(runtimePanelRoot.transform);
+
+        var eyebrow = CreateTmp(runtimePanelRoot.transform, "PanelEyebrow", new Vector2(28f, -18f), 12, FontStyles.Bold, 20f);
+        eyebrow.text = "GÖREV GÜNLÜĞÜ";
+        eyebrow.color = AccentColor;
+        eyebrow.characterSpacing = 10f;
+
+        currentQuestTitleText = CreateTmp(runtimePanelRoot.transform, "PanelTitle", new Vector2(28f, -42f), 26, FontStyles.Bold);
+        currentQuestDescriptionText = CreateTmp(runtimePanelRoot.transform, "PanelDesc", new Vector2(28f, -88f), 16, FontStyles.Normal, 110f);
+        currentQuestDescriptionText.color = new Color(1f, 1f, 1f, 0.8f);
+
+        var hint = CreateTmp(runtimePanelRoot.transform, "Hint", new Vector2(28f, -212f), 13, FontStyles.Italic, 24f);
         hint.text = "Kapatmak için M veya ESC";
+        hint.color = new Color(1f, 1f, 1f, 0.45f);
 
         questPanelObject = runtimePanelRoot;
         questPanelObject.SetActive(false);
@@ -487,5 +673,67 @@ public class QuestManager : NetworkBehaviour
         tmp.overflowMode = TextOverflowModes.Ellipsis;
         tmp.raycastTarget = false;
         return tmp;
+    }
+
+    /// <summary>VerticalLayoutGroup içinde boyutu layout tarafından yönetilen TMP oluşturur.</summary>
+    private static TextMeshProUGUI CreateLayoutTmp(Transform parent, string name, float fontSize, FontStyles style, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+
+        var tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.fontSize = fontSize;
+        tmp.fontStyle = style;
+        tmp.color = color;
+        tmp.textWrappingMode = TextWrappingModes.Normal;
+        tmp.overflowMode = TextOverflowModes.Overflow;
+        tmp.raycastTarget = false;
+        return tmp;
+    }
+
+    /// <summary>
+    /// Runtime'da 9-slice yuvarlak köşeli sprite üretir
+    /// (editör dışı çalıştığı için builtin UISprite kullanılamıyor).
+    /// </summary>
+    private static Sprite GetRoundedSprite()
+    {
+        if (roundedSprite != null) return roundedSprite;
+
+        const int size = 32;
+        const float radius = 10f;
+
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            wrapMode = TextureWrapMode.Clamp
+        };
+
+        var pixels = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                // Köşe merkezine olan mesafeden kenar yumuşatmalı alfa hesapla.
+                float dx = Mathf.Max(0f, Mathf.Max(radius - x - 0.5f, x + 0.5f - (size - radius)));
+                float dy = Mathf.Max(0f, Mathf.Max(radius - y - 0.5f, y + 0.5f - (size - radius)));
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                float alpha = Mathf.Clamp01(radius - dist + 0.5f);
+                pixels[y * size + x] = new Color32(255, 255, 255, (byte)(alpha * 255f));
+            }
+        }
+
+        tex.SetPixels32(pixels);
+        tex.Apply();
+
+        roundedSprite = Sprite.Create(
+            tex,
+            new Rect(0f, 0f, size, size),
+            new Vector2(0.5f, 0.5f),
+            100f,
+            0,
+            SpriteMeshType.FullRect,
+            new Vector4(12f, 12f, 12f, 12f));
+        roundedSprite.hideFlags = HideFlags.HideAndDontSave;
+        return roundedSprite;
     }
 }
