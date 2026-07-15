@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// MainMenu lobby panel: character pick, Ready, Host Start (when all ready).
-/// Builds a minimal panel under the menu Canvas if refs are missing.
+/// All UI references are authored and assigned in the MainMenu scene.
 /// </summary>
 public class LobbyUI : MonoBehaviour
 {
@@ -27,7 +27,7 @@ public class LobbyUI : MonoBehaviour
 
     private void Awake()
     {
-        EnsurePanel();
+        ValidateSceneReferences();
         WireButtons();
         if (lobbyPanel != null)
             lobbyPanel.SetActive(false);
@@ -306,121 +306,14 @@ public class LobbyUI : MonoBehaviour
         if (legacy != null) legacy.text = text;
     }
 
-    private void EnsurePanel()
+    private void ValidateSceneReferences()
     {
-        if (lobbyPanel != null && readyButton != null && startGameButton != null)
-            return;
-
-        Canvas canvas = FindFirstObjectByType<Canvas>();
-        if (canvas == null) return;
-
-        if (connectPanel == null)
+        if (connectPanel == null || lobbyPanel == null ||
+            ahuButton == null || yamanButton == null ||
+            readyButton == null || startGameButton == null ||
+            statusText == null || readyButtonLabel == null || hostIpText == null)
         {
-            var panelTf = canvas.transform.Find("Panel");
-            if (panelTf != null) connectPanel = panelTf.gameObject;
+            Debug.LogError("[LobbyUI] MainMenu scene UI references are incomplete.", this);
         }
-
-        if (lobbyPanel == null)
-        {
-            lobbyPanel = new GameObject("LobbyPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            lobbyPanel.transform.SetParent(canvas.transform, false);
-            var rt = lobbyPanel.GetComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            lobbyPanel.GetComponent<Image>().color = new Color(0.02f, 0.05f, 0.06f, 0.72f);
-            lobbyPanel.GetComponent<Image>().raycastTarget = true;
-        }
-
-        Transform root = lobbyPanel.transform;
-        if (root.Find("Box") == null)
-        {
-            var box = CreateChild(root, "Box", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(520f, 420f));
-            var boxImg = box.gameObject.AddComponent<Image>();
-            boxImg.color = new Color(0.07f, 0.1f, 0.11f, 0.95f);
-
-            CreateTmp(box, "Title", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -24f), new Vector2(-24f, -70f), 32, "Lobi", FontStyles.Bold);
-            statusText = CreateTmp(box, "Status", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -72f), new Vector2(-24f, -110f), 20, "Bağlantı bekleniyor...", FontStyles.Normal);
-
-            ahuButton = CreateButton(box, "AhuButton", new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(420f, 52f), "Ahu");
-            yamanButton = CreateButton(box, "YamanButton", new Vector2(0.5f, 0.5f), new Vector2(0f, -24f), new Vector2(420f, 52f), "Yaman");
-            readyButton = CreateButton(box, "ReadyButton", new Vector2(0.5f, 0.5f), new Vector2(0f, -100f), new Vector2(420f, 52f), "Hazırım", out readyButtonLabel);
-            startGameButton = CreateButton(box, "StartGameButton", new Vector2(0.5f, 0.5f), new Vector2(0f, -168f), new Vector2(420f, 52f), "Oyunu Başlat");
-        }
-
-        if (hostIpText == null)
-        {
-            // Sağ üst köşe: host'un paylaşacağı IP.
-            hostIpText = CreateTmp(root, "HostIp", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-560f, -56f), new Vector2(-24f, -16f), 20, "", FontStyles.Bold);
-            hostIpText.alignment = TextAlignmentOptions.TopRight;
-            hostIpText.gameObject.SetActive(false);
-        }
-    }
-
-    private static RectTransform CreateChild(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size)
-    {
-        var go = new GameObject(name, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = aMin;
-        rt.anchorMax = aMax;
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = pos;
-        rt.sizeDelta = size;
-        return rt;
-    }
-
-    private static TextMeshProUGUI CreateTmp(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 offsetMin, Vector2 offsetMax, float size, string text, FontStyles style)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = aMin;
-        rt.anchorMax = aMax;
-        rt.offsetMin = offsetMin;
-        rt.offsetMax = offsetMax;
-        var tmp = go.GetComponent<TextMeshProUGUI>();
-        tmp.text = text;
-        tmp.fontSize = size;
-        tmp.fontStyle = style;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.color = new Color(0.93f, 0.94f, 0.92f, 1f);
-        tmp.raycastTarget = false;
-        return tmp;
-    }
-
-    private static Button CreateButton(Transform parent, string name, Vector2 anchor, Vector2 pos, Vector2 size, string label)
-    {
-        return CreateButton(parent, name, anchor, pos, size, label, out _);
-    }
-
-    private static Button CreateButton(Transform parent, string name, Vector2 anchor, Vector2 pos, Vector2 size, string label, out TextMeshProUGUI labelTmp)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = anchor;
-        rt.anchorMax = anchor;
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = pos;
-        rt.sizeDelta = size;
-        go.GetComponent<Image>().color = new Color(0.12f, 0.18f, 0.18f, 0.95f);
-        var btn = go.GetComponent<Button>();
-
-        var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        labelGo.transform.SetParent(go.transform, false);
-        var lrt = labelGo.GetComponent<RectTransform>();
-        lrt.anchorMin = Vector2.zero;
-        lrt.anchorMax = Vector2.one;
-        lrt.offsetMin = Vector2.zero;
-        lrt.offsetMax = Vector2.zero;
-        labelTmp = labelGo.GetComponent<TextMeshProUGUI>();
-        labelTmp.text = label;
-        labelTmp.fontSize = 26;
-        labelTmp.alignment = TextAlignmentOptions.Center;
-        labelTmp.color = Color.white;
-        labelTmp.raycastTarget = false;
-        return btn;
     }
 }

@@ -298,14 +298,8 @@ public class QuestManager : NetworkBehaviour
         if (questPanelObject != null)
             questPanelObject.SetActive(false);
 
-        // Only re-lock if character select is not open
-        var selector = FindFirstObjectByType<CharacterSelector>();
-        bool selecting = selector != null && selector.selectionPanel != null && selector.selectionPanel.activeSelf;
-        if (!selecting)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void OnCurrentQuestChanged(int oldValue, int newValue)

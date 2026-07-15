@@ -488,6 +488,8 @@ public class MainMenuUI : MonoBehaviour
 
         sm.OnLoadEventCompleted -= OnNetcodeSceneLoadCompleted;
         sm.OnLoadEventCompleted += OnNetcodeSceneLoadCompleted;
+        sm.OnSceneEvent -= OnNetcodeSceneEvent;
+        sm.OnSceneEvent += OnNetcodeSceneEvent;
 
         sceneEventsHooked = true;
         Debug.Log("[MainMenuUI] SceneManager ready, hooked OnLoadEventCompleted.");
@@ -499,7 +501,20 @@ public class MainMenuUI : MonoBehaviour
         if (!sceneEventsHooked || networkManager == null || networkManager.SceneManager == null) return;
 
         networkManager.SceneManager.OnLoadEventCompleted -= OnNetcodeSceneLoadCompleted;
+        networkManager.SceneManager.OnSceneEvent -= OnNetcodeSceneEvent;
         sceneEventsHooked = false;
+    }
+
+    private void OnNetcodeSceneEvent(SceneEvent sceneEvent)
+    {
+        // Client: host sahne yüklemeyi başlattığında yükleme ekranını göster.
+        // (Host kendi coroutine'inde zaten gösteriyor.)
+        if (networkManager.IsServer) return;
+        if (sceneEvent.SceneEventType != SceneEventType.Load) return;
+        if (sceneEvent.SceneName != gameplaySceneName) return;
+
+        if (LoadingScreenManager.Instance != null)
+            LoadingScreenManager.Instance.ShowLoadingScreenForScene(sceneEvent.SceneName, "Bölüm 1: Uzungöl Tatili");
     }
 
     private void OnNetcodeSceneLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
