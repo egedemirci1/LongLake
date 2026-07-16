@@ -18,7 +18,7 @@ public class NpcWalkToPoint : NetworkBehaviour
     [Tooltip("Boş bırakılırsa Yaman'ın NetworkLocalSetup spawn noktası kullanılır.")]
     [SerializeField] private Transform destination;
     [SerializeField] private bool useYamanSpawnIfNoDestination = true;
-    [SerializeField] private Vector3 yamanSpawnFallback = new Vector3(1753.697f, 110f, 523f);
+    [SerializeField] private Vector3 yamanSpawnFallback = new Vector3(1753.697f, 56f, 523f);
 
     [Header("Movement")]
     [SerializeField] private float walkSpeed = 5f;
@@ -310,8 +310,10 @@ public class NpcWalkToPoint : NetworkBehaviour
         for (int i = 0; i < 10; i++)
             yield return null;
 
-        Vector3 target = ResolveDestination();
-        if (!TrySampleNear(target, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit))
+        Vector3 target = SnapDestinationToGround(ResolveDestination());
+        // Önce dar, olmazsa geniş — serialize Y (56) ile bake yüzeyi arasında fark olabilir.
+        if (!TrySampleNear(target, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit) &&
+            !TrySampleNear(target, 40f, float.MaxValue, out targetHit))
         {
             Debug.LogError($"[NpcWalkToPoint] Hedef yakınında NavMesh bulunamadı: {target}");
             yield break;
@@ -451,6 +453,55 @@ public class NpcWalkToPoint : NetworkBehaviour
         }
 
         return yamanSpawnFallback;
+    }
+
+    /// <summary>
+    /// Spawn/Inspector Y'si yaklaşık; NavMesh SamplePosition küre yarıçapı kullanır.
+    /// Önce terrain yüksekliğine oturt ki 4m sample gerçek zemini kaçırmasın.
+    /// </summary>
+    private static Vector3 SnapDestinationToGround(Vector3 pos)
+    {
+        float terrainY = SampleTerrainHeight(pos.x, pos.z);
+        if (!float.IsNegativeInfinity(terrainY))
+            return new Vector3(pos.x, terrainY + 0.1f, pos.z);
+
+        const float rayHeight = 500f;
+        Vector3 origin = new Vector3(pos.x, rayHeight, pos.z);
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, rayHeight + 50f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            // Gökyüzü collider'ı yutmasın — hedefe göre makul yükseklik bandı.
+            if (Mathf.Abs(hit.point.y - pos.y) < 80f || pos.y < 1f)
+                return new Vector3(pos.x, hit.point.y + 0.1f, pos.z);
+        }
+
+        return pos;
+    }
+
+    private static float SampleTerrainHeight(float worldX, float worldZ)
+    {
+        float best = float.NegativeInfinity;
+        var terrains = Terrain.activeTerrains;
+        if (terrains == null || terrains.Length == 0)
+            return best;
+
+        var probe = new Vector3(worldX, 0f, worldZ);
+        foreach (var terrain in terrains)
+        {
+            if (terrain == null || terrain.terrainData == null) continue;
+
+            Vector3 tp = terrain.transform.position;
+            Vector3 size = terrain.terrainData.size;
+            float lx = worldX - tp.x;
+            float lz = worldZ - tp.z;
+            if (lx < 0f || lz < 0f || lx > size.x || lz > size.z)
+                continue;
+
+            float h = terrain.SampleHeight(probe) + tp.y;
+            if (h > best)
+                best = h;
+        }
+
+        return best;
     }
 
     private void UpdateGait()
@@ -722,12 +773,13 @@ public class NpcWalkToPoint : NetworkBehaviour
         _agent.isStopped = false;
         _agent.enabled = true;
 
+        Vector3 safiyeTarget = SnapDestinationToGround(safiyeHouseDestination);
         // Önce dar, olmazsa geniş yarıçap — Safiye evi önü yeni bake edilene kadar yakın mesh'e snap.
-        if (!TrySampleNear(safiyeHouseDestination, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit) &&
-            !TrySampleNear(safiyeHouseDestination, 40f, float.MaxValue, out targetHit))
+        if (!TrySampleNear(safiyeTarget, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit) &&
+            !TrySampleNear(safiyeTarget, 40f, float.MaxValue, out targetHit))
         {
             Debug.LogError(
-                $"[NpcWalkToPoint] Safiye hedefi NavMesh'te değil: {safiyeHouseDestination}. " +
+                $"[NpcWalkToPoint] Safiye hedefi NavMesh'te değil: {safiyeTarget}. " +
                 "LongLake → Bake CrashSite NavMesh (Doors Open) çalıştır (yol proxy'leri ekler).");
             yield break;
         }
