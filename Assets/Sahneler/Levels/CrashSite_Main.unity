@@ -34511,8 +34511,9 @@ MonoBehaviour:
   npcObjectName: ismail
   npcOverride: {fileID: 0}
   destination: {fileID: 0}
-  useYamanSpawnIfNoDestination: 1
-  yamanSpawnFallback: {x: 1753.697, y: 110, z: 523}
+  carDestination: {x: 1755.214, y: 110.6208, z: 529.1782}
+  useYamanSpawnIfNoDestination: 0
+  yamanSpawnFallback: {x: 1753.697, y: 56, z: 523}
   walkSpeed: 1.8
   runSpeed: 4.5
   walkBeforeRunSeconds: 2.2

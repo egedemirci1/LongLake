@@ -488,9 +488,9 @@ public class MainMenuUI : MonoBehaviour
 
     private void ApplyTransportTuning()
     {
-        // ZeroTier / Editor burst traffic can fill the default 128 receive queue.
-        if (unityTransport.MaxPacketQueueSize < 512)
-            unityTransport.MaxPacketQueueSize = 512;
+        // ZeroTier / Editor burst traffic can fill the default queue during scene load spikes.
+        if (unityTransport.MaxPacketQueueSize < 1024)
+            unityTransport.MaxPacketQueueSize = 1024;
 
         unityTransport.ConnectTimeoutMS = 10000;
         unityTransport.DisconnectTimeoutMS = 60000;

@@ -15,9 +15,11 @@ public class NpcWalkToPoint : NetworkBehaviour
     [SerializeField] private Transform npcOverride;
 
     [Header("Target")]
-    [Tooltip("Boş bırakılırsa Yaman'ın NetworkLocalSetup spawn noktası kullanılır.")]
+    [Tooltip("Boş bırakılırsa carDestination kullanılır.")]
     [SerializeField] private Transform destination;
-    [SerializeField] private bool useYamanSpawnIfNoDestination = true;
+    [Tooltip("Kapı sonrası araba / inceleme noktası (sabit dünya koordinatı).")]
+    [SerializeField] private Vector3 carDestination = new Vector3(1755.214f, 110.6208f, 529.1782f);
+    [SerializeField] private bool useYamanSpawnIfNoDestination = false;
     [SerializeField] private Vector3 yamanSpawnFallback = new Vector3(1753.697f, 56f, 523f);
 
     [Header("Movement")]
@@ -28,6 +30,8 @@ public class NpcWalkToPoint : NetworkBehaviour
     [Tooltip("Bitişe bu mesafeden yakınken tekrar yürüyüşe döner.")]
     [SerializeField] private float approachWalkDistance = 7f;
     [SerializeField] private float stoppingDistance = 0.35f;
+    [Tooltip("Araba hedefine bu yatay mesafeden yakınsa 'vardı' sayılır.")]
+    [SerializeField] private float arrivalDistanceThreshold = 4f;
     [SerializeField] private float walkAnimatorSpeedMultiplier = 2.8f;
     [SerializeField] private float runAnimatorSpeedMultiplier = 2.2f;
     [SerializeField] private float navMeshSampleRadius = 4f;
@@ -91,6 +95,9 @@ public class NpcWalkToPoint : NetworkBehaviour
     private bool _runExhausted;
     private bool _talkEnableScheduled;
     private bool _dialogueEndHooked;
+    private Vector3 _activeJourneyTarget;
+    private bool _hasActiveJourneyTarget;
+    private float _destinationRetryCooldown;
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     public override void OnNetworkSpawn()
@@ -137,7 +144,10 @@ public class NpcWalkToPoint : NetworkBehaviour
         TryTraverseDoorLink();
 
         if (IsServer)
+        {
             TryMarkArrivedOnServer();
+            TryRetryDestinationOnServer();
+        }
     }
 
     private bool _traversingOffMeshLink;
@@ -193,6 +203,10 @@ public class NpcWalkToPoint : NetworkBehaviour
         }
 
         _traversingOffMeshLink = false;
+
+        // Link sonrası rota kopabiliyor — hedefe tekrar yürüt.
+        if (IsServer && _hasActiveJourneyTarget && !journeyArrived.Value)
+            RequestDestinationRefresh(force: true);
     }
 
     /// <summary>
@@ -310,13 +324,18 @@ public class NpcWalkToPoint : NetworkBehaviour
         for (int i = 0; i < 10; i++)
             yield return null;
 
-        Vector3 target = SnapDestinationToGround(ResolveDestination());
-        // Önce dar, olmazsa geniş — serialize Y (56) ile bake yüzeyi arasında fark olabilir.
+        Vector3 target = ResolveDestination();
+        // Önce verilen dünya koordinatı; olmazsa terrain snap + geniş yarıçap.
         if (!TrySampleNear(target, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit) &&
             !TrySampleNear(target, 40f, float.MaxValue, out targetHit))
         {
-            Debug.LogError($"[NpcWalkToPoint] Hedef yakınında NavMesh bulunamadı: {target}");
-            yield break;
+            Vector3 grounded = SnapDestinationToGround(target);
+            if (!TrySampleNear(grounded, navMeshSampleRadius, float.MaxValue, out targetHit) &&
+                !TrySampleNear(grounded, 40f, float.MaxValue, out targetHit))
+            {
+                Debug.LogError($"[NpcWalkToPoint] Hedef yakınında NavMesh bulunamadı: {target} (grounded: {grounded})");
+                yield break;
+            }
         }
 
         // ÖNCE mevcut konumun HEMEN yanındaki mesh — büyük SamplePosition evi dışına ışınlıyordu.
@@ -363,7 +382,13 @@ public class NpcWalkToPoint : NetworkBehaviour
                 $"[NpcWalkToPoint] {_npc.name} için geçerli rota yok (kapı NavMeshLink / eşik). " +
                 "Kapı açıkken Door_Group NavMeshLink uçlarının iki mavi adaya oturduğunu kontrol et.");
             _agent.enabled = false;
+            yield break;
         }
+
+        _activeJourneyTarget = targetHit.position;
+        _hasActiveJourneyTarget = true;
+        if (IsServer)
+            RequestDestinationRefresh(force: true);
     }
 
     private static void RefreshOpenQuestDoorLinks()
@@ -450,9 +475,10 @@ public class NpcWalkToPoint : NetworkBehaviour
             NetworkLocalSetup setup = FindFirstObjectByType<NetworkLocalSetup>();
             if (setup != null)
                 return setup.YamanSpawnPosition;
+            return yamanSpawnFallback;
         }
 
-        return yamanSpawnFallback;
+        return carDestination;
     }
 
     /// <summary>
@@ -610,19 +636,70 @@ public class NpcWalkToPoint : NetworkBehaviour
 
     private void TryMarkArrivedOnServer()
     {
-        if (!IsServer || journeyArrived.Value || !_journeyInitialized)
+        if (!IsServer || journeyArrived.Value || !_journeyInitialized || !_hasActiveJourneyTarget)
             return;
         if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
             return;
-        if (_agent.pathPending)
+        if (_agent.pathPending || _traversingOffMeshLink)
+            return;
+
+        float distToTarget = HorizontalDistance(_agent.transform.position, _activeJourneyTarget);
+        if (distToTarget > arrivalDistanceThreshold)
             return;
 
         float remaining = _agent.remainingDistance;
-        bool noPathLeft = !_agent.hasPath || remaining <= Mathf.Max(stoppingDistance + 0.15f, 0.5f);
-        bool mostlyStopped = _agent.velocity.sqrMagnitude < 0.05f;
+        bool nearEndOfPath = _agent.hasPath &&
+            !float.IsInfinity(remaining) &&
+            !float.IsNaN(remaining) &&
+            remaining <= Mathf.Max(stoppingDistance + 0.15f, 0.5f);
+        bool mostlyStopped = _agent.velocity.sqrMagnitude < 0.08f;
 
-        if (noPathLeft && mostlyStopped)
+        if ((nearEndOfPath || distToTarget <= stoppingDistance + 0.5f) && mostlyStopped)
             journeyArrived.Value = true;
+    }
+
+    private void TryRetryDestinationOnServer()
+    {
+        if (!IsServer || journeyArrived.Value || !_journeyInitialized || !_hasActiveJourneyTarget)
+            return;
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+            return;
+        if (_traversingOffMeshLink)
+            return;
+
+        _destinationRetryCooldown -= Time.deltaTime;
+        if (_destinationRetryCooldown > 0f)
+            return;
+
+        float distToTarget = HorizontalDistance(_agent.transform.position, _activeJourneyTarget);
+        if (distToTarget <= arrivalDistanceThreshold)
+            return;
+
+        bool stuck = !_agent.hasPath ||
+            _agent.pathStatus == NavMeshPathStatus.PathPartial ||
+            _agent.pathStatus == NavMeshPathStatus.PathInvalid;
+
+        float rem = _agent.remainingDistance;
+        bool farOnPath = _agent.hasPath &&
+            !float.IsInfinity(rem) &&
+            !float.IsNaN(rem) &&
+            rem > arrivalDistanceThreshold + 2f &&
+            _agent.velocity.sqrMagnitude < 0.04f;
+
+        if (stuck || farOnPath)
+            RequestDestinationRefresh(force: false);
+    }
+
+    private void RequestDestinationRefresh(bool force)
+    {
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh || !_hasActiveJourneyTarget)
+            return;
+
+        if (!force)
+            _destinationRetryCooldown = 1.25f;
+
+        _agent.isStopped = false;
+        _agent.SetDestination(_activeJourneyTarget);
     }
 
     private void OnJourneyArrivedChanged(bool previous, bool current)
