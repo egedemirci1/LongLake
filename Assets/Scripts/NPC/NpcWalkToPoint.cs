@@ -22,13 +22,27 @@ public class NpcWalkToPoint : NetworkBehaviour
 
     [Header("Movement")]
     [SerializeField] private float walkSpeed = 1.8f;
+    [SerializeField] private float runSpeed = 4.5f;
+    [Tooltip("Yürüyüş başladıktan bu kadar saniye sonra koşmaya geçer (bitişe yakın değilse).")]
+    [SerializeField] private float walkBeforeRunSeconds = 2.2f;
+    [Tooltip("Bitişe bu mesafeden yakınken tekrar yürüyüşe döner.")]
+    [SerializeField] private float approachWalkDistance = 7f;
     [SerializeField] private float stoppingDistance = 0.35f;
-    [SerializeField] private float animatorSpeedMultiplier = 2.8f;
+    [SerializeField] private float walkAnimatorSpeedMultiplier = 2.8f;
+    [SerializeField] private float runAnimatorSpeedMultiplier = 2.2f;
     [SerializeField] private float navMeshSampleRadius = 4f;
     [Tooltip("NavMesh'e oturturken yatayda bundan fazla ışınlama yasak (evin dışına atmayı önler).")]
     [SerializeField] private float maxNavMeshSnapDistance = 0.55f;
     [Tooltip("İçerde mesh yoksa kapı eşiğine en fazla bu kadar yaklaşarak oturt.")]
     [SerializeField] private float maxDoorwaySnapDistance = 2.5f;
+
+    [Header("After Arrival Talk")]
+    [SerializeField] private bool enableTalkAfterArrival = true;
+    [SerializeField] private float talkEnableDelaySeconds = 1.5f;
+    [SerializeField] private string arrivalSequenceId = "ismail_arrival";
+    [SerializeField] private string talkPrompt = "Konuş";
+    [SerializeField] private float talkNearbyRadius = 5f;
+    [SerializeField] private int talkMinimumPlayersRequired = 2;
 
     [Header("Temporary Door Watch (remove when dialogue-driven)")]
     [SerializeField] private bool autoStartWhenKnockDoorOpens = true;
@@ -42,10 +56,19 @@ public class NpcWalkToPoint : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    private readonly NetworkVariable<bool> journeyArrived = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     private Transform _npc;
     private NavMeshAgent _agent;
     private Animator _animator;
     private bool _journeyInitialized;
+    private float _journeyElapsed;
+    private bool _isRunning;
+    private bool _talkEnableScheduled;
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     public override void OnNetworkSpawn()
@@ -53,14 +76,19 @@ public class NpcWalkToPoint : NetworkBehaviour
         ResolveNpc();
         ResolveWatchDoor();
         journeyStarted.OnValueChanged += OnJourneyStartedChanged;
+        journeyArrived.OnValueChanged += OnJourneyArrivedChanged;
 
         if (journeyStarted.Value)
             StartCoroutine(BeginJourneyLocalRoutine());
+
+        if (journeyArrived.Value)
+            ScheduleTalkEnable();
     }
 
     public override void OnNetworkDespawn()
     {
         journeyStarted.OnValueChanged -= OnJourneyStartedChanged;
+        journeyArrived.OnValueChanged -= OnJourneyArrivedChanged;
     }
 
     private void Update()
@@ -68,7 +96,11 @@ public class NpcWalkToPoint : NetworkBehaviour
         if (IsServer && !journeyStarted.Value && autoStartWhenKnockDoorOpens)
             TryStartFromDoorWatch();
 
+        UpdateGait();
         UpdateAnimation();
+
+        if (IsServer)
+            TryMarkArrivedOnServer();
     }
 
     /// <summary>
@@ -176,6 +208,9 @@ public class NpcWalkToPoint : NetworkBehaviour
         _agent.radius = 0.35f;
         _agent.height = 1.8f;
         _agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
+
+        _journeyElapsed = 0f;
+        _isRunning = false;
 
         Vector3 target = ResolveDestination();
         if (!TrySampleNear(target, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit))
@@ -309,14 +344,160 @@ public class NpcWalkToPoint : NetworkBehaviour
         return yamanSpawnFallback;
     }
 
+    private void UpdateGait()
+    {
+        if (!_journeyInitialized || _agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+            return;
+
+        _journeyElapsed += Time.deltaTime;
+
+        // Path henüz hazır değilse yürüyüşte kal
+        if (_agent.pathPending || !_agent.hasPath)
+        {
+            ApplyGait(running: false);
+            return;
+        }
+
+        float remaining = _agent.remainingDistance;
+        if (float.IsInfinity(remaining))
+        {
+            ApplyGait(running: false);
+            return;
+        }
+
+        // Bitişe yaklaşınca yürüyüş; ortada süre dolunca koşu
+        bool nearEnd = remaining <= Mathf.Max(approachWalkDistance, stoppingDistance + 0.5f);
+        bool wantRun = !nearEnd && _journeyElapsed >= walkBeforeRunSeconds;
+        ApplyGait(wantRun);
+    }
+
+    private void ApplyGait(bool running)
+    {
+        if (_agent == null) return;
+
+        if (_isRunning == running &&
+            Mathf.Approximately(_agent.speed, running ? runSpeed : walkSpeed))
+            return;
+
+        _isRunning = running;
+        _agent.speed = running ? runSpeed : walkSpeed;
+        _agent.acceleration = running ? 10f : 5f;
+        _agent.autoBraking = !running || _agent.remainingDistance < approachWalkDistance;
+    }
+
     private void UpdateAnimation()
     {
         if (!_journeyInitialized || _agent == null || _animator == null)
             return;
 
+        float mult = _isRunning ? runAnimatorSpeedMultiplier : walkAnimatorSpeedMultiplier;
         float animationSpeed = _agent.enabled && _agent.isOnNavMesh
-            ? _agent.velocity.magnitude * animatorSpeedMultiplier
+            ? _agent.velocity.magnitude * mult
             : 0f;
         _animator.SetFloat(SpeedHash, animationSpeed, 0.12f, Time.deltaTime);
+    }
+
+    private void TryMarkArrivedOnServer()
+    {
+        if (!IsServer || journeyArrived.Value || !_journeyInitialized)
+            return;
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+            return;
+        if (_agent.pathPending)
+            return;
+
+        float remaining = _agent.remainingDistance;
+        bool noPathLeft = !_agent.hasPath || remaining <= Mathf.Max(stoppingDistance + 0.15f, 0.5f);
+        bool mostlyStopped = _agent.velocity.sqrMagnitude < 0.05f;
+
+        if (noPathLeft && mostlyStopped)
+            journeyArrived.Value = true;
+    }
+
+    private void OnJourneyArrivedChanged(bool previous, bool current)
+    {
+        if (current && !previous)
+            ScheduleTalkEnable();
+    }
+
+    private void ScheduleTalkEnable()
+    {
+        if (!enableTalkAfterArrival || _talkEnableScheduled)
+            return;
+        _talkEnableScheduled = true;
+        StartCoroutine(EnableTalkAfterDelayRoutine());
+    }
+
+    private System.Collections.IEnumerator EnableTalkAfterDelayRoutine()
+    {
+        yield return new WaitForSeconds(talkEnableDelaySeconds);
+
+        if (_npc == null)
+            ResolveNpc();
+        if (_npc == null)
+            yield break;
+
+        EnsureNpcHasCollider();
+
+        var talk = _npc.GetComponent<NpcDialogueTalk>();
+        if (talk == null)
+            talk = _npc.gameObject.AddComponent<NpcDialogueTalk>();
+
+        talk.Configure(arrivalSequenceId, talkPrompt, this);
+        talk.SetInteractEnabled(true);
+
+        if (_agent != null && _agent.enabled)
+        {
+            _agent.isStopped = true;
+            _agent.ResetPath();
+        }
+
+        if (_animator != null)
+            _animator.SetFloat(SpeedHash, 0f);
+    }
+
+    /// <summary>Client E ile çağırır; server yakınlığı doğrulayıp herkese diyalog açar.</summary>
+    public void RequestStartArrivalDialogue()
+    {
+        if (!IsSpawned) return;
+        StartArrivalDialogueServerRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void StartArrivalDialogueServerRpc()
+    {
+        if (!journeyArrived.Value) return;
+        if (DialogueManager.IsDialogueOpen) return;
+        if (DialogueManager.Instance == null) return;
+
+        if (_npc == null)
+            ResolveNpc();
+        if (_npc == null) return;
+
+        int required = GetTalkMinimumPlayersRequired();
+        if (!PlayersNearbyUtility.AreEnoughPlayersNear(_npc.position, talkNearbyRadius, required))
+            return;
+
+        DialogueManager.Instance.TryStartDialogue(arrivalSequenceId);
+    }
+
+    private int GetTalkMinimumPlayersRequired()
+    {
+        int connected = 1;
+        if (NetworkManager != null)
+            connected = Mathf.Max(1, NetworkManager.ConnectedClientsIds.Count);
+
+        return Mathf.Clamp(connected, 1, Mathf.Max(1, talkMinimumPlayersRequired));
+    }
+
+    private void EnsureNpcHasCollider()
+    {
+        if (_npc.GetComponentInChildren<Collider>() != null)
+            return;
+
+        var capsule = _npc.gameObject.AddComponent<CapsuleCollider>();
+        capsule.height = 1.8f;
+        capsule.radius = 0.4f;
+        capsule.center = new Vector3(0f, 0.9f, 0f);
     }
 }

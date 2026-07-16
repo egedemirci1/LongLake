@@ -126,11 +126,27 @@ public class DialogueManager : NetworkBehaviour
     private void RebuildSequenceCache()
     {
         _sequenceById.Clear();
-        foreach (var seq in sequences)
+
+        void Add(DialogueSequence seq)
         {
-            if (seq == null || string.IsNullOrEmpty(seq.sequenceId)) continue;
+            if (seq == null || string.IsNullOrEmpty(seq.sequenceId)) return;
             _sequenceById[seq.sequenceId] = seq;
         }
+
+        foreach (var seq in sequences)
+            Add(seq);
+
+        // Inspector referansı kaçsa bile Resources/Dialogue altındakiler yüklensin.
+        var fromResources = Resources.LoadAll<DialogueSequence>("Dialogue");
+        foreach (var seq in fromResources)
+            Add(seq);
+    }
+
+    /// <summary>Runtime'da ek sequence kaydı (örn. NPC referansı).</summary>
+    public void RegisterSequence(DialogueSequence seq)
+    {
+        if (seq == null || string.IsNullOrEmpty(seq.sequenceId)) return;
+        _sequenceById[seq.sequenceId] = seq;
     }
 
     public DialogueNode GetCurrentNode()

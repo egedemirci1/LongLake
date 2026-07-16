@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a11b22c33d44e55f66778899aabbcc01, type: 3}
+  m_Name: IsmailArrivalDialogue
+  sequenceId: ismail_arrival
+  startNodeId: n1
+  nodes:
+  - id: n1
+    speaker: "\u0130smail"
+    text: "Araban\u0131n durumu \u00E7ok k\u00F6t\u00FC..."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n2
+  - id: n2
+    speaker: "\u0130smail"
+    text: "K\u00F6y yolu da kapal\u0131. Siz en iyisi Safiye'nin evinde kal\u0131n, oras\u0131 g\u00FCvenli."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n3
+  - id: n3
+    speaker: "\u0130smail"
+    text: "Ben arabayla ilgilenece\u011Fim. Sabah tamirciye u\u011Fray\u0131p net araban\u0131n durumunu \u00F6\u011Freniriz."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: 
+  completeQuestId: 
