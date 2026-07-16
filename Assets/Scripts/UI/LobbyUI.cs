@@ -492,8 +492,8 @@ public class LobbyUI : MonoBehaviour
         cardRt.anchorMin = new Vector2(0.5f, 0.5f);
         cardRt.anchorMax = new Vector2(0.5f, 0.5f);
         cardRt.pivot = new Vector2(0.5f, 0.5f);
-        cardRt.sizeDelta = new Vector2(860f, 620f);
-        cardRt.anchoredPosition = new Vector2(0f, 8f);
+        cardRt.sizeDelta = new Vector2(860f, 680f);
+        cardRt.anchoredPosition = new Vector2(0f, 0f);
 
         var cardImg = card.GetComponent<Image>();
         cardImg.sprite = RuntimeUiSprites.GetRoundedSprite(14);
@@ -549,23 +549,23 @@ public class LobbyUI : MonoBehaviour
         ruleImg.color = AccentColor;
         ruleImg.raycastTarget = false;
 
-        // Character row
+        // Character row — altta aksiyon butonlarına boşluk bırak
         var row = new GameObject("CharacterRow", typeof(RectTransform));
         row.transform.SetParent(card.transform, false);
         var rowRt = row.GetComponent<RectTransform>();
         rowRt.anchorMin = new Vector2(0.5f, 1f);
         rowRt.anchorMax = new Vector2(0.5f, 1f);
         rowRt.pivot = new Vector2(0.5f, 1f);
-        rowRt.anchoredPosition = new Vector2(0f, -228f);
-        rowRt.sizeDelta = new Vector2(780f, 260f);
+        rowRt.anchoredPosition = new Vector2(0f, -220f);
+        rowRt.sizeDelta = new Vector2(780f, 240f);
 
         var h = row.AddComponent<HorizontalLayoutGroup>();
         h.spacing = 28f;
-        h.childAlignment = TextAnchor.MiddleCenter;
+        h.childAlignment = TextAnchor.UpperCenter;
         h.childControlWidth = true;
         h.childControlHeight = true;
         h.childForceExpandWidth = true;
-        h.childForceExpandHeight = true;
+        h.childForceExpandHeight = false;
         h.padding = new RectOffset(0, 0, 0, 0);
 
         RestyleCharacterButton(
@@ -576,15 +576,16 @@ public class LobbyUI : MonoBehaviour
             yamanButton, row.transform, "Yaman", "Kararlı · Koruyucu", YamanTone, yamanPortrait,
             out _yamanCardBg, out _yamanRing, out _yamanPortraitImg, out _yamanName, out _yamanMeta, out _yamanBadge);
 
-        // Actions
+        // Actions — kartların ALTINDA (bottom-anchored, status/IP üstünde)
         var actions = new GameObject("Actions", typeof(RectTransform));
         actions.transform.SetParent(card.transform, false);
+        actions.transform.SetAsLastSibling();
         var actRt = actions.GetComponent<RectTransform>();
         actRt.anchorMin = new Vector2(0.5f, 0f);
         actRt.anchorMax = new Vector2(0.5f, 0f);
         actRt.pivot = new Vector2(0.5f, 0f);
-        actRt.anchoredPosition = new Vector2(0f, 88f);
-        actRt.sizeDelta = new Vector2(780f, 56f);
+        actRt.anchoredPosition = new Vector2(0f, 78f);
+        actRt.sizeDelta = new Vector2(780f, 48f);
 
         var actH = actions.AddComponent<HorizontalLayoutGroup>();
         actH.spacing = 16f;
@@ -592,7 +593,8 @@ public class LobbyUI : MonoBehaviour
         actH.childControlWidth = true;
         actH.childControlHeight = true;
         actH.childForceExpandWidth = true;
-        actH.childForceExpandHeight = true;
+        actH.childForceExpandHeight = false;
+        actH.padding = new RectOffset(0, 0, 0, 0);
 
         RestyleActionButton(readyButton, actions.transform, readyButtonLabel, false, out _readyBg);
         if (readyButtonLabel != null)
@@ -611,12 +613,13 @@ public class LobbyUI : MonoBehaviour
             startLabel.alignment = TextAlignmentOptions.Center;
         }
 
-        // Status + IP
+        // Status + IP — en altta, butonların altında
         if (statusText != null)
         {
             statusText.transform.SetParent(card.transform, false);
+            statusText.transform.SetAsLastSibling();
             statusText.gameObject.SetActive(true);
-            Place(statusText.rectTransform, 36f, 52f, 36f, 28f, fromBottom: true);
+            Place(statusText.rectTransform, 36f, 44f, 36f, 24f, fromBottom: true);
             statusText.fontSize = 14f;
             statusText.fontStyle = FontStyles.Normal;
             statusText.color = MutedText;
@@ -627,8 +630,9 @@ public class LobbyUI : MonoBehaviour
         if (hostIpText != null)
         {
             hostIpText.transform.SetParent(card.transform, false);
+            hostIpText.transform.SetAsLastSibling();
             hostIpText.gameObject.SetActive(true);
-            Place(hostIpText.rectTransform, 36f, 24f, 36f, 22f, fromBottom: true);
+            Place(hostIpText.rectTransform, 36f, 18f, 36f, 20f, fromBottom: true);
             hostIpText.fontSize = 12f;
             hostIpText.fontStyle = FontStyles.Normal;
             hostIpText.color = new Color(MutedText.r, MutedText.g, MutedText.b, 0.85f);
@@ -748,8 +752,14 @@ public class LobbyUI : MonoBehaviour
         var le = button.gameObject.GetComponent<LayoutElement>();
         if (le == null) le = button.gameObject.AddComponent<LayoutElement>();
         le.flexibleWidth = 1f;
+        le.flexibleHeight = 0f;
         le.minWidth = 300f;
-        le.preferredHeight = 260f;
+        le.minHeight = 240f;
+        le.preferredWidth = 370f;
+        le.preferredHeight = 240f;
+
+        var btnRt = button.GetComponent<RectTransform>();
+        btnRt.sizeDelta = new Vector2(370f, 240f);
 
         cardBg = button.GetComponent<Image>();
         if (cardBg == null) cardBg = button.gameObject.AddComponent<Image>();
@@ -787,8 +797,8 @@ public class LobbyUI : MonoBehaviour
         plateRt.anchorMin = new Vector2(0.5f, 1f);
         plateRt.anchorMax = new Vector2(0.5f, 1f);
         plateRt.pivot = new Vector2(0.5f, 1f);
-        plateRt.anchoredPosition = new Vector2(0f, -14f);
-        plateRt.sizeDelta = new Vector2(300f, 168f);
+        plateRt.anchoredPosition = new Vector2(0f, -12f);
+        plateRt.sizeDelta = new Vector2(300f, 130f);
         var plateImg = plate.GetComponent<Image>();
         plateImg.sprite = RuntimeUiSprites.GetRoundedSprite(10);
         plateImg.type = Image.Type.Sliced;
@@ -849,28 +859,29 @@ public class LobbyUI : MonoBehaviour
         nameRt.anchorMin = new Vector2(0f, 0f);
         nameRt.anchorMax = new Vector2(1f, 0f);
         nameRt.pivot = new Vector2(0.5f, 0f);
-        nameRt.anchoredPosition = new Vector2(0f, 78f);
-        nameRt.sizeDelta = new Vector2(-32f, 36f);
+        nameRt.anchoredPosition = new Vector2(0f, 68f);
+        nameRt.sizeDelta = new Vector2(-32f, 32f);
         nameTmp.alignment = TextAlignmentOptions.Center;
         nameTmp.text = displayName;
+        nameTmp.fontSize = 26f;
 
-        metaTmp = CreateTmp(button.transform, "Meta", 14f, FontStyles.Normal, MutedText);
+        metaTmp = CreateTmp(button.transform, "Meta", 13f, FontStyles.Normal, MutedText);
         var metaRt = metaTmp.rectTransform;
         metaRt.anchorMin = new Vector2(0f, 0f);
         metaRt.anchorMax = new Vector2(1f, 0f);
         metaRt.pivot = new Vector2(0.5f, 0f);
-        metaRt.anchoredPosition = new Vector2(0f, 52f);
-        metaRt.sizeDelta = new Vector2(-32f, 22f);
+        metaRt.anchoredPosition = new Vector2(0f, 44f);
+        metaRt.sizeDelta = new Vector2(-32f, 20f);
         metaTmp.alignment = TextAlignmentOptions.Center;
         metaTmp.text = meta;
 
-        badgeTmp = CreateTmp(button.transform, "Badge", 13f, FontStyles.Bold, tone);
+        badgeTmp = CreateTmp(button.transform, "Badge", 12f, FontStyles.Bold, tone);
         var badgeRt = badgeTmp.rectTransform;
         badgeRt.anchorMin = new Vector2(0f, 0f);
         badgeRt.anchorMax = new Vector2(1f, 0f);
         badgeRt.pivot = new Vector2(0.5f, 0f);
-        badgeRt.anchoredPosition = new Vector2(0f, 22f);
-        badgeRt.sizeDelta = new Vector2(-32f, 22f);
+        badgeRt.anchoredPosition = new Vector2(0f, 16f);
+        badgeRt.sizeDelta = new Vector2(-32f, 20f);
         badgeTmp.alignment = TextAlignmentOptions.Center;
         badgeTmp.characterSpacing = 6f;
         badgeTmp.text = "SEÇ";
@@ -888,8 +899,14 @@ public class LobbyUI : MonoBehaviour
         var le = button.gameObject.GetComponent<LayoutElement>();
         if (le == null) le = button.gameObject.AddComponent<LayoutElement>();
         le.flexibleWidth = 1f;
-        le.minHeight = 52f;
-        le.preferredHeight = 52f;
+        le.flexibleHeight = 0f;
+        le.minHeight = 48f;
+        le.preferredHeight = 48f;
+        le.minWidth = 200f;
+
+        var btnRt = button.GetComponent<RectTransform>();
+        btnRt.localScale = Vector3.one;
+        btnRt.sizeDelta = new Vector2(360f, 48f);
 
         bg = button.GetComponent<Image>();
         if (bg == null) bg = button.gameObject.AddComponent<Image>();

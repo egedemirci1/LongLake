@@ -36,7 +36,6 @@ public class MainMenuUI : MonoBehaviour
     private bool callbacksRegistered;
     private bool sceneEventsHooked;
     private bool isTryingToConnectClient;
-    private float connectStartTime;
 
     private void Awake()
     {
@@ -60,12 +59,7 @@ public class MainMenuUI : MonoBehaviour
 
         HookUiButtons();
         RegisterCallbacksOnce();
-
-        SetStatus($"Ready. ActiveScene={SceneManager.GetActiveScene().name}");
-        Debug.Log($"[MainMenuUI] Ready. ActiveScene={SceneManager.GetActiveScene().name}");
-
-        // Client debug ticker (prints status every 1 second; only active when client is trying to connect)
-        InvokeRepeating(nameof(TickClientDebug), 1f, 1f);
+        SetStatus("");
     }
 
     private void OnDestroy()
@@ -115,22 +109,17 @@ public class MainMenuUI : MonoBehaviour
         ApplyTransportTuning();
         unityTransport.SetConnectionData("0.0.0.0", port, "0.0.0.0");
 
-        SetStatus($"Starting host... (listen 0.0.0.0:{port})");
-        Debug.Log($"[MainMenuUI] Host listen 0.0.0.0:{port}");
-        Debug.Log("[MainMenuUI] Starting host...");
+        SetStatus("Oda açılıyor…");
 
         bool ok = networkManager.StartHost();
         if (!ok)
         {
-            Debug.LogError("[MainMenuUI] StartHost() returned false");
-            SetStatus("StartHost failed");
+            Debug.LogError("[MainMenuUI] StartHost() failed.");
+            SetStatus("Oda açılamadı.");
             return;
         }
 
-        // Scene events hook: try after StartHost (can be null in Awake)
         TryHookSceneEventsWithRetry();
-
-        // Stay on MainMenu lobby until host starts the game (both ready).
         SetStatus("Lobi: karakter seç → Hazırım. Herkes hazır olunca Oyunu Başlat.");
     }
 
@@ -305,25 +294,20 @@ public class MainMenuUI : MonoBehaviour
 
         // Keep menu music until gameplay; lobby stays on MainMenu.
 
-        SetStatus($"Starting client to {ip}:{port} ...");
-        Debug.Log($"[MainMenuUI] Starting client to {ip}:{port}");
+        SetStatus("Bağlanılıyor…");
 
         isTryingToConnectClient = true;
-        connectStartTime = Time.realtimeSinceStartup;
 
         bool ok = networkManager.StartClient();
         if (!ok)
         {
-            Debug.LogError("[MainMenuUI] StartClient() returned false");
-            SetStatus("StartClient failed");
+            Debug.LogError("[MainMenuUI] StartClient() failed.");
+            SetStatus("Bağlantı başarısız.");
             isTryingToConnectClient = false;
             return;
         }
 
-        // Scene events hook: try after StartClient (can be null in Awake)
         TryHookSceneEventsWithRetry();
-
-        // Print status if not connected after 10 seconds
         Invoke(nameof(LogClientStillConnecting), 10f);
     }
 
@@ -373,8 +357,8 @@ public class MainMenuUI : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(ip) || ip == "0.0.0.0")
         {
-            Debug.LogError("[MainMenuUI] Client needs host IP. Set UnityTransport Address to host ZeroTier IP (e.g. 10.171.156.166).");
-            SetStatus("Set host IP on UnityTransport Address");
+            Debug.LogError("[MainMenuUI] Host IP gerekli.");
+            SetStatus("Host IP gir.");
             return false;
         }
 
@@ -399,27 +383,22 @@ public class MainMenuUI : MonoBehaviour
     private void TryLoadGameplayScene_Server()
     {
         if (!networkManager.IsServer)
-        {
-            Debug.LogWarning("[MainMenuUI] TryLoadGameplayScene_Server called but this is not server.");
             return;
-        }
 
-        // Build list check
         if (!Application.CanStreamedLevelBeLoaded(gameplaySceneName))
         {
-            Debug.LogError($"[MainMenuUI] Scene '{gameplaySceneName}' not in build list or name is wrong.");
-            SetStatus($"Scene missing in build: {gameplaySceneName}");
+            Debug.LogError($"[MainMenuUI] Scene '{gameplaySceneName}' is not in Build Settings.");
+            SetStatus($"Sahne eksik: {gameplaySceneName}");
             return;
         }
 
         if (networkManager.SceneManager == null)
         {
-            Debug.LogError("[MainMenuUI] SceneManager is null even after StartHost. Is Enable Scene Management checked? Is there only one NetworkManager?");
-            SetStatus("SceneManager null (Enable Scene Management?)");
+            Debug.LogError("[MainMenuUI] SceneManager null — Enable Scene Management?");
+            SetStatus("Sahne yöneticisi hazır değil.");
             return;
         }
 
-        // Loading screen'i göster ve coroutine ile scene yükle
         StartCoroutine(LoadSceneWithLoadingScreen());
     }
 
@@ -454,7 +433,7 @@ public class MainMenuUI : MonoBehaviour
         // Video prepare için ekstra frame (client flash önleme).
         yield return null;
 
-        SetStatus($"Loading: {gameplaySceneName}");
+        SetStatus("Yükleniyor…");
         networkManager.SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
     }
 
@@ -476,7 +455,7 @@ public class MainMenuUI : MonoBehaviour
             yield return new WaitForSeconds(waitSeconds);
         }
 
-        Debug.LogWarning("[MainMenuUI] Scene events hook failed after retries. (SceneManager still null)");
+        Debug.LogWarning("[MainMenuUI] SceneManager hook failed after retries.");
     }
 
     private bool TryHookSceneEvents()
@@ -486,10 +465,7 @@ public class MainMenuUI : MonoBehaviour
 
         var sm = networkManager.SceneManager;
         if (sm == null)
-        {
-            Debug.LogWarning("[MainMenuUI] SceneManager null (might not be initialized yet).");
             return false;
-        }
 
         sm.OnLoadEventCompleted -= OnNetcodeSceneLoadCompleted;
         sm.OnLoadEventCompleted += OnNetcodeSceneLoadCompleted;
@@ -497,7 +473,6 @@ public class MainMenuUI : MonoBehaviour
         sm.OnSceneEvent += OnNetcodeSceneEvent;
 
         sceneEventsHooked = true;
-        Debug.Log("[MainMenuUI] SceneManager ready, hooked OnLoadEventCompleted.");
         return true;
     }
 
@@ -525,78 +500,47 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnNetcodeSceneLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        Debug.Log($"[MainMenuUI] Netcode scene load completed: {sceneName} mode={mode} completed={clientsCompleted?.Count ?? 0} timedOut={clientsTimedOut?.Count ?? 0}");
-        SetStatus($"Loaded: {sceneName}");
+        SetStatus("");
 
         var loading = LoadingScreenManager.Resolve();
         if (loading != null)
             loading.HideLoadingScreen();
     }
 
-    // ---- Netcode callbacks ----
-
     private void OnServerStarted()
     {
-        Debug.Log("[MainMenuUI] Server started");
-        SetStatus("Server started");
+        SetStatus("Lobi hazır.");
     }
 
     private void OnClientConnected(ulong clientId)
     {
-        Debug.Log("[MainMenuUI] Connected. clientId=" + clientId);
-        SetStatus("Connected. clientId=" + clientId);
-
-        // Exit "connecting" mode if client connected
         if (!networkManager.IsServer)
             isTryingToConnectClient = false;
+
+        SetStatus("Bağlandı.");
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
-        Debug.LogWarning("[MainMenuUI] Disconnected. clientId=" + clientId);
-        SetStatus("Disconnected. clientId=" + clientId);
-
         if (!networkManager.IsServer)
             isTryingToConnectClient = false;
+
+        SetStatus("Bağlantı kesildi.");
     }
 
     private void OnTransportFailure()
     {
-        Debug.LogError("[MainMenuUI] Transport failure (Firewall/UDP/VPN adapter/bind?)");
-        SetStatus("Transport failure");
+        Debug.LogError("[MainMenuUI] Transport failure (firewall / UDP / VPN?).");
+        SetStatus("Bağlantı hatası.");
         isTryingToConnectClient = false;
-    }
-
-    // ---- Client debug ticker ----
-
-    private void TickClientDebug()
-    {
-        if (networkManager == null) return;
-        if (!isTryingToConnectClient) return;
-        if (networkManager.IsServer) return; // not for host, client debug only
-
-        float elapsed = Time.realtimeSinceStartup - connectStartTime;
-
-        Debug.Log(
-            $"[ClientDebug t+{elapsed:0.0}s] " +
-            $"IsClient={networkManager.IsClient} " +
-            $"IsConnectedClient={networkManager.IsConnectedClient} " +
-            $"ShutdownInProgress={networkManager.ShutdownInProgress} " +
-            $"LocalClientId={networkManager.LocalClientId} " +
-            $"ActiveScene={SceneManager.GetActiveScene().name}"
-        );
     }
 
     private void LogClientStillConnecting()
     {
-        if (networkManager == null) return;
-        if (networkManager.IsServer) return;
+        if (networkManager == null || networkManager.IsServer) return;
 
         if (isTryingToConnectClient && !networkManager.IsConnectedClient)
-        {
-            Debug.LogWarning("[MainMenuUI] Client still not connected after 10s. This is usually UDP/firewall/bind/VPN rule issue.");
-            SetStatus("Still connecting... (check UDP 7777 firewall)");
-        }
+            SetStatus("Hâlâ bağlanıyor… (UDP 7777 / firewall kontrol et)");
     }
 
     // ---- Misc ----

@@ -66,7 +66,6 @@ public class LoadingScreenManager : MonoBehaviour
     private Image _posterImage;
     private RenderTexture _videoRt;
     private bool _videoHooks;
-    private bool _videoWarmStarted;
 
     public static LoadingScreenManager Resolve()
     {
@@ -410,7 +409,6 @@ public class LoadingScreenManager : MonoBehaviour
         if (_videoPlayer == null || loadingVideoClip == null) return;
         if (_videoPlayer.isPrepared || _videoPlayer.isPlaying) return;
 
-        _videoWarmStarted = true;
         _videoPlayer.Prepare();
     }
 
@@ -420,7 +418,6 @@ public class LoadingScreenManager : MonoBehaviour
         if (_videoPlayer.isPlaying)
             _videoPlayer.Pause();
         _videoPlayer.time = 0;
-        _videoWarmStarted = false;
     }
 
     private void OnVideoPrepared(VideoPlayer source)

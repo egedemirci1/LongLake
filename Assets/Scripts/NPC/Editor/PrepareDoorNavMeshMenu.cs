@@ -20,12 +20,12 @@ public static class PrepareDoorNavMeshMenu
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
         try
         {
-            int doors = PrepareDoorsInScene(scene, clearNavStatic: true, addObstacles: true);
+            int doors = PrepareDoorsInScene(scene, addObstacles: true);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             EditorUtility.DisplayDialog(
                 "Hazır",
-                $"{doors} kapıya Obstacle eklendi / Navigation Static temizlendi.\n\n" +
+                $"{doors} kapıya NavMeshObstacle eklendi.\n\n" +
                 "Şimdi: LongLake → Bake CrashSite NavMesh (Doors Open)",
                 "Tamam");
         }
@@ -43,7 +43,7 @@ public static class PrepareDoorNavMeshMenu
 
         try
         {
-            PrepareDoorsInScene(scene, clearNavStatic: true, addObstacles: true);
+            PrepareDoorsInScene(scene, addObstacles: true);
 
             // Bake sırasında kapıları açık konuma al — eşikte walkable koridor oluşsun.
             foreach (var root in scene.GetRootGameObjects())
@@ -117,7 +117,7 @@ public static class PrepareDoorNavMeshMenu
         }
     }
 
-    private static int PrepareDoorsInScene(UnityEngine.SceneManagement.Scene scene, bool clearNavStatic, bool addObstacles)
+    private static int PrepareDoorsInScene(UnityEngine.SceneManagement.Scene scene, bool addObstacles)
     {
         int doors = 0;
         foreach (var root in scene.GetRootGameObjects())
@@ -126,16 +126,8 @@ public static class PrepareDoorNavMeshMenu
             {
                 doors++;
 
-                if (clearNavStatic)
-                {
-                    var flags = GameObjectUtility.GetStaticEditorFlags(door.gameObject);
-                    var withoutNav = flags & ~StaticEditorFlags.NavigationStatic;
-                    if (withoutNav != flags)
-                    {
-                        GameObjectUtility.SetStaticEditorFlags(door.gameObject, withoutNav);
-                        EditorUtility.SetDirty(door.gameObject);
-                    }
-                }
+                // NavigationStatic artık deprecated; bake NavMeshSurface + CollectSources ile yapılır.
+                // Kapılar bake'e Obstacle / açık rotasyon ile dahil edilir — static flag gerekmez.
 
                 if (!addObstacles) continue;
 

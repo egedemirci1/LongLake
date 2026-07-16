@@ -260,8 +260,6 @@ public class LobbyManager : NetworkBehaviour
             return;
         }
 
-        Debug.Log("[LobbyManager] Host starting gameplay scene.");
-
         // NetworkVariable: Rpc kaçsa bile client yükleme ekranını alır.
         gameplayLoading.Value = true;
         BeginGameplayLoadingRpc();
