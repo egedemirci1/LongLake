@@ -31,4 +31,6 @@ public class DialogueSequence : ScriptableObject
     public DialogueNode[] nodes = Array.Empty<DialogueNode>();
     [Tooltip("Optional quest id to complete when this sequence ends normally.")]
     public string completeQuestId;
+    [Tooltip("Optional quest id to start when this sequence ends normally.")]
+    public string startQuestId;
 }

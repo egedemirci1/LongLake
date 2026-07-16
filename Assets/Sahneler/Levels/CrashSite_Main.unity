@@ -34527,6 +34527,8 @@ MonoBehaviour:
   availableQuests:
   - {fileID: 11400000, guid: caa094cf01ba796429befc50bd0f63d6, type: 2}
   - {fileID: 11400000, guid: 86cdef7e150945bd9b0ee0217c8ba92b, type: 2}
+  - {fileID: 11400000, guid: 3a7f1c9e2b4d5086a1e9f0c3d5b67891, type: 2}
+  - {fileID: 11400000, guid: 4b8e2d0f3c5a6197b2f0a1d4e6c78902, type: 2}
   openingQuestIndex: 0
   crashBagItemId: backpack
   bagsRequired: 2

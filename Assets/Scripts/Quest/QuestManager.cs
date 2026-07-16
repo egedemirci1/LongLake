@@ -222,6 +222,15 @@ public class QuestManager : NetworkBehaviour
 
     private void CompleteOpeningQuestOnServer()
     {
+        CompleteCurrentQuestOnServer(chainToNext: true);
+    }
+
+    /// <summary>
+    /// Aktif görevi tamamlar. chainToNext=true ise listedeki bir sonraki göreve geçer
+    /// (çanta → Yardım Ara). Kapı çalma gibi yerlerde false: diyalog startQuestId açar.
+    /// </summary>
+    private void CompleteCurrentQuestOnServer(bool chainToNext)
+    {
         if (!IsServer) return;
         if (currentQuestIndex.Value < 0) return;
 
@@ -229,19 +238,59 @@ public class QuestManager : NetworkBehaviour
         if (!completedQuestIndices.Contains(completedIndex))
             completedQuestIndices.Add(completedIndex);
 
-        // Chain to next shared quest (e.g. Yardım Ara) if one exists
-        int nextIndex = completedIndex + 1;
-        if (availableQuests != null &&
-            nextIndex < availableQuests.Length &&
-            availableQuests[nextIndex] != null &&
-            !completedQuestIndices.Contains(nextIndex))
+        if (chainToNext)
         {
-            currentQuestIndex.Value = nextIndex;
+            int nextIndex = completedIndex + 1;
+            if (availableQuests != null &&
+                nextIndex < availableQuests.Length &&
+                availableQuests[nextIndex] != null &&
+                !completedQuestIndices.Contains(nextIndex))
+            {
+                currentQuestIndex.Value = nextIndex;
+                return;
+            }
         }
-        else
+
+        currentQuestIndex.Value = -1;
+    }
+
+    /// <summary>Server-only. Completes the active quest if it matches questId.</summary>
+    public void CompleteCurrentQuestIfIdServer(string questId, bool chainToNext = false)
+    {
+        if (!IsServer || !IsSpawned) return;
+        if (!IsCurrentQuestId(questId)) return;
+        CompleteCurrentQuestOnServer(chainToNext);
+    }
+
+    /// <summary>Server-only. Starts quest by id (shared for all players).</summary>
+    public void StartQuestByIdServer(string questId)
+    {
+        if (!IsServer || !IsSpawned) return;
+        if (string.IsNullOrEmpty(questId) || availableQuests == null) return;
+
+        int index = -1;
+        for (int i = 0; i < availableQuests.Length; i++)
         {
-            currentQuestIndex.Value = -1;
+            if (availableQuests[i] != null && availableQuests[i].questID == questId)
+            {
+                index = i;
+                break;
+            }
         }
+
+        if (index < 0)
+        {
+            Debug.LogWarning($"[QuestManager] StartQuestById: unknown '{questId}'.");
+            return;
+        }
+
+        if (completedQuestIndices.Contains(index))
+            return;
+
+        if (currentQuestIndex.Value == index)
+            return;
+
+        currentQuestIndex.Value = index;
     }
 
     // ---- Shared quest API ----
@@ -311,14 +360,6 @@ public class QuestManager : NetworkBehaviour
         if (string.IsNullOrEmpty(questId)) return false;
         QuestData quest = GetCurrentQuest();
         return quest != null && quest.questID == questId;
-    }
-
-    /// <summary>Server-only. Completes the active quest if it matches questId.</summary>
-    public void CompleteCurrentQuestIfIdServer(string questId)
-    {
-        if (!IsServer || !IsSpawned) return;
-        if (!IsCurrentQuestId(questId)) return;
-        CompleteOpeningQuestOnServer();
     }
 
     // ---- UI ----

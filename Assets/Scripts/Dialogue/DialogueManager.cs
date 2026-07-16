@@ -448,12 +448,19 @@ public class DialogueManager : NetworkBehaviour
     private void CloseNormally()
     {
         string endedSequenceId = _activeSequence != null ? _activeSequence.sequenceId : sequenceIdNv.Value.ToString();
-        string questId = _activeSequence != null ? _activeSequence.completeQuestId : null;
-        if (!string.IsNullOrEmpty(questId) && QuestManager.Instance != null)
-            QuestManager.Instance.CompleteCurrentQuestIfIdServer(questId);
+        string completeQuestId = _activeSequence != null ? _activeSequence.completeQuestId : null;
+        string startQuestId = _activeSequence != null ? _activeSequence.startQuestId : null;
+
+        if (QuestManager.Instance != null)
+        {
+            if (!string.IsNullOrEmpty(completeQuestId))
+                QuestManager.Instance.CompleteCurrentQuestIfIdServer(completeQuestId, chainToNext: false);
+
+            if (!string.IsNullOrEmpty(startQuestId))
+                QuestManager.Instance.StartQuestByIdServer(startQuestId);
+        }
 
         ClearSessionState();
-        Debug.Log("[DialogueManager] Dialogue ended normally.");
         OnDialogueEnded?.Invoke(endedSequenceId);
     }
 

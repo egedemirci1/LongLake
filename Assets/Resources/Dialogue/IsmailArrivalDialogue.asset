@@ -32,4 +32,5 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     choices: []
     nextNodeId: 
-  completeQuestId: 
+  completeQuestId: quest_003
+  startQuestId: quest_004
