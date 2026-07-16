@@ -290,8 +290,8 @@ MonoBehaviour:
   vcam: {fileID: 1560541428597581281}
   cameraRoot: {fileID: 4135013735270702863}
   gameplaySceneName: CrashSite_Main
-  ahuSpawnPosition: {x: 1755.412, y: 110, z: 528}
-  yamanSpawnPosition: {x: 1753.697, y: 110, z: 523}
+  ahuSpawnPosition: {x: 1755.412, y: 56, z: 528}
+  yamanSpawnPosition: {x: 1753.697, y: 56, z: 523}
 --- !u!114 &2050461967792612107
 MonoBehaviour:
   m_ObjectHideFlags: 0

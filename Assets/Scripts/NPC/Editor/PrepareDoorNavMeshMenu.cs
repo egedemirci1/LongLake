@@ -104,6 +104,7 @@ public static class PrepareDoorNavMeshMenu
         {
             PrepareDoorsInScene(scene, addObstacles: true);
             StripBrokenDoorGroupMeshColliders(scene);
+            int skyBlockers = StripSkyNavMeshBlockers(scene);
             int thresholds = EnsureDoorThresholds(scene);
 
             foreach (var root in scene.GetRootGameObjects())
@@ -185,9 +186,9 @@ public static class PrepareDoorNavMeshMenu
             EditorUtility.DisplayDialog(
                 "NavMesh Bake tamam",
                 $"{thresholds} kapı eşiği güncellendi.\n" +
+                $"{skyBlockers} gökyüzü NavMesh blocker silindi.\n" +
                 "Bake: eşikte mavi koridor.\n" +
-                "Play: kapı açıkken NavMeshLink köprüsü de aktif.\n\n" +
-                "Eşik hâlâ boşsa Scene'de DoorThreshold'un yatay plaka olduğunu kontrol et.",
+                "Play: kapı açıkken NavMeshLink köprüsü de aktif.",
                 "Tamam");
         }
         finally
@@ -215,6 +216,27 @@ public static class PrepareDoorNavMeshMenu
         StripBrokenDoorGroupMeshColliders(scene);
         EnsureDoorThresholds(scene);
         EditorSceneManager.SaveScene(scene);
+    }
+
+    [MenuItem("LongLake/Remove Sky NavMesh Blockers (No Bake)")]
+    public static void RemoveSkyNavBlockersOnly()
+    {
+        var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
+        try
+        {
+            int n = StripSkyNavMeshBlockers(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            EditorUtility.DisplayDialog(
+                "Gökyüzü blocker'lar",
+                $"{n} collider silindi (havada dev düzlem).\n\n" +
+                "Sonra: LongLake → Bake CrashSite NavMesh (Doors Open)",
+                "Tamam");
+        }
+        finally
+        {
+            EditorSceneManager.CloseScene(scene, true);
+        }
     }
 
     [MenuItem("LongLake/Add Walkable Proxies Under Roads (No Bake)")]
@@ -602,6 +624,118 @@ public static class PrepareDoorNavMeshMenu
         }
 
         EditorUtility.SetDirty(link);
+    }
+
+    /// <summary>
+    /// Havada kalan dev düz collider'lar (Mesh=None, NavMeshBake proxy vb.) NavMesh'i gökyüzüne taşır.
+    /// </summary>
+    private static int StripSkyNavMeshBlockers(UnityEngine.SceneManagement.Scene scene)
+    {
+        int removed = 0;
+        var toRemove = new List<Collider>();
+
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            foreach (var col in root.GetComponentsInChildren<Collider>(true))
+            {
+                if (col == null || col.isTrigger) continue;
+                if (ShouldStripSkyBlocker(col, out _))
+                    toRemove.Add(col);
+            }
+        }
+
+        foreach (var col in toRemove)
+        {
+            if (col == null) continue;
+            Debug.LogWarning($"[NavMesh] Sky blocker removed: {GetColliderPath(col)}", col.gameObject);
+            Undo.DestroyObjectImmediate(col);
+            removed++;
+        }
+
+        return removed;
+    }
+
+    private static bool ShouldStripSkyBlocker(Collider col, out string reason)
+    {
+        reason = string.Empty;
+        Bounds b = col.bounds;
+
+        if (col is MeshCollider meshCol && meshCol.sharedMesh == null)
+        {
+            reason = "MeshCollider (Mesh=None)";
+            return true;
+        }
+
+        if (b.size.y > 6f)
+            return false;
+
+        bool wide = b.size.x >= 20f || b.size.z >= 20f;
+        if (!wide)
+            return false;
+
+        float terrainY = SampleTerrainHeightEditor(b.center.x, b.center.z);
+        if (float.IsNegativeInfinity(terrainY))
+            return false;
+
+        float above = b.center.y - terrainY;
+        if (above <= 12f)
+            return false;
+
+        string n = col.gameObject.name ?? string.Empty;
+        if (n.StartsWith("NavMeshBake", System.StringComparison.Ordinal))
+        {
+            reason = $"NavMeshBake proxy {above:F0}m above terrain";
+            return true;
+        }
+
+        if (above > 18f)
+        {
+            reason = $"flat collider {above:F0}m above terrain (size {b.size})";
+            return true;
+        }
+
+        return false;
+    }
+
+    private static float SampleTerrainHeightEditor(float worldX, float worldZ)
+    {
+        float best = float.NegativeInfinity;
+        var terrains = Terrain.activeTerrains;
+        if (terrains == null || terrains.Length == 0)
+            return best;
+
+        var probe = new Vector3(worldX, 0f, worldZ);
+        foreach (var terrain in terrains)
+        {
+            if (terrain == null || terrain.terrainData == null) continue;
+
+            Vector3 tp = terrain.transform.position;
+            Vector3 size = terrain.terrainData.size;
+            float lx = worldX - tp.x;
+            float lz = worldZ - tp.z;
+            if (lx < 0f || lz < 0f || lx > size.x || lz > size.z)
+                continue;
+
+            float h = terrain.SampleHeight(probe) + tp.y;
+            if (h > best)
+                best = h;
+        }
+
+        return best;
+    }
+
+    private static string GetColliderPath(Collider col)
+    {
+        if (col == null) return "?";
+        var parts = new List<string>();
+        Transform t = col.transform;
+        while (t != null)
+        {
+            parts.Add(t.name);
+            t = t.parent;
+        }
+        parts.Reverse();
+        return string.Join("/", parts);
     }
 
     private static NavMeshSurface EnsureNavMeshSurface(UnityEngine.SceneManagement.Scene scene)
