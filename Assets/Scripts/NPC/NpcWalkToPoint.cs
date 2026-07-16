@@ -21,8 +21,8 @@ public class NpcWalkToPoint : NetworkBehaviour
     [SerializeField] private Vector3 yamanSpawnFallback = new Vector3(1753.697f, 110f, 523f);
 
     [Header("Movement")]
-    [SerializeField] private float walkSpeed = 1.8f;
-    [SerializeField] private float runSpeed = 4.5f;
+    [SerializeField] private float walkSpeed = 5f;
+    [SerializeField] private float runSpeed = 6.5f;
     [Tooltip("Yürüyüş başladıktan bu kadar saniye sonra koşmaya geçer (bitişe yakın değilse).")]
     [SerializeField] private float walkBeforeRunSeconds = 2.2f;
     [Tooltip("Bitişe bu mesafeden yakınken tekrar yürüyüşe döner.")]
@@ -36,6 +36,14 @@ public class NpcWalkToPoint : NetworkBehaviour
     [Tooltip("İçerde mesh yoksa kapı eşiğine en fazla bu kadar yaklaşarak oturt.")]
     [SerializeField] private float maxDoorwaySnapDistance = 2.5f;
 
+    [Header("Run Stamina (no UI — behaviour only)")]
+    [SerializeField] private bool useRunStamina = true;
+    [SerializeField] private float maxRunStamina = 100f;
+    [Tooltip("Koşarken saniyede düşüş.")]
+    [SerializeField] private float runStaminaDrainPerSecond = 16f;
+    [Tooltip("Yürürken / dinlenirken saniyede doluş.")]
+    [SerializeField] private float runStaminaRegenPerSecond = 22f;
+
     [Header("After Arrival Talk")]
     [SerializeField] private bool enableTalkAfterArrival = true;
     [SerializeField] private float talkEnableDelaySeconds = 1.5f;
@@ -43,6 +51,10 @@ public class NpcWalkToPoint : NetworkBehaviour
     [SerializeField] private string talkPrompt = "Konuş";
     [SerializeField] private float talkNearbyRadius = 5f;
     [SerializeField] private int talkMinimumPlayersRequired = 2;
+
+    [Header("After Car Dialogue → Safiye")]
+    [SerializeField] private bool walkToSafiyeAfterArrivalTalk = true;
+    [SerializeField] private Vector3 safiyeHouseDestination = new Vector3(1610.107f, 119.9632f, 643.2148f);
 
     [Header("Temporary Door Watch (remove when dialogue-driven)")]
     [SerializeField] private bool autoStartWhenKnockDoorOpens = true;
@@ -62,33 +74,56 @@ public class NpcWalkToPoint : NetworkBehaviour
         NetworkVariableWritePermission.Server
     );
 
+    private readonly NetworkVariable<bool> safiyeJourneyStarted = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server
+    );
+
     private Transform _npc;
     private NavMeshAgent _agent;
     private Animator _animator;
     private bool _journeyInitialized;
+    private bool _safiyeJourneyInitialized;
     private float _journeyElapsed;
     private bool _isRunning;
+    private float _runStamina;
+    private bool _runExhausted;
     private bool _talkEnableScheduled;
+    private bool _dialogueEndHooked;
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     public override void OnNetworkSpawn()
     {
+        // Eski sahne override'ları (1.8 / 4.5) — oyuncu yürüyüşü 5 ile hizala.
+        if (Mathf.Approximately(walkSpeed, 1.8f))
+            walkSpeed = 5f;
+        if (Mathf.Approximately(runSpeed, 4.5f))
+            runSpeed = 6.5f;
+
         ResolveNpc();
         ResolveWatchDoor();
         journeyStarted.OnValueChanged += OnJourneyStartedChanged;
         journeyArrived.OnValueChanged += OnJourneyArrivedChanged;
+        safiyeJourneyStarted.OnValueChanged += OnSafiyeJourneyStartedChanged;
+        TryHookDialogueEnd();
 
         if (journeyStarted.Value)
             StartCoroutine(BeginJourneyLocalRoutine());
 
-        if (journeyArrived.Value)
+        if (journeyArrived.Value && !safiyeJourneyStarted.Value)
             ScheduleTalkEnable();
+
+        if (safiyeJourneyStarted.Value)
+            StartCoroutine(BeginSafiyeJourneyLocalRoutine());
     }
 
     public override void OnNetworkDespawn()
     {
         journeyStarted.OnValueChanged -= OnJourneyStartedChanged;
         journeyArrived.OnValueChanged -= OnJourneyArrivedChanged;
+        safiyeJourneyStarted.OnValueChanged -= OnSafiyeJourneyStartedChanged;
+        UnhookDialogueEnd();
     }
 
     private void Update()
@@ -96,11 +131,68 @@ public class NpcWalkToPoint : NetworkBehaviour
         if (IsServer && !journeyStarted.Value && autoStartWhenKnockDoorOpens)
             TryStartFromDoorWatch();
 
+        TryHookDialogueEnd();
         UpdateGait();
         UpdateAnimation();
+        TryTraverseDoorLink();
 
         if (IsServer)
             TryMarkArrivedOnServer();
+    }
+
+    private bool _traversingOffMeshLink;
+
+    /// <summary>
+    /// NavMeshLink geçişini düz yürüyüş gibi yap — Unity default'u ince çizgi/teleport hissi verir.
+    /// </summary>
+    private void TryTraverseDoorLink()
+    {
+        if (_traversingOffMeshLink) return;
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh) return;
+        if (!_agent.isOnOffMeshLink) return;
+        StartCoroutine(TraverseDoorLinkRoutine());
+    }
+
+    private System.Collections.IEnumerator TraverseDoorLinkRoutine()
+    {
+        _traversingOffMeshLink = true;
+        OffMeshLinkData data = _agent.currentOffMeshLinkData;
+        Vector3 end = data.endPos;
+
+        _agent.updatePosition = false;
+        _agent.updateRotation = false;
+
+        float speed = _isRunning ? runSpeed : walkSpeed;
+        while (_agent != null && _agent.enabled && _agent.isOnOffMeshLink)
+        {
+            Vector3 pos = _agent.transform.position;
+            Vector3 next = Vector3.MoveTowards(pos, end, speed * Time.deltaTime);
+            _agent.transform.position = next;
+
+            Vector3 flat = end - pos;
+            flat.y = 0f;
+            if (flat.sqrMagnitude > 0.001f)
+                _agent.transform.rotation = Quaternion.Slerp(
+                    _agent.transform.rotation,
+                    Quaternion.LookRotation(flat.normalized),
+                    12f * Time.deltaTime);
+
+            if ((next - end).sqrMagnitude <= 0.01f)
+                break;
+
+            yield return null;
+        }
+
+        if (_agent != null)
+        {
+            if (_agent.isOnOffMeshLink)
+                _agent.CompleteOffMeshLink();
+            _agent.Warp(_agent.transform.position);
+            _agent.updatePosition = true;
+            _agent.updateRotation = true;
+        }
+
+        _traversingOffMeshLink = false;
     }
 
     /// <summary>
@@ -168,7 +260,6 @@ public class NpcWalkToPoint : NetworkBehaviour
     {
         if (!IsServer || journeyStarted.Value) return;
         journeyStarted.Value = true;
-        Debug.Log($"<b>[NPC]</b> {npcObjectName} yürüyüşe başlıyor.");
     }
 
     private void OnJourneyStartedChanged(bool previous, bool current)
@@ -205,12 +296,19 @@ public class NpcWalkToPoint : NetworkBehaviour
         _agent.angularSpeed = 360f;
         _agent.stoppingDistance = stoppingDistance;
         _agent.autoBraking = true;
+        _agent.autoTraverseOffMeshLink = false; // kapı linkini elle yürüterek geç (tek çizgi teleport olmasın)
         _agent.radius = 0.35f;
         _agent.height = 1.8f;
         _agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
 
         _journeyElapsed = 0f;
         _isRunning = false;
+        ResetRunStamina();
+
+        // Kapı link'ini tazeleyip PathComplete olana kadar dene (Partial = eşikte takılır).
+        RefreshOpenQuestDoorLinks();
+        for (int i = 0; i < 10; i++)
+            yield return null;
 
         Vector3 target = ResolveDestination();
         if (!TrySampleNear(target, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit))
@@ -232,36 +330,47 @@ public class NpcWalkToPoint : NetworkBehaviour
         if (!_agent.isOnNavMesh)
             _agent.Warp(_npc.position);
 
-        // Carve/path henüz hazır değilse birkaç kez dene.
         bool pathOk = false;
-        for (int attempt = 0; attempt < 10; attempt++)
+        for (int attempt = 0; attempt < 20; attempt++)
         {
+            if (attempt == 5 || attempt == 12)
+                RefreshOpenQuestDoorLinks();
+
             if (_agent.isOnNavMesh && _agent.SetDestination(targetHit.position))
             {
                 float wait = 0f;
-                while (_agent.pathPending && wait < 1f)
+                while (_agent.pathPending && wait < 1.25f)
                 {
                     wait += Time.deltaTime;
                     yield return null;
                 }
 
-                if (_agent.hasPath && _agent.pathStatus != NavMeshPathStatus.PathInvalid)
+                if (_agent.hasPath && _agent.pathStatus == NavMeshPathStatus.PathComplete)
                 {
                     pathOk = true;
                     break;
                 }
             }
 
-            yield return new WaitForSeconds(0.15f);
+            yield return new WaitForSeconds(0.2f);
         }
 
         if (!pathOk)
         {
             Debug.LogError(
-                $"[NpcWalkToPoint] {_npc.name} için geçerli rota yok. " +
-                "NavMesh'i kapı eşiği açık/walkable olacak şekilde yeniden bake et; " +
-                "kapı objesinde Navigation Static kapalı olmalı.");
+                $"[NpcWalkToPoint] {_npc.name} için geçerli rota yok (kapı NavMeshLink / eşik). " +
+                "Kapı açıkken Door_Group NavMeshLink uçlarının iki mavi adaya oturduğunu kontrol et.");
             _agent.enabled = false;
+        }
+    }
+
+    private static void RefreshOpenQuestDoorLinks()
+    {
+        foreach (var door in FindObjectsByType<DoorController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (door == null) continue;
+            if (!door.IsNavMeshPassageOpen) continue;
+            door.RefreshDoorwayNavMeshLink();
         }
     }
 
@@ -346,29 +455,90 @@ public class NpcWalkToPoint : NetworkBehaviour
 
     private void UpdateGait()
     {
-        if (!_journeyInitialized || _agent == null || !_agent.enabled || !_agent.isOnNavMesh)
+        if (_traversingOffMeshLink) return;
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh || _agent.isStopped)
+            return;
+
+        // Araba bacağı (varıştan önce) veya Safiye bacağı.
+        bool onCarLeg = _journeyInitialized && !journeyArrived.Value;
+        bool onSafiyeLeg = _safiyeJourneyInitialized && safiyeJourneyStarted.Value;
+        if (!onCarLeg && !onSafiyeLeg)
             return;
 
         _journeyElapsed += Time.deltaTime;
 
-        // Path henüz hazır değilse yürüyüşte kal
-        if (_agent.pathPending || !_agent.hasPath)
+        if (_agent.pathPending)
         {
             ApplyGait(running: false);
             return;
         }
 
         float remaining = _agent.remainingDistance;
-        if (float.IsInfinity(remaining))
+        // Unity bazen hasPath iken bile Infinity döner — o zaman düz mesafe kullan.
+        if (!_agent.hasPath || float.IsInfinity(remaining) || float.IsNaN(remaining))
         {
-            ApplyGait(running: false);
+            if (_agent.hasPath)
+                remaining = Vector3.Distance(_agent.transform.position, _agent.destination);
+            else
+            {
+                ApplyGait(running: false);
+                return;
+            }
+        }
+
+        bool nearEnd = remaining <= Mathf.Max(approachWalkDistance, stoppingDistance + 0.5f);
+        bool wantRun = !nearEnd && _journeyElapsed >= walkBeforeRunSeconds;
+        bool canRun = wantRun && (!useRunStamina || !_runExhausted);
+        ApplyGait(canRun);
+        TickRunStamina(Time.deltaTime);
+    }
+
+    private void ResetRunStamina()
+    {
+        _runStamina = maxRunStamina;
+        _runExhausted = false;
+    }
+
+    private void TickRunStamina(float dt)
+    {
+        if (!useRunStamina || dt <= 0f) return;
+
+        if (_isRunning)
+        {
+            _runStamina -= runStaminaDrainPerSecond * dt;
+            if (_runStamina <= 0f)
+            {
+                _runStamina = 0f;
+                _runExhausted = true;
+                ApplyGait(running: false);
+            }
             return;
         }
 
-        // Bitişe yaklaşınca yürüyüş; ortada süre dolunca koşu
-        bool nearEnd = remaining <= Mathf.Max(approachWalkDistance, stoppingDistance + 0.5f);
-        bool wantRun = !nearEnd && _journeyElapsed >= walkBeforeRunSeconds;
-        ApplyGait(wantRun);
+        // Yürüyüş / duruşta doldur; full olunca tekrar koşabilir.
+        _runStamina += runStaminaRegenPerSecond * dt;
+        if (_runStamina >= maxRunStamina)
+        {
+            _runStamina = maxRunStamina;
+            _runExhausted = false;
+        }
+    }
+
+    private void UpdateAnimation()
+    {
+        if (_agent == null || _animator == null)
+            return;
+
+        bool onCarLeg = _journeyInitialized && !journeyArrived.Value;
+        bool onSafiyeLeg = _safiyeJourneyInitialized && safiyeJourneyStarted.Value;
+        if (!onCarLeg && !onSafiyeLeg)
+            return;
+
+        float mult = _isRunning ? runAnimatorSpeedMultiplier : walkAnimatorSpeedMultiplier;
+        float animationSpeed = _agent.enabled && _agent.isOnNavMesh && !_agent.isStopped
+            ? _agent.velocity.magnitude * mult
+            : 0f;
+        _animator.SetFloat(SpeedHash, animationSpeed, 0.12f, Time.deltaTime);
     }
 
     private void ApplyGait(bool running)
@@ -382,19 +552,9 @@ public class NpcWalkToPoint : NetworkBehaviour
         _isRunning = running;
         _agent.speed = running ? runSpeed : walkSpeed;
         _agent.acceleration = running ? 10f : 5f;
-        _agent.autoBraking = !running || _agent.remainingDistance < approachWalkDistance;
-    }
-
-    private void UpdateAnimation()
-    {
-        if (!_journeyInitialized || _agent == null || _animator == null)
-            return;
-
-        float mult = _isRunning ? runAnimatorSpeedMultiplier : walkAnimatorSpeedMultiplier;
-        float animationSpeed = _agent.enabled && _agent.isOnNavMesh
-            ? _agent.velocity.magnitude * mult
-            : 0f;
-        _animator.SetFloat(SpeedHash, animationSpeed, 0.12f, Time.deltaTime);
+        float rem = _agent.remainingDistance;
+        bool near = !float.IsInfinity(rem) && rem < approachWalkDistance;
+        _agent.autoBraking = !running || near;
     }
 
     private void TryMarkArrivedOnServer()
@@ -422,7 +582,7 @@ public class NpcWalkToPoint : NetworkBehaviour
 
     private void ScheduleTalkEnable()
     {
-        if (!enableTalkAfterArrival || _talkEnableScheduled)
+        if (!enableTalkAfterArrival || _talkEnableScheduled || safiyeJourneyStarted.Value)
             return;
         _talkEnableScheduled = true;
         StartCoroutine(EnableTalkAfterDelayRoutine());
@@ -431,6 +591,9 @@ public class NpcWalkToPoint : NetworkBehaviour
     private System.Collections.IEnumerator EnableTalkAfterDelayRoutine()
     {
         yield return new WaitForSeconds(talkEnableDelaySeconds);
+
+        if (safiyeJourneyStarted.Value)
+            yield break;
 
         if (_npc == null)
             ResolveNpc();
@@ -466,7 +629,7 @@ public class NpcWalkToPoint : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void StartArrivalDialogueServerRpc()
     {
-        if (!journeyArrived.Value) return;
+        if (!journeyArrived.Value || safiyeJourneyStarted.Value) return;
         if (DialogueManager.IsDialogueOpen) return;
         if (DialogueManager.Instance == null) return;
 
@@ -479,6 +642,120 @@ public class NpcWalkToPoint : NetworkBehaviour
             return;
 
         DialogueManager.Instance.TryStartDialogue(arrivalSequenceId);
+    }
+
+    private void TryHookDialogueEnd()
+    {
+        if (_dialogueEndHooked || DialogueManager.Instance == null) return;
+        DialogueManager.Instance.OnDialogueEnded += OnArrivalDialogueEnded;
+        _dialogueEndHooked = true;
+    }
+
+    private void UnhookDialogueEnd()
+    {
+        if (!_dialogueEndHooked || DialogueManager.Instance == null) return;
+        DialogueManager.Instance.OnDialogueEnded -= OnArrivalDialogueEnded;
+        _dialogueEndHooked = false;
+    }
+
+    private void OnArrivalDialogueEnded(string endedSequenceId)
+    {
+        if (!walkToSafiyeAfterArrivalTalk) return;
+        if (endedSequenceId != arrivalSequenceId) return;
+        StartSafiyeJourney();
+    }
+
+    /// <summary>Araba diyaloğu bitince Safiye evine yürüyüş.</summary>
+    public void StartSafiyeJourney()
+    {
+        if (!IsSpawned) return;
+        if (IsServer)
+            TryStartSafiyeJourneyOnServer();
+        else
+            StartSafiyeJourneyServerRpc();
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    private void StartSafiyeJourneyServerRpc()
+    {
+        TryStartSafiyeJourneyOnServer();
+    }
+
+    private void TryStartSafiyeJourneyOnServer()
+    {
+        if (!IsServer || safiyeJourneyStarted.Value) return;
+        if (!journeyArrived.Value) return;
+        safiyeJourneyStarted.Value = true;
+    }
+
+    private void OnSafiyeJourneyStartedChanged(bool previous, bool current)
+    {
+        if (current && !previous)
+            StartCoroutine(BeginSafiyeJourneyLocalRoutine());
+    }
+
+    private System.Collections.IEnumerator BeginSafiyeJourneyLocalRoutine()
+    {
+        if (_safiyeJourneyInitialized) yield break;
+        _safiyeJourneyInitialized = true;
+
+        if (_npc == null)
+            ResolveNpc();
+        if (_npc == null) yield break;
+
+        var talk = _npc.GetComponent<NpcDialogueTalk>();
+        if (talk != null)
+            talk.SetInteractEnabled(false);
+
+        // İlk yolculuk agent'ı yoksa kur.
+        if (!_journeyInitialized)
+            yield return BeginJourneyLocalRoutine();
+
+        if (_agent == null)
+            yield break;
+
+        _journeyElapsed = 0f;
+        _isRunning = false;
+        ResetRunStamina();
+        ApplyGait(running: false);
+
+        _agent.isStopped = false;
+        _agent.enabled = true;
+
+        // Önce dar, olmazsa geniş yarıçap — Safiye evi önü yeni bake edilene kadar yakın mesh'e snap.
+        if (!TrySampleNear(safiyeHouseDestination, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit) &&
+            !TrySampleNear(safiyeHouseDestination, 40f, float.MaxValue, out targetHit))
+        {
+            Debug.LogError(
+                $"[NpcWalkToPoint] Safiye hedefi NavMesh'te değil: {safiyeHouseDestination}. " +
+                "LongLake → Bake CrashSite NavMesh (Doors Open) çalıştır (yol proxy'leri ekler).");
+            yield break;
+        }
+
+        bool pathOk = false;
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            if (_agent.isOnNavMesh && _agent.SetDestination(targetHit.position))
+            {
+                float wait = 0f;
+                while (_agent.pathPending && wait < 1f)
+                {
+                    wait += Time.deltaTime;
+                    yield return null;
+                }
+
+                if (_agent.hasPath && _agent.pathStatus != NavMeshPathStatus.PathInvalid)
+                {
+                    pathOk = true;
+                    break;
+                }
+            }
+
+            yield return new WaitForSeconds(0.15f);
+        }
+
+        if (!pathOk)
+            Debug.LogError("[NpcWalkToPoint] Safiye evine geçerli rota yok.");
     }
 
     private int GetTalkMinimumPlayersRequired()

@@ -45,7 +45,6 @@ public class KnockDoorDialogueTrigger : NetworkBehaviour
 
         dialogueStarted.Value = true;
         DialogueManager.Instance.TryStartDialogue(sequenceId);
-        Debug.Log($"<b>[KAPI→DİYALOG]</b> Kapı açıldı, '{sequenceId}' başlıyor.");
     }
 
     private static bool IsAnyQuestKnockDoorOpen()
@@ -84,7 +83,6 @@ public class KnockDoorDialogueTrigger : NetworkBehaviour
         }
 
         walkOnDialogueEnd.StartJourney();
-        Debug.Log("<b>[DİYALOG→YÜRÜYÜŞ]</b> Diyalog bitti; İsmail arabaya doğru yürüyor.");
     }
 
     private void ResolveWalk()

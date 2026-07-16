@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.AI;
+using Unity.AI.Navigation;
 
 public class DoorController : NetworkBehaviour, IInteractable
 {
@@ -36,6 +37,15 @@ public class DoorController : NetworkBehaviour, IInteractable
     [Tooltip("Kapalıyken geçidi keser, açılınca serbest bırakır. Bake'te kapı Navigation Static olmamalı.")]
     [SerializeField] private bool carveNavMeshWhenClosed = true;
     [SerializeField] private NavMeshObstacle navMeshObstacle;
+    [Tooltip("Eşikte bake deliği varsa NavMeshLink ile içeri-dışarı bağlar (tüm sahneyi yeniden bake etmez).")]
+    [SerializeField] private bool useDoorwayNavMeshLink = true;
+    [SerializeField] private NavMeshLink doorwayNavMeshLink;
+    [Tooltip("Door_Group local Start — Ismail kapısı için Y üzerinden geçiş.")]
+    [SerializeField] private Vector3 doorwayLinkStartPoint = new Vector3(0f, 0.61f, 0f);
+    [Tooltip("Door_Group local End.")]
+    [SerializeField] private Vector3 doorwayLinkEndPoint = new Vector3(0f, -0.59f, 0f);
+    [Tooltip("Link giriş genişliği — düşükse tek çizgi gibi geçer.")]
+    [SerializeField] private float doorwayLinkWidth = 1.6f;
 
     [Header("Co-op Proximity")]
     [Tooltip("Co-op'ta tüm oyuncular kapıya yakın olmalı. Solo'da otomatik sadece 1 kişi yeter.")]
@@ -92,6 +102,7 @@ public class DoorController : NetworkBehaviour, IInteractable
         IsOpen.OnValueChanged += OnIsOpenChanged;
 
         EnsureNavMeshObstacle();
+        EnsureDoorwayNavMeshLink();
         ApplyNavMeshCarveState();
 
         _currentLocalZ = transform.localEulerAngles.z;
@@ -130,12 +141,26 @@ public class DoorController : NetworkBehaviour, IInteractable
         if (!knockOnlyForQuest) return;
         _targetLocalZ = current ? knockOpenZRotation : closeRotation;
         ApplyNavMeshCarveState();
+        if (current)
+            StartCoroutine(RefreshLinkAfterOpenRoutine());
     }
 
     private void OnIsOpenChanged(bool previous, bool current)
     {
         if (knockOnlyForQuest) return;
         ApplyNavMeshCarveState();
+        if (current)
+            StartCoroutine(RefreshLinkAfterOpenRoutine());
+    }
+
+    private System.Collections.IEnumerator RefreshLinkAfterOpenRoutine()
+    {
+        // Obstacle kapanınca / carve güncellenince birkaç frame bekle, sonra link uçlarını oturt.
+        for (int i = 0; i < 6; i++)
+            yield return null;
+        RefreshDoorwayNavMeshLink();
+        yield return null;
+        RefreshDoorwayNavMeshLink();
     }
 
     private void Update()
@@ -176,41 +201,92 @@ public class DoorController : NetworkBehaviour, IInteractable
             navMeshObstacle = gameObject.AddComponent<NavMeshObstacle>();
 
         navMeshObstacle.shape = NavMeshObstacleShape.Box;
-        navMeshObstacle.carving = true;
         navMeshObstacle.carveOnlyStationary = false;
         navMeshObstacle.carvingMoveThreshold = 0.05f;
         navMeshObstacle.carvingTimeToStationary = 0.15f;
 
-        // Kapı mesh boyutuna göre carve kutusu — yoksa makul varsayılan.
-        if (TryGetComponent<Collider>(out var col))
-        {
-            Bounds b = col.bounds;
-            Vector3 localSize = transform.InverseTransformVector(b.size);
-            localSize = new Vector3(Mathf.Abs(localSize.x), Mathf.Abs(localSize.y), Mathf.Abs(localSize.z));
-            // Çok ince eksenleri agent'ın geçemeyeceği kadar kalınlaştır.
-            localSize.x = Mathf.Max(localSize.x, 0.25f);
-            localSize.y = Mathf.Max(localSize.y, 1.8f);
-            localSize.z = Mathf.Max(localSize.z, 0.25f);
-            navMeshObstacle.size = localSize;
-            navMeshObstacle.center = transform.InverseTransformPoint(b.center);
-        }
-        else
-        {
-            navMeshObstacle.size = new Vector3(1.1f, 2.2f, 0.35f);
-            navMeshObstacle.center = new Vector3(0f, 1.1f, 0f);
-        }
+        // Sadece ince Size yaz; Center'a dokunma (kapı hinge / mesh offset bozulmasın).
+        ApplyThinDoorObstacleSize(navMeshObstacle);
+    }
+
+    /// <summary>Tüm kapılar için ortak ince carve boyutu (Center korunur).</summary>
+    private static readonly Vector3 ThinDoorObstacleSize = new Vector3(0.01f, 0.001f, 0.03f);
+
+    public static void ApplyThinDoorObstacleSize(NavMeshObstacle obstacle)
+    {
+        if (obstacle == null) return;
+        obstacle.size = ThinDoorObstacleSize;
+    }
+
+    public static void ClampIfOversized(NavMeshObstacle obstacle)
+    {
+        ApplyThinDoorObstacleSize(obstacle);
     }
 
     private void ApplyNavMeshCarveState()
     {
-        if (!carveNavMeshWhenClosed) return;
-        EnsureNavMeshObstacle();
-        if (navMeshObstacle == null) return;
+        if (carveNavMeshWhenClosed)
+        {
+            EnsureNavMeshObstacle();
+            if (navMeshObstacle != null)
+            {
+                bool passageOpen = IsNavMeshPassageOpen;
+                navMeshObstacle.carving = !passageOpen;
+                navMeshObstacle.enabled = !passageOpen;
+            }
+        }
 
-        // Kapalıysa carve aktif (yol kesik); açıksa carve kapalı (bake'teki geçit kullanılır).
-        bool passageOpen = IsNavMeshPassageOpen;
-        navMeshObstacle.carving = !passageOpen;
-        navMeshObstacle.enabled = !passageOpen;
+        if (useDoorwayNavMeshLink)
+        {
+            EnsureDoorwayNavMeshLink();
+            if (doorwayNavMeshLink != null)
+                doorwayNavMeshLink.activated = IsNavMeshPassageOpen;
+        }
+    }
+
+    /// <summary>Kapı açılınca / yolculuk öncesi link uçlarını NavMesh adalarına oturt.</summary>
+    public void RefreshDoorwayNavMeshLink()
+    {
+        EnsureDoorwayNavMeshLink();
+        if (doorwayNavMeshLink != null)
+            doorwayNavMeshLink.activated = IsNavMeshPassageOpen;
+    }
+
+    /// <summary>
+    /// Link Door_Group üzerinde. Uçlar Inspector/kod local noktaları (varsayılan Y: 0.61 / -0.59).
+    /// </summary>
+    private void EnsureDoorwayNavMeshLink()
+    {
+        if (!useDoorwayNavMeshLink) return;
+
+        Transform host = FindDoorGroupHost();
+        if (host == null)
+            host = transform.parent != null ? transform.parent : transform;
+
+        if (doorwayNavMeshLink == null)
+            doorwayNavMeshLink = host.GetComponent<NavMeshLink>();
+        if (doorwayNavMeshLink == null)
+            doorwayNavMeshLink = host.gameObject.AddComponent<NavMeshLink>();
+
+        doorwayNavMeshLink.agentTypeID = 0;
+        doorwayNavMeshLink.startPoint = doorwayLinkStartPoint;
+        doorwayNavMeshLink.endPoint = doorwayLinkEndPoint;
+        doorwayNavMeshLink.width = doorwayLinkWidth;
+        doorwayNavMeshLink.bidirectional = true;
+        doorwayNavMeshLink.autoUpdate = false;
+        doorwayNavMeshLink.area = 0;
+    }
+
+    private Transform FindDoorGroupHost()
+    {
+        Transform t = transform;
+        while (t != null)
+        {
+            if (t.name != null && t.name.StartsWith("Door_Group", System.StringComparison.Ordinal))
+                return t;
+            t = t.parent;
+        }
+        return null;
     }
 
     public void Interact(InventoryManager interactorInventory)
@@ -234,7 +310,6 @@ public class DoorController : NetworkBehaviour, IInteractable
         if (!CanKnock()) return;
 
         hasBeenKnocked.Value = true;
-        Debug.Log($"<b>[KAPI]</b> Kapı çalındı (herkes yakında). Quest={requiredQuestId}. Açılış {knockOpenDelaySeconds:0.#}s sonra.");
 
         if (completeQuestOnKnock && QuestManager.Instance != null)
             QuestManager.Instance.CompleteCurrentQuestIfIdServer(requiredQuestId);
@@ -247,7 +322,6 @@ public class DoorController : NetworkBehaviour, IInteractable
         yield return new WaitForSeconds(knockOpenDelaySeconds);
         if (!IsSpawned || !IsServer) yield break;
         knockDoorOpened.Value = true;
-        Debug.Log("<b>[KAPI]</b> Kapı açılıyor (gecikme bitti).");
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -261,11 +335,10 @@ public class DoorController : NetworkBehaviour, IInteractable
             {
                 IsLocked.Value = false;
                 IsOpen.Value = true;
-                Debug.Log($"<b>[KAPI]</b> {requiredKeyName} kullanildi, kapi acildi! (Server)");
             }
             else
             {
-                Debug.Log($"<b>[KAPI]</b> Kilitli! Gereken anahtar: {requiredKeyName} (Server)");
+                return;
             }
             return;
         }

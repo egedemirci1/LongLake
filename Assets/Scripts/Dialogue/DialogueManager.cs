@@ -279,8 +279,6 @@ public class DialogueManager : NetworkBehaviour
         sequenceIdNv.Value = sequenceIdFs;
         nodeIdNv.Value = new FixedString64Bytes(seq.startNodeId);
         isActive.Value = true;
-
-        Debug.Log($"[DialogueManager] Started '{sequenceId}' at '{seq.startNodeId}' with {_participants.Count} participant(s).");
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -431,7 +429,6 @@ public class DialogueManager : NetworkBehaviour
             else
             {
                 resolved = unique[UnityEngine.Random.Range(0, unique.Count)];
-                Debug.Log($"[DialogueManager] random resolve picks choice {resolved}");
             }
 
             resolvedChoiceIndex.Value = resolved;
@@ -479,7 +476,6 @@ public class DialogueManager : NetworkBehaviour
     private void ForceCloseAbort()
     {
         ClearSessionState();
-        Debug.Log("[DialogueManager] Dialogue aborted (no participants left).");
     }
 
     private void ClearSessionState()

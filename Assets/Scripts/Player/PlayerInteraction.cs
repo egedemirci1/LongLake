@@ -110,8 +110,7 @@ public class PlayerInteraction : NetworkBehaviour
         // 1) Deneme yazan
         foreach (var txt in all)
         {
-            if (txt == null) continue;
-            if (!txt.gameObject.scene.IsValid()) continue;
+            if (!IsSceneTmp(txt)) continue;
 
             if (!string.IsNullOrEmpty(txt.text) && txt.text.ToLower().Contains("deneme"))
             {
@@ -123,8 +122,7 @@ public class PlayerInteraction : NetworkBehaviour
         // 2) InteractionText adlı
         foreach (var txt in all)
         {
-            if (txt == null) continue;
-            if (!txt.gameObject.scene.IsValid()) continue;
+            if (!IsSceneTmp(txt)) continue;
 
             if (txt.gameObject.name == "InteractionText")
             {
@@ -134,9 +132,26 @@ public class PlayerInteraction : NetworkBehaviour
         }
 
         // 3) InteractionUI tag altı
-        GameObject uiRoot = GameObject.FindWithTag("InteractionUI");
+        GameObject uiRoot = null;
+        try
+        {
+            uiRoot = GameObject.FindWithTag("InteractionUI");
+        }
+        catch (UnityException)
+        {
+            // Tag tanımlı değilse yoksay
+        }
+
         if (uiRoot != null)
             interactionText = uiRoot.GetComponentInChildren<TMP_Text>(true);
+    }
+
+    private static bool IsSceneTmp(TMP_Text txt)
+    {
+        if (txt == null) return false;
+        GameObject go = txt.gameObject;
+        if (go == null) return false;
+        return go.scene.IsValid();
     }
 
     private void Update()

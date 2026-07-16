@@ -6662,28 +6662,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 2645263541083952716, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
---- !u!64 &133120320
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057218182}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!4 &133676701 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 175382364505879623, guid: 33fb3539e3441f94799c57bc3e6fb426, type: 3}
@@ -7757,28 +7735,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7502819169404645214, guid: f6607d2d3194deb45bbeef76acadddfa, type: 3}
   m_PrefabInstance: {fileID: 175597074}
   m_PrefabAsset: {fileID: 0}
---- !u!64 &179427414
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057218180}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1001 &180306447
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16297,6 +16253,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 537400022082320302, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.55128455
+      objectReference: {fileID: 0}
+    - target: {fileID: 537400022082320302, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -1.4329712e-14
+      objectReference: {fileID: 0}
+    - target: {fileID: 537400022082320302, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.00000032782557
+      objectReference: {fileID: 0}
+    - target: {fileID: 537400022082320302, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.8343173
+      objectReference: {fileID: 0}
+    - target: {fileID: 537400022082320302, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 113.09
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       propertyPath: m_Name
       value: safiye-evi
@@ -16416,9 +16392,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8343248219658952724, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 621794120}
-    - targetCorrespondingSourceObject: {fileID: 7441841428917361374, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 558305754}
     - targetCorrespondingSourceObject: {fileID: 3703246943810928190, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 632294994}
@@ -16434,9 +16407,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 963144361005471858, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 734013242}
-    - targetCorrespondingSourceObject: {fileID: 7681355974421203530, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 133120320}
     - targetCorrespondingSourceObject: {fileID: 1213485321288561052, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1276713632}
@@ -16452,9 +16422,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -2623709148465394067, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1400942357}
-    - targetCorrespondingSourceObject: {fileID: 7748598389310585880, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 179427414}
     - targetCorrespondingSourceObject: {fileID: -4767139955372698465, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1555024461}
@@ -16473,9 +16440,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5639049908711260915, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 645663937}
-    - targetCorrespondingSourceObject: {fileID: -3664286774379674878, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1665470220}
     - targetCorrespondingSourceObject: {fileID: 4576931000865259534, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 421044234}
@@ -16488,9 +16452,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4576931000865259534, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 421044241}
-    - targetCorrespondingSourceObject: {fileID: -308134665827913786, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1422017933}
     - targetCorrespondingSourceObject: {fileID: 5127327410195104786, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 421044232}
@@ -16503,9 +16464,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5127327410195104786, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1124251985}
-    - targetCorrespondingSourceObject: {fileID: -8903865262930876367, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 519316517}
     - targetCorrespondingSourceObject: {fileID: 1669390747069572416, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 787691625}
@@ -16765,6 +16723,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 421044240}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -16819,6 +16781,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 421044241}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -16854,11 +16820,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0062798997, y: 0.00017020432, z: -0.00041004084}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!208 &421044241
 NavMeshObstacle:
@@ -16870,11 +16836,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0062802853, y: 0.00017014053, z: -0.00040997937}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1001 &425903723
 PrefabInstance:
@@ -17424,6 +17390,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 437653768}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -17437,11 +17407,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.0065, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0062805586, y: 0.00014961231, z: -0.00040998217}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1001 &440213040
 PrefabInstance:
@@ -18788,28 +18758,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: 68d4d96e1d0598748aa4744c456590bc, type: 3}
---- !u!64 &519316517
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057218176}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1 &520340338
 GameObject:
   m_ObjectHideFlags: 0
@@ -19696,28 +19644,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4104380202958562290, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
---- !u!64 &558305754
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057218184}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1001 &558390691
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21727,6 +21653,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 645663937}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -21762,11 +21692,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0062799985, y: 0.00017010795, z: -0.00040997844}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1001 &653318213
 PrefabInstance:
@@ -22379,28 +22309,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 2212009239438826721, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
---- !u!64 &673215928
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1531731156}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1001 &677702702
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26013,6 +25921,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 734013242}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -26048,11 +25960,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.006279511, y: 0.00017037244, z: -0.0004100157}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1 &742984559
 GameObject:
@@ -34401,6 +34313,8 @@ MonoBehaviour:
   talkPrompt: "Konu\u015F"
   talkNearbyRadius: 5
   talkMinimumPlayersRequired: 2
+  walkToSafiyeAfterArrivalTalk: 1
+  safiyeHouseDestination: {x: 1610.107, y: 119.9632, z: 643.2148}
   autoStartWhenKnockDoorOpens: 0
   watchDoor: {fileID: 0}
   watchDoorOpenZ: -110
@@ -38371,29 +38285,9 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1669390747069572416, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
   m_PrefabInstance: {fileID: 421044228}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1057218176 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -8903865262930876367, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-  m_PrefabInstance: {fileID: 421044228}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1057218177 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -308134665827913786, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-  m_PrefabInstance: {fileID: 421044228}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1057218178 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -3664286774379674878, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-  m_PrefabInstance: {fileID: 421044228}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1057218179 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -4767139955372698465, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-  m_PrefabInstance: {fileID: 421044228}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1057218180 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7748598389310585880, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
   m_PrefabInstance: {fileID: 421044228}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1057218181 stripped
@@ -38401,19 +38295,9 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1213485321288561052, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
   m_PrefabInstance: {fileID: 421044228}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1057218182 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7681355974421203530, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-  m_PrefabInstance: {fileID: 421044228}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1057218183 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3703246943810928190, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
-  m_PrefabInstance: {fileID: 421044228}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1057218184 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7441841428917361374, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
   m_PrefabInstance: {fileID: 421044228}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1057218185 stripped
@@ -39890,6 +39774,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 1124251985}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -39925,11 +39813,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.006279954, y: 0.00017104484, z: -0.00040998962}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!64 &1126447333
 MeshCollider:
@@ -44203,28 +44091,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3330003619663746138, guid: 928e50c8b9894f240ba955510cd27a3e, type: 3}
   m_PrefabInstance: {fileID: 1266349356}
   m_PrefabAsset: {fileID: 0}
---- !u!64 &1274510048
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1531731152}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!64 &1276713632
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -44784,6 +44650,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 1464263115}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -46927,6 +46797,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 1400942357}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -46962,11 +46836,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0062804706, y: 0.00017069584, z: -0.00040997006}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1 &1403499913 stripped
 GameObject:
@@ -47203,28 +47077,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.54, y: 2.66, z: 0.89}
   m_Center: {x: 0, y: 0.12, z: 0}
---- !u!64 &1422017933
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057218177}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!4 &1425143497 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7584916998656032344, guid: 5d8b976fab3c41f4cb03fe912a97d039, type: 3}
@@ -47355,28 +47207,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 2911736426955009642, guid: 7fd727c124584254e9fc690f25f4b5b9, type: 3}
---- !u!64 &1446229053
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1531731158}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1001 &1446315574
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -49742,11 +49572,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: -0.0050797435, y: 0.00015037367, z: -0.00040999756}
+  m_Center: {x: -0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1001 &1465880814
 PrefabInstance:
@@ -51243,9 +51073,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8966425080833024711, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       insertIndex: -1
       addedObject: {fileID: 263928707}
-    - targetCorrespondingSourceObject: {fileID: -5616801563616564518, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1446229053}
     - targetCorrespondingSourceObject: {fileID: 8381445512754698166, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1363174617}
@@ -51261,9 +51088,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 9001531039093607257, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       insertIndex: -1
       addedObject: {fileID: 437653768}
-    - targetCorrespondingSourceObject: {fileID: -7420840993758140187, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 673215928}
     - targetCorrespondingSourceObject: {fileID: 2982689613243720689, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1483748396}
@@ -51291,9 +51115,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5061857295836695981, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1685606822}
-    - targetCorrespondingSourceObject: {fileID: -3517438629212512724, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1274510048}
     - targetCorrespondingSourceObject: {fileID: -6493311535957680784, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2029505512}
@@ -51347,11 +51168,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: -204827754396623593, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
   m_PrefabInstance: {fileID: 1531731145}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1531731152 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -3517438629212512724, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
-  m_PrefabInstance: {fileID: 1531731145}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1531731153 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5061857295836695981, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
@@ -51367,19 +51183,9 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2982689613243720689, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
   m_PrefabInstance: {fileID: 1531731145}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1531731156 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -7420840993758140187, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
-  m_PrefabInstance: {fileID: 1531731145}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1531731157 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8381445512754698166, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
-  m_PrefabInstance: {fileID: 1531731145}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1531731158 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: -5616801563616564518, guid: 9e056ab24e50e0d4298804b1ba604321, type: 3}
   m_PrefabInstance: {fileID: 1531731145}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1531731159 stripped
@@ -53592,28 +53398,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1071012509893646920, guid: fdca8753340ce954fbb0d7a4dd9e72fb, type: 3}
   m_PrefabInstance: {fileID: 1658686761}
   m_PrefabAsset: {fileID: 0}
---- !u!64 &1665470220
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1057218178}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!1 &1670118967
 GameObject:
   m_ObjectHideFlags: 0
@@ -55142,6 +54926,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 1685606822}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -55155,11 +54943,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0050798445, y: 0.00014991406, z: -0.00040999806}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1 &1689058208
 GameObject:
@@ -62690,6 +62478,10 @@ MonoBehaviour:
   knockOpenDelaySeconds: 4.5
   carveNavMeshWhenClosed: 1
   navMeshObstacle: {fileID: 2029505515}
+  useDoorwayNavMeshLink: 1
+  doorwayNavMeshLink: {fileID: 0}
+  doorwayLinkHalfLength: 1.1
+  doorwayLinkWidth: 1
   requireAllPlayersNearby: 1
   minimumPlayersRequired: 2
   nearbyRadius: 6
@@ -62725,11 +62517,11 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 0.125, y: 0.9, z: 0.125}
+  m_Extents: {x: 0.005, y: 0.0005, z: 0.015}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 0
-  m_Center: {x: 0.0062797796, y: 0.00016982913, z: -0.0004099775}
+  m_Center: {x: 0.006, y: 0, z: 0}
   m_TimeToStationary: 0.5
 --- !u!1 &2039076452 stripped
 GameObject:
