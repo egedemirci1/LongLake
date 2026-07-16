@@ -425,29 +425,34 @@ public class MainMenuUI : MonoBehaviour
 
     private System.Collections.IEnumerator LoadSceneWithLoadingScreen()
     {
-        // Canvas'ı bul ve direkt child'ı olan "Panel" GameObject'ini gizle
+        // Lobi + ana panel (Rpc zaten kapatmış olabilir; yine de garanti).
+        var lobbyUi = FindFirstObjectByType<LobbyUI>();
+        if (lobbyUi != null)
+            lobbyUi.HideForGameplayLoad();
+
         Canvas canvas = FindFirstObjectByType<Canvas>();
         if (canvas != null)
         {
             Transform panelTransform = canvas.transform.Find("Panel");
             if (panelTransform != null)
-            {
                 panelTransform.gameObject.SetActive(false);
-            }
+
+            Transform lobbyTransform = canvas.transform.Find("LobbyPanel");
+            if (lobbyTransform != null)
+                lobbyTransform.gameObject.SetActive(false);
         }
 
-        // Loading screen'i göster
-        if (LoadingScreenManager.Instance != null)
-        {
-            LoadingScreenManager.Instance.ShowLoadingScreenForScene(gameplaySceneName, "Bölüm 1: Uzungöl Tatili");
-        }
+        // Loading Rpc / NetworkVariable ile gelmiş olabilir; yoksa host'ta da göster.
+        var loading = LoadingScreenManager.Resolve();
+        if (loading != null)
+            loading.ShowLoadingScreenForScene(gameplaySceneName, "Bölüm 1: Uzungöl Tatili");
 
-        // UI'nin render edilmesi için bekle
+        // Video warm-up + UI layout için kısa bekle — client ile senkron.
         Canvas.ForceUpdateCanvases();
         yield return null;
-        yield return null;
         yield return new WaitForEndOfFrame();
-        yield return new WaitForSeconds(0.2f);
+        // Video prepare için ekstra frame (client flash önleme).
+        yield return null;
 
         SetStatus($"Loading: {gameplaySceneName}");
         networkManager.SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
@@ -513,20 +518,19 @@ public class MainMenuUI : MonoBehaviour
         if (sceneEvent.SceneEventType != SceneEventType.Load) return;
         if (sceneEvent.SceneName != gameplaySceneName) return;
 
-        if (LoadingScreenManager.Instance != null)
-            LoadingScreenManager.Instance.ShowLoadingScreenForScene(sceneEvent.SceneName, "Bölüm 1: Uzungöl Tatili");
+        var loading = LoadingScreenManager.Resolve();
+        if (loading != null)
+            loading.ShowLoadingScreenForScene(sceneEvent.SceneName, "Bölüm 1: Uzungöl Tatili");
     }
 
     private void OnNetcodeSceneLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         Debug.Log($"[MainMenuUI] Netcode scene load completed: {sceneName} mode={mode} completed={clientsCompleted?.Count ?? 0} timedOut={clientsTimedOut?.Count ?? 0}");
         SetStatus($"Loaded: {sceneName}");
-        
-        // Loading screen'i kapat
-        if (LoadingScreenManager.Instance != null)
-        {
-            LoadingScreenManager.Instance.HideLoadingScreen();
-        }
+
+        var loading = LoadingScreenManager.Resolve();
+        if (loading != null)
+            loading.HideLoadingScreen();
     }
 
     // ---- Netcode callbacks ----

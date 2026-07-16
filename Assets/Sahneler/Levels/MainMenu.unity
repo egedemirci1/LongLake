@@ -895,6 +895,8 @@ MonoBehaviour:
   statusText: {fileID: 673385015}
   readyButtonLabel: {fileID: 980832465}
   hostIpText: {fileID: 475402569}
+  ahuPortrait: {fileID: 21300000, guid: 8ed9d442b9f840edbd8e6ad80e02ddaf, type: 3}
+  yamanPortrait: {fileID: 21300000, guid: f1d0aa4a60a940858dcd0d5afc1918d3, type: 3}
 --- !u!1 &980832463
 GameObject:
   m_ObjectHideFlags: 0
@@ -2102,9 +2104,27 @@ MonoBehaviour:
   backgroundImage: {fileID: 2044722735}
   baslikText: {fileID: 2044722734}
   aciklamaText: {fileID: 2044722733}
+  loadingVideoClip: {fileID: 32900000, guid: a1b2c3d4e5f60718293a4b5c6d7e8f01, type: 3}
+  loadingPosterSprite: {fileID: 21300000, guid: 5b78b3940e1778c40833d28bb5b984fc, type: 3}
+  muteVideo: 1
+  tipPanel: {fileID: 0}
+  tipEyebrowText: {fileID: 0}
+  tipBodyText: {fileID: 0}
+  tipGroup: {fileID: 0}
   screenshotSprites: []
   defaultBaslik: "Oyun Y\xFCkleniyor"
   defaultAciklama: "B\xF6l\xFCm 1: Uzung\xF6l Tatili"
+  tipHoldSeconds: 4.2
+  tipFadeSeconds: 0.45
+  tips:
+  - "Ko\u015Fma hakk\u0131n s\u0131n\u0131rl\u0131d\u0131r \u2014 stamina bitince biraz beklemen gerekir."
+  - Envanter ve craft paneli I tu\u015Fu ile a\u00E7\u0131l\u0131r.
+  - E tu\u015Fu ile kap\u0131, \u00E7ekmece ve e\u015Fyalara etkile\u015Fime girersin.
+  - G\xF6rev g\xFCnl\xFC\u011F\xFCn\xFC M tu\u015Fu ile a\u00E7\u0131p kapatabilirsin.
+  - S\u0131rt \u00E7antas\u0131 bulunca hotbar a\u00E7\u0131l\u0131r; slotlar 1\u20138 ile se\u00E7ilir.
+  - Kap\u0131y\u0131 \u00E7almak i\u00E7in iki oyuncu da kap\u0131n\u0131n yak\u0131n\u0131nda olmal\u0131.
+  - Diyalogda her iki oyuncu da Devam demeli veya ayn\u0131 se\u00E7imi onaylamal\u0131.
+  - Not defterini L tu\u015Fu ile a\u00E7abilirsin \u2014 ipu\u00E7lar\u0131 orada birikir.
 --- !u!4 &1501989226
 Transform:
   m_ObjectHideFlags: 0

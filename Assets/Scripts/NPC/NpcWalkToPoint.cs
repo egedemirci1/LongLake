@@ -25,6 +25,10 @@ public class NpcWalkToPoint : NetworkBehaviour
     [SerializeField] private float stoppingDistance = 0.35f;
     [SerializeField] private float animatorSpeedMultiplier = 2.8f;
     [SerializeField] private float navMeshSampleRadius = 4f;
+    [Tooltip("NavMesh'e oturturken yatayda bundan fazla ışınlama yasak (evin dışına atmayı önler).")]
+    [SerializeField] private float maxNavMeshSnapDistance = 0.55f;
+    [Tooltip("İçerde mesh yoksa kapı eşiğine en fazla bu kadar yaklaşarak oturt.")]
+    [SerializeField] private float maxDoorwaySnapDistance = 2.5f;
 
     [Header("Temporary Door Watch (remove when dialogue-driven)")]
     [SerializeField] private bool autoStartWhenKnockDoorOpens = true;
@@ -173,29 +177,32 @@ public class NpcWalkToPoint : NetworkBehaviour
         _agent.height = 1.8f;
         _agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
 
-        if (!NavMesh.SamplePosition(_npc.position, out NavMeshHit startHit, navMeshSampleRadius, NavMesh.AllAreas))
-        {
-            Debug.LogError($"[NpcWalkToPoint] {_npc.name} yakınında NavMesh bulunamadı. Kapı eşiği bake'te walkable mı?");
-            yield break;
-        }
-
         Vector3 target = ResolveDestination();
-        if (!NavMesh.SamplePosition(target, out NavMeshHit targetHit, navMeshSampleRadius, NavMesh.AllAreas))
+        if (!TrySampleNear(target, navMeshSampleRadius, float.MaxValue, out NavMeshHit targetHit))
         {
             Debug.LogError($"[NpcWalkToPoint] Hedef yakınında NavMesh bulunamadı: {target}");
             yield break;
         }
 
-        _npc.position = startHit.position;
+        // ÖNCE mevcut konumun HEMEN yanındaki mesh — büyük SamplePosition evi dışına ışınlıyordu.
+        if (!TryPlaceOnNavMeshNearNpc())
+        {
+            Debug.LogError(
+                $"[NpcWalkToPoint] {_npc.name} NavMesh üzerinde değil ve güvenli snap yok. " +
+                "Ev içi zemin bake'te walkable olmalı; aksi halde agent evi dışına atılırdı (engellendi).");
+            yield break;
+        }
+
         _agent.enabled = true;
+        if (!_agent.isOnNavMesh)
+            _agent.Warp(_npc.position);
 
         // Carve/path henüz hazır değilse birkaç kez dene.
         bool pathOk = false;
         for (int attempt = 0; attempt < 10; attempt++)
         {
-            if (_agent.SetDestination(targetHit.position))
+            if (_agent.isOnNavMesh && _agent.SetDestination(targetHit.position))
             {
-                // PathPending bitene kadar bekle, Partial path'i de kabul et ama Incomplete uyar.
                 float wait = 0f;
                 while (_agent.pathPending && wait < 1f)
                 {
@@ -221,6 +228,70 @@ public class NpcWalkToPoint : NetworkBehaviour
                 "kapı objesinde Navigation Static kapalı olmalı.");
             _agent.enabled = false;
         }
+    }
+
+    /// <summary>
+    /// NPC'yi NavMesh'e oturtur. Yatayda uzaktaki (evin dışı) noktalara ışınlamaz.
+    /// </summary>
+    private bool TryPlaceOnNavMeshNearNpc()
+    {
+        // 1) Mevcut pozisyonun çok yakınında mesh var mı?
+        if (TrySampleNear(_npc.position, 0.75f, maxNavMeshSnapDistance, out NavMeshHit localHit))
+        {
+            _agent.Warp(localHit.position);
+            return true;
+        }
+
+        // 2) Açık quest kapısı eşiği — kısa mesafe ise oraya oturt (dışarıya rastgele değil).
+        Transform door = FindOpenQuestKnockDoor();
+        if (door != null)
+        {
+            Vector3 doorway = door.position + door.forward * 0.6f;
+            if (TrySampleNear(doorway, 1.2f, maxDoorwaySnapDistance, out NavMeshHit doorHit))
+            {
+                float horiz = HorizontalDistance(_npc.position, doorHit.position);
+                if (horiz <= maxDoorwaySnapDistance)
+                {
+                    Debug.LogWarning(
+                        $"[NpcWalkToPoint] {_npc.name} içerde mesh bulamadı; kapı eşiğine alındı ({horiz:0.00}m). " +
+                        "Kalıcı çözüm: ev içi NavMesh bake.");
+                    _agent.Warp(doorHit.position);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TrySampleNear(Vector3 origin, float sampleRadius, float maxHorizontal, out NavMeshHit hit)
+    {
+        hit = default;
+        if (!NavMesh.SamplePosition(origin, out NavMeshHit sampled, sampleRadius, NavMesh.AllAreas))
+            return false;
+
+        if (HorizontalDistance(origin, sampled.position) > maxHorizontal)
+            return false;
+
+        hit = sampled;
+        return true;
+    }
+
+    private static float HorizontalDistance(Vector3 a, Vector3 b)
+    {
+        a.y = 0f;
+        b.y = 0f;
+        return Vector3.Distance(a, b);
+    }
+
+    private static Transform FindOpenQuestKnockDoor()
+    {
+        foreach (var door in FindObjectsByType<DoorController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (door.IsQuestKnockDoor && door.IsNavMeshPassageOpen)
+                return door.transform;
+        }
+        return null;
     }
 
     private Vector3 ResolveDestination()

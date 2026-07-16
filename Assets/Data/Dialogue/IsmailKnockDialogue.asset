@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a11b22c33d44e55f66778899aabbcc01, type: 3}
+  m_Name: IsmailKnockDialogue
+  sequenceId: ismail_knock
+  startNodeId: n1
+  nodes:
+  - id: n1
+    speaker: "\u0130smail"
+    text: "Kim o? Gece vakti kap\u0131y\u0131 b\u00F6yle \u00E7alan olmaz burada..."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n2
+  - id: n2
+    speaker: "\u0130smail"
+    text: "Siz de mi o kaza sesini duydunuz? Yolun kenar\u0131nda bir \u015Feyler oldu san\u0131r\u0131m."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n3
+  - id: n3
+    speaker: "\u0130smail"
+    text: "Sizinle ne i\u015Finiz var burada?"
+    voiceClip: {fileID: 0}
+    choices:
+    - label: "Arabam\u0131z yolda kald\u0131, yard\u0131m ar\u0131yoruz"
+      nextNodeId: n4_help
+    - label: "Kaza yerini kontrol etmeye geldik"
+      nextNodeId: n4_check
+    nextNodeId: 
+  - id: n4_help
+    speaker: "\u0130smail"
+    text: "Anlad\u0131m... Bu saatte yaln\u0131z ba\u015F\u0131n\u0131za zor. Ben de d\u0131\u015Far\u0131da bir g\u00FCr\u00FClt\u00FC duymu\u015Ftım."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n5
+  - id: n4_check
+    speaker: "\u0130smail"
+    text: "Do\u011Frusu iyi etmi\u015Fsiniz. Ben de pencereden bakt\u0131m ama net g\u00F6remedim."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n5
+  - id: n5
+    speaker: "\u0130smail"
+    text: "\u015Eu a\u015Fa\u011F\u0131da, yol kenar\u0131nda bir ara\u00E7 duruyor gibiydi. Birlikte bakmaya gidelim."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: n6
+  - id: n6
+    speaker: "\u0130smail"
+    text: "Siz arkadan gelin. Ben \u00F6nden y\u00FCr\u00FCr\u00FCm \u2014 arabaya do\u011Fru."
+    voiceClip: {fileID: 0}
+    choices: []
+    nextNodeId: 
+  completeQuestId: 

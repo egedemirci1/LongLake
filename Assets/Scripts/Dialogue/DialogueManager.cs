@@ -54,6 +54,9 @@ public class DialogueManager : NetworkBehaviour
 
     public event Action OnDialogueStateChanged;
 
+    /// <summary>Diyalog normal bittiğinde (abort değil). Argüman: sequenceId.</summary>
+    public event Action<string> OnDialogueEnded;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -428,12 +431,14 @@ public class DialogueManager : NetworkBehaviour
 
     private void CloseNormally()
     {
+        string endedSequenceId = _activeSequence != null ? _activeSequence.sequenceId : sequenceIdNv.Value.ToString();
         string questId = _activeSequence != null ? _activeSequence.completeQuestId : null;
         if (!string.IsNullOrEmpty(questId) && QuestManager.Instance != null)
             QuestManager.Instance.CompleteCurrentQuestIfIdServer(questId);
 
         ClearSessionState();
         Debug.Log("[DialogueManager] Dialogue ended normally.");
+        OnDialogueEnded?.Invoke(endedSequenceId);
     }
 
     private void ForceCloseAbort()

@@ -1,10 +1,10 @@
 using TMPro;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Binds DialoguePanel to DialogueManager. Creates a minimal panel under InteractionUI if refs missing.
+/// Dialogue panel — quest HUD / stamina ile aynı görsel dil:
+/// koyu yuvarlak kart, kehribar vurgu, fade+slide, dinamik yükseklik.
 /// </summary>
 public class DialogueUI : MonoBehaviour
 {
@@ -18,7 +18,31 @@ public class DialogueUI : MonoBehaviour
     [SerializeField] private Button[] choiceButtons = new Button[3];
     [SerializeField] private TextMeshProUGUI[] choiceLabels = new TextMeshProUGUI[3];
 
+    private static readonly Color AccentColor = new Color(0.95f, 0.77f, 0.32f, 1f);
+    private static readonly Color CardColor = new Color(0.05f, 0.06f, 0.08f, 0.94f);
+    private static readonly Color ScrimColor = new Color(0.02f, 0.03f, 0.04f, 0.55f);
+    private static readonly Color MutedText = new Color(1f, 1f, 1f, 0.5f);
+    private static readonly Color BodyTextColor = new Color(0.93f, 0.94f, 0.92f, 1f);
+    private static readonly Color ButtonIdle = new Color(0.10f, 0.12f, 0.14f, 0.98f);
+    private static readonly Color ButtonHover = new Color(0.16f, 0.18f, 0.20f, 1f);
+    private static readonly Color ButtonSelected = new Color(0.95f, 0.77f, 0.32f, 0.28f);
+    private static readonly Color ContinueAccent = new Color(0.95f, 0.77f, 0.32f, 0.95f);
+    private static readonly Color ContinueReady = new Color(0.18f, 0.20f, 0.18f, 0.9f);
+
+    private const float IntroDuration = 0.22f;
+    private const float IntroSlide = 28f;
+    private const float CardWidth = 820f;
+
     private DialogueManager _manager;
+    private CanvasGroup _panelGroup;
+    private CanvasGroup _cardGroup;
+    private RectTransform _cardRect;
+    private Vector2 _cardBasePos;
+    private Image _continueImage;
+    private Image[] _choiceImages = new Image[3];
+    private float _introStart = -1f;
+    private bool _wasActive;
+    private string _lastNodeId;
 
     private void Awake()
     {
@@ -26,22 +50,19 @@ public class DialogueUI : MonoBehaviour
         WireButtons();
         if (dialoguePanel != null)
             dialoguePanel.SetActive(false);
+        if (_panelGroup != null)
+            _panelGroup.alpha = 0f;
     }
 
-    private void OnEnable()
-    {
-        TryBindManager();
-    }
+    private void OnEnable() => TryBindManager();
 
-    private void OnDisable()
-    {
-        UnbindManager();
-    }
+    private void OnDisable() => UnbindManager();
 
     private void Update()
     {
         if (_manager == null)
             TryBindManager();
+        AnimateIntro();
     }
 
     private void TryBindManager()
@@ -99,7 +120,20 @@ public class DialogueUI : MonoBehaviour
         if (_manager == null || dialoguePanel == null) return;
 
         bool active = _manager.IsActive;
-        dialoguePanel.SetActive(active);
+
+        if (active && !_wasActive)
+        {
+            dialoguePanel.SetActive(true);
+            PlayIntro();
+        }
+        else if (!active && _wasActive)
+        {
+            dialoguePanel.SetActive(false);
+            _introStart = -1f;
+            if (_panelGroup != null) _panelGroup.alpha = 0f;
+        }
+        _wasActive = active;
+
         if (!active) return;
 
         var node = _manager.GetCurrentNode();
@@ -111,29 +145,36 @@ public class DialogueUI : MonoBehaviour
             return;
         }
 
+        // Yeni satıra geçince hafif yeniden intro (kart zaten açıksa daha kısa his).
+        if (_lastNodeId != node.id)
+        {
+            _lastNodeId = node.id;
+            if (_cardGroup != null && _introStart < 0f)
+                PlayNodePulse();
+        }
+
         if (speakerText != null)
-            speakerText.text = string.IsNullOrEmpty(node.speaker) ? "" : node.speaker;
+            speakerText.text = string.IsNullOrEmpty(node.speaker) ? "" : node.speaker.ToUpperInvariant();
         if (bodyText != null)
             bodyText.text = node.text ?? "";
 
         bool participant = _manager.IsLocalParticipant();
         bool ready = _manager.IsLocalReady();
         int readyCount = _manager.ReadyCount;
-        int needed = _manager.ParticipantCount;
+        int needed = Mathf.Max(1, _manager.ParticipantCount);
         int resolved = _manager.ResolvedChoiceIndex;
-
         bool hasChoices = node.choices != null && node.choices.Length > 0;
 
         if (statusText != null)
         {
             if (!participant)
-                statusText.text = "Dinliyorsun (konuşmanın parçası değilsin)";
+                statusText.text = "DİNLİYORSUN";
             else if (resolved >= 0)
-                statusText.text = $"Seçim: {resolved + 1}  ·  Bekleniyor {readyCount}/{needed}";
+                statusText.text = $"SEÇİM {resolved + 1}  ·  {readyCount}/{needed}";
             else if (ready)
-                statusText.text = $"Hazır · Bekleniyor {readyCount}/{needed}";
+                statusText.text = $"HAZIR  ·  {readyCount}/{needed}";
             else
-                statusText.text = $"Bekleniyor {readyCount}/{needed}";
+                statusText.text = $"{readyCount}/{needed} HAZIR";
         }
 
         if (continueButton != null)
@@ -142,9 +183,15 @@ public class DialogueUI : MonoBehaviour
             continueButton.gameObject.SetActive(showContinue);
             continueButton.interactable = showContinue && !ready;
             if (continueButtonLabel != null)
+            {
                 continueButtonLabel.text = ready ? "Hazır" : "Devam";
+                continueButtonLabel.color = ready ? MutedText : (showContinue && !ready ? new Color(0.08f, 0.08f, 0.06f, 1f) : Color.white);
+            }
+            if (_continueImage != null)
+                _continueImage.color = ready ? ContinueReady : ContinueAccent;
         }
 
+        int localChoice = _manager.GetLocalChoiceIndex();
         for (int i = 0; i < choiceButtons.Length; i++)
         {
             Button btn = choiceButtons[i];
@@ -154,24 +201,68 @@ public class DialogueUI : MonoBehaviour
             btn.gameObject.SetActive(show);
             if (!show) continue;
 
+            bool selected = localChoice == i;
             if (choiceLabels != null && i < choiceLabels.Length && choiceLabels[i] != null)
+            {
                 choiceLabels[i].text = node.choices[i].label;
+                choiceLabels[i].color = selected ? AccentColor : Color.white;
+                choiceLabels[i].fontStyle = selected ? FontStyles.Bold : FontStyles.Normal;
+            }
 
-            int localChoice = _manager.GetLocalChoiceIndex();
-            // Stay interactable while dialogue open so player can change mind (upsert).
             btn.interactable = true;
-            if (localChoice == i && choiceLabels != null && i < choiceLabels.Length && choiceLabels[i] != null)
-                choiceLabels[i].text = $"> {node.choices[i].label}";
+            if (_choiceImages != null && i < _choiceImages.Length && _choiceImages[i] != null)
+                _choiceImages[i].color = selected ? ButtonSelected : ButtonIdle;
         }
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        // Layout yeniden hesaplansın (dinamik yükseklik).
+        if (_cardRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_cardRect);
+    }
+
+    private void PlayIntro()
+    {
+        _introStart = Time.unscaledTime;
+        if (_panelGroup != null) _panelGroup.alpha = 0f;
+        if (_cardGroup != null) _cardGroup.alpha = 0f;
+        if (_cardRect != null)
+            _cardRect.anchoredPosition = _cardBasePos + Vector2.down * IntroSlide;
+    }
+
+    private void PlayNodePulse()
+    {
+        // Satır değişiminde kartı hafifçe yeniden belirginleştir.
+        if (_cardGroup == null) return;
+        _cardGroup.alpha = 0.55f;
+        _introStart = Time.unscaledTime - IntroDuration * 0.45f;
+    }
+
+    private void AnimateIntro()
+    {
+        if (_introStart < 0f || _panelGroup == null) return;
+
+        float t = Mathf.Clamp01((Time.unscaledTime - _introStart) / IntroDuration);
+        float eased = 1f - (1f - t) * (1f - t);
+
+        _panelGroup.alpha = eased;
+        if (_cardGroup != null)
+            _cardGroup.alpha = eased;
+        if (_cardRect != null)
+            _cardRect.anchoredPosition = _cardBasePos + Vector2.down * (IntroSlide * (1f - eased));
+
+        if (t >= 1f)
+            _introStart = -1f;
     }
 
     private void EnsurePanel()
     {
         if (dialoguePanel != null && speakerText != null && bodyText != null && statusText != null && continueButton != null)
             return;
+
+        if (dialoguePanel != null)
+            Destroy(dialoguePanel);
 
         Transform canvas = transform;
         if (canvas.GetComponent<Canvas>() == null)
@@ -180,98 +271,198 @@ public class DialogueUI : MonoBehaviour
             if (ui != null) canvas = ui.transform;
         }
 
-        if (dialoguePanel == null)
-        {
-            dialoguePanel = new GameObject("DialoguePanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            dialoguePanel.transform.SetParent(canvas, false);
-            var rt = dialoguePanel.GetComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            var bg = dialoguePanel.GetComponent<Image>();
-            bg.color = new Color(0.02f, 0.04f, 0.05f, 0.55f);
-            bg.raycastTarget = true;
-        }
+        dialoguePanel = new GameObject("DialoguePanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        dialoguePanel.transform.SetParent(canvas, false);
+        var panelRt = dialoguePanel.GetComponent<RectTransform>();
+        panelRt.anchorMin = Vector2.zero;
+        panelRt.anchorMax = Vector2.one;
+        panelRt.offsetMin = Vector2.zero;
+        panelRt.offsetMax = Vector2.zero;
+        dialoguePanel.GetComponent<Image>().color = ScrimColor;
+        dialoguePanel.GetComponent<Image>().raycastTarget = true;
 
-        Transform root = dialoguePanel.transform;
-        var box = CreateChild(root, "Box", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(900f, 280f));
-        var boxImg = box.gameObject.AddComponent<Image>();
-        boxImg.color = new Color(0.06f, 0.09f, 0.1f, 0.92f);
+        _panelGroup = dialoguePanel.AddComponent<CanvasGroup>();
+        _panelGroup.alpha = 0f;
 
-        speakerText = CreateTmp(box, "Speaker", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -16f), new Vector2(-24f, -48f), 28, FontStyles.Bold);
-        bodyText = CreateTmp(box, "Body", new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(24f, 72f), new Vector2(-24f, -64f), 26, FontStyles.Normal);
-        statusText = CreateTmp(box, "Status", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(24f, 40f), new Vector2(-24f, 68f), 18, FontStyles.Normal);
+        // Kart
+        var card = new GameObject("Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        card.transform.SetParent(dialoguePanel.transform, false);
+        _cardRect = card.GetComponent<RectTransform>();
+        _cardRect.anchorMin = new Vector2(0.5f, 0f);
+        _cardRect.anchorMax = new Vector2(0.5f, 0f);
+        _cardRect.pivot = new Vector2(0.5f, 0f);
+        _cardBasePos = new Vector2(0f, 40f);
+        _cardRect.anchoredPosition = _cardBasePos;
+        _cardRect.sizeDelta = new Vector2(CardWidth, 100f);
 
-        continueButton = CreateButton(box, "ContinueButton", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-24f, 16f), new Vector2(180f, 44f), out continueButtonLabel, "Devam");
+        var cardImg = card.GetComponent<Image>();
+        cardImg.sprite = RuntimeUiSprites.GetRoundedSprite(12);
+        cardImg.type = Image.Type.Sliced;
+        cardImg.color = CardColor;
+        cardImg.raycastTarget = true;
 
+        var layout = card.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(28, 24, 18, 18);
+        layout.spacing = 10f;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        var fitter = card.AddComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        _cardGroup = card.AddComponent<CanvasGroup>();
+        _cardGroup.blocksRaycasts = true;
+
+        // Accent (layout dışı)
+        var accent = new GameObject("Accent", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        accent.transform.SetParent(card.transform, false);
+        var accentRt = accent.GetComponent<RectTransform>();
+        accentRt.anchorMin = new Vector2(0f, 0f);
+        accentRt.anchorMax = new Vector2(0f, 1f);
+        accentRt.pivot = new Vector2(0f, 0.5f);
+        accentRt.anchoredPosition = new Vector2(8f, 0f);
+        accentRt.sizeDelta = new Vector2(4f, -24f);
+        var accentImg = accent.GetComponent<Image>();
+        accentImg.sprite = RuntimeUiSprites.GetRoundedSprite(2);
+        accentImg.type = Image.Type.Sliced;
+        accentImg.color = AccentColor;
+        accentImg.raycastTarget = false;
+        accent.AddComponent<LayoutElement>().ignoreLayout = true;
+
+        // Header: konuşmacı + status
+        var header = CreateRow(card.transform, "Header", 28f);
+        speakerText = CreateLayoutTmp(header.transform, "Speaker", 15f, FontStyles.Bold, AccentColor);
+        speakerText.characterSpacing = 8f;
+        speakerText.alignment = TextAlignmentOptions.MidlineLeft;
+        var speakerLe = speakerText.gameObject.AddComponent<LayoutElement>();
+        speakerLe.flexibleWidth = 1f;
+        speakerLe.minHeight = 22f;
+
+        statusText = CreateLayoutTmp(header.transform, "Status", 13f, FontStyles.Bold, MutedText);
+        statusText.characterSpacing = 4f;
+        statusText.alignment = TextAlignmentOptions.MidlineRight;
+        var statusLe = statusText.gameObject.AddComponent<LayoutElement>();
+        statusLe.preferredWidth = 200f;
+        statusLe.minHeight = 22f;
+
+        // Body
+        bodyText = CreateLayoutTmp(card.transform, "Body", 23f, FontStyles.Normal, BodyTextColor);
+        bodyText.alignment = TextAlignmentOptions.TopLeft;
+        bodyText.textWrappingMode = TextWrappingModes.Normal;
+        bodyText.overflowMode = TextOverflowModes.Overflow;
+        bodyText.lineSpacing = -6f;
+        var bodyLe = bodyText.gameObject.AddComponent<LayoutElement>();
+        bodyLe.minHeight = 40f;
+        bodyLe.flexibleWidth = 1f;
+        var bodyFit = bodyText.gameObject.AddComponent<ContentSizeFitter>();
+        bodyFit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        bodyFit.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        // Choices
+        var choicesRoot = CreateColumn(card.transform, "Choices", 8f);
         choiceButtons = new Button[3];
         choiceLabels = new TextMeshProUGUI[3];
+        _choiceImages = new Image[3];
         for (int i = 0; i < 3; i++)
         {
-            float y = 16f + i * 50f;
-            choiceButtons[i] = CreateButton(box, $"Choice{i}", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, y), new Vector2(420f, 44f), out choiceLabels[i], $"Seçenek {i + 1}");
+            choiceButtons[i] = CreateLayoutButton(choicesRoot.transform, $"Choice{i}", out choiceLabels[i], out _choiceImages[i], false);
             choiceButtons[i].gameObject.SetActive(false);
         }
+
+        // Continue
+        continueButton = CreateLayoutButton(card.transform, "ContinueButton", out continueButtonLabel, out _continueImage, true);
+        continueButtonLabel.text = "Devam";
+        var contLe = continueButton.gameObject.AddComponent<LayoutElement>();
+        contLe.preferredHeight = 46f;
+        contLe.minHeight = 46f;
     }
 
-    private static RectTransform CreateChild(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPos, Vector2 size)
+    private static GameObject CreateRow(Transform parent, string name, float height)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = anchorMin;
-        rt.anchorMax = anchorMax;
-        rt.pivot = anchorMin;
-        rt.anchoredPosition = anchoredPos;
-        rt.sizeDelta = size;
-        return rt;
+        var h = go.AddComponent<HorizontalLayoutGroup>();
+        h.childAlignment = TextAnchor.MiddleLeft;
+        h.childControlWidth = true;
+        h.childControlHeight = true;
+        h.childForceExpandWidth = false;
+        h.childForceExpandHeight = true;
+        h.spacing = 12f;
+        var le = go.AddComponent<LayoutElement>();
+        le.minHeight = height;
+        le.preferredHeight = height;
+        return go;
     }
 
-    private static TextMeshProUGUI CreateTmp(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 offsetMin, Vector2 offsetMax, float size, FontStyles style)
+    private static GameObject CreateColumn(Transform parent, string name, float spacing)
+    {
+        var go = new GameObject(name, typeof(RectTransform));
+        go.transform.SetParent(parent, false);
+        var v = go.AddComponent<VerticalLayoutGroup>();
+        v.spacing = spacing;
+        v.childAlignment = TextAnchor.UpperLeft;
+        v.childControlWidth = true;
+        v.childControlHeight = true;
+        v.childForceExpandWidth = true;
+        v.childForceExpandHeight = false;
+        go.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        return go;
+    }
+
+    private static TextMeshProUGUI CreateLayoutTmp(Transform parent, string name, float fontSize, FontStyles style, Color color)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = aMin;
-        rt.anchorMax = aMax;
-        rt.offsetMin = offsetMin;
-        rt.offsetMax = offsetMax;
         var tmp = go.GetComponent<TextMeshProUGUI>();
-        tmp.fontSize = size;
+        tmp.fontSize = fontSize;
         tmp.fontStyle = style;
-        tmp.color = new Color(0.93f, 0.94f, 0.92f, 1f);
+        tmp.color = color;
         tmp.raycastTarget = false;
-        tmp.alignment = name == "Status" ? TextAlignmentOptions.Left : TextAlignmentOptions.TopLeft;
         return tmp;
     }
 
-    private static Button CreateButton(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 anchoredPos, Vector2 size, out TextMeshProUGUI label, string text)
+    private static Button CreateLayoutButton(
+        Transform parent, string name, out TextMeshProUGUI label, out Image bg, bool accent)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchorMin = aMin;
-        rt.anchorMax = aMax;
-        rt.pivot = aMin;
-        rt.anchoredPosition = anchoredPos;
-        rt.sizeDelta = size;
-        var img = go.GetComponent<Image>();
-        img.color = new Color(0.12f, 0.18f, 0.18f, 0.95f);
+
+        bg = go.GetComponent<Image>();
+        bg.sprite = RuntimeUiSprites.GetRoundedSprite(8);
+        bg.type = Image.Type.Sliced;
+        bg.color = accent ? ContinueAccent : ButtonIdle;
+
         var btn = go.GetComponent<Button>();
+        var colors = btn.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
+        colors.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+        colors.disabledColor = new Color(0.7f, 0.7f, 0.7f, 0.7f);
+        colors.fadeDuration = 0.08f;
+        btn.colors = colors;
+        btn.targetGraphic = bg;
+
+        var le = go.GetComponent<LayoutElement>();
+        if (le == null) le = go.AddComponent<LayoutElement>();
+        le.preferredHeight = 46f;
+        le.minHeight = 46f;
+        le.flexibleWidth = 1f;
 
         var labelGo = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         labelGo.transform.SetParent(go.transform, false);
         var lrt = labelGo.GetComponent<RectTransform>();
         lrt.anchorMin = Vector2.zero;
         lrt.anchorMax = Vector2.one;
-        lrt.offsetMin = Vector2.zero;
-        lrt.offsetMax = Vector2.zero;
+        lrt.offsetMin = new Vector2(16f, 6f);
+        lrt.offsetMax = new Vector2(-16f, -6f);
         label = labelGo.GetComponent<TextMeshProUGUI>();
-        label.text = text;
-        label.fontSize = 22;
+        label.fontSize = 19;
         label.alignment = TextAlignmentOptions.Center;
-        label.color = Color.white;
+        label.color = accent ? new Color(0.08f, 0.08f, 0.06f, 1f) : Color.white;
         label.raycastTarget = false;
         return btn;
     }
