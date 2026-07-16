@@ -19,6 +19,7 @@ public class PlayerStamina : NetworkBehaviour
     private bool _sprinting;
     private bool _exhausted;
     private float _regenDelayTimer;
+    private PlayerController _playerController;
 
     public float MaxStamina => maxStamina;
     public float CurrentStamina => _current;
@@ -35,6 +36,7 @@ public class PlayerStamina : NetworkBehaviour
         _exhausted = false;
         _regenDelayTimer = 0f;
         _sprinting = false;
+        _playerController = GetComponent<PlayerController>();
         NotifyChanged();
     }
 
@@ -59,6 +61,7 @@ public class PlayerStamina : NetworkBehaviour
                 _exhausted = true;
                 _regenDelayTimer = regenDelayAfterEmpty;
                 _sprinting = false;
+                PlayPantingSound();
             }
         }
         else
@@ -87,5 +90,24 @@ public class PlayerStamina : NetworkBehaviour
     private void NotifyChanged()
     {
         OnStaminaChanged?.Invoke(_current, maxStamina);
+    }
+
+    private void PlayPantingSound()
+    {
+        if (_playerController == null)
+            _playerController = GetComponent<PlayerController>();
+
+        if (_playerController != null)
+        {
+            int charIndex = _playerController.characterIndex.Value;
+            if (charIndex == 0) // Ahu (Female)
+            {
+                GameAudio.PlayFemalePant();
+            }
+            else if (charIndex == 1) // Yaman (Male)
+            {
+                GameAudio.PlayMalePant();
+            }
+        }
     }
 }

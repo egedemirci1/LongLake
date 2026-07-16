@@ -13,7 +13,7 @@ public class FootstepAudio : NetworkBehaviour
     [SerializeField] private AudioClip runClip;
     [SerializeField] private AudioClip runClipRight;
     [SerializeField] private string walkResourcesPath = "SFX/walk";
-    [SerializeField] private string runResourcesPath = "SFX/run";
+    [SerializeField] private string runResourcesPath = "SFX/running";
 
     [Header("Gait timing")]
     [Tooltip("Yürümede sol→sağ aralığı.")]
@@ -42,6 +42,7 @@ public class FootstepAudio : NetworkBehaviour
     private AudioSource _source;
     private float _nextStepTime;
     private bool _nextIsLeft = true;
+    private bool _wasSprinting;
 
     public override void OnNetworkSpawn()
     {
@@ -90,54 +91,46 @@ public class FootstepAudio : NetworkBehaviour
             return;
         }
 
-        if (Time.time < _nextStepTime)
-            return;
-
-        bool sprinting = speed >= sprintSpeedThreshold;
-        bool isLeft = _nextIsLeft;
-
-        PlayFoot(isLeft, sprinting);
-
-        float gap = isLeft
-            ? (sprinting ? runPairGap : walkPairGap)
-            : (sprinting ? runPairGap : walkPairGap) + (sprinting ? runStridePause : walkStridePause);
-
-        gap += Random.Range(-gapJitter, gapJitter);
-        gap = Mathf.Max(0.14f, gap);
-
-        _nextStepTime = Time.time + gap;
-        _nextIsLeft = !isLeft;
-    }
-
-    private void PlayFoot(bool left, bool sprinting)
-    {
-        AudioClip clip;
-        if (sprinting)
+        bool sprinting = false;
+        if (IsOwner)
         {
-            clip = (!left && runClipRight != null) ? runClipRight : runClip;
-            if (clip == null) clip = walkClip;
+            sprinting = Input.GetKey(KeyCode.LeftShift);
         }
         else
         {
-            clip = (!left && walkClipRight != null) ? walkClipRight : walkClip;
+            sprinting = speed >= sprintSpeedThreshold;
         }
 
-        if (clip == null) return;
+        AudioClip targetClip = sprinting ? runClip : walkClip;
+        float targetVolume = sprinting ? runVolume : walkVolume;
+        float targetPitch = sprinting ? (leftPitch * runPitchBoost) : leftPitch;
 
-        float pitch = left ? leftPitch : rightPitch;
-        if (sprinting) pitch *= runPitchBoost;
-        pitch *= Random.Range(0.98f, 1.03f);
-
-        float volume = sprinting ? runVolume : walkVolume;
-        volume *= Random.Range(0.92f, 1.05f);
-
-        // Pitch PlayOneShot'tan önce set edilmeli (Stop yok — kesilme/tıkırtı olmaz).
-        _source.pitch = pitch;
-        _source.PlayOneShot(clip, volume);
+        if (_source.clip != targetClip || !_source.isPlaying)
+        {
+            _source.clip = targetClip;
+            _source.loop = false; // Disable native loop to bypass truncation import bug
+            _source.volume = targetVolume;
+            _source.pitch = targetPitch;
+            _source.Play();
+        }
+        else
+        {
+            // Update volume/pitch dynamically if state is same but values changed
+            _source.volume = targetVolume;
+            _source.pitch = targetPitch;
+            if (!_source.isPlaying)
+            {
+                _source.Play();
+            }
+        }
     }
 
     private void ResetGait()
     {
+        if (_source != null && _source.isPlaying)
+        {
+            _source.Stop();
+        }
         _nextStepTime = 0f;
         _nextIsLeft = true;
     }

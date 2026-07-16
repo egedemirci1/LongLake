@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class CraftingSlotDropHandler : MonoBehaviour, IDropHandler
+public class CraftingSlotDropHandler : MonoBehaviour, IDropHandler, IPointerClickHandler
 {
     [Header("Slot Info")]
     public bool isInputSlot = true; // true = input slot, false = output slot
@@ -33,6 +33,11 @@ public class CraftingSlotDropHandler : MonoBehaviour, IDropHandler
         
         // Sadece craft malzemesi olan item'lar kabul edilir
         return item.isMaterial;
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        GameAudio.PlayClick();
     }
 }
 

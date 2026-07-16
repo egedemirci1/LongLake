@@ -400,9 +400,14 @@ public class QuestManager : NetworkBehaviour
         RefreshAllUi();
 
         // Yeni görev başladığında kart soldan kayarak belirsin
-        // (tamamlanma flaşı sürüyorsa intro'yu coroutine tetikler).
-        if (newValue >= 0 && !hudFlashActive)
+        // Eğer bu ilk görevse (oldValue == -1) ses ve intro hemen çalınır.
+        // Eğer bir önceki görev tamamlandığı için buraya geldiysek (oldValue >= 0),
+        // ses ve intro PlayQuestCompletedFlash coroutine'i tarafından gecikmeli çalınacak.
+        if (newValue >= 0 && oldValue == -1 && !hudFlashActive)
+        {
             PlayHudIntro();
+            GameAudio.PlayQStart();
+        }
 
         OnQuestStateChanged?.Invoke();
     }
@@ -423,6 +428,7 @@ public class QuestManager : NetworkBehaviour
             isActiveAndEnabled)
         {
             StartCoroutine(PlayQuestCompletedFlash(availableQuests[changeEvent.Value]));
+            GameAudio.PlayQFinish();
         }
 
         RefreshAllUi();
@@ -563,13 +569,17 @@ public class QuestManager : NetworkBehaviour
         if (hudProgressText != null)
             hudProgressText.gameObject.SetActive(false);
 
-        yield return new WaitForSeconds(CompletionFlashSeconds);
+        float waitTime = GameAudio.GetQFinishDuration();
+        yield return new WaitForSeconds(waitTime);
 
         hudFlashActive = false;
         UpdateHud();
 
         if (GetCurrentQuest() != null)
+        {
             PlayHudIntro();
+            GameAudio.PlayQStart();
+        }
     }
 
     private void EnsureUiExists()

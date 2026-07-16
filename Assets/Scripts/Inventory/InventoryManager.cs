@@ -239,12 +239,14 @@ public class InventoryManager : NetworkBehaviour
                     // Envanter açılıyor - cursor'u göster ve unlock et
                     Cursor.lockState = CursorLockMode.None;
                     Cursor.visible = true;
+                    GameAudio.PlayInvOpen();
                 }
                 else
                 {
                     // Envanter kapanıyor - cursor'u kilitle ve gizle
                     Cursor.lockState = CursorLockMode.Locked;
                     Cursor.visible = false;
+                    GameAudio.PlayInvClose();
                 }
             }
         }
@@ -897,6 +899,47 @@ public class InventoryManager : NetworkBehaviour
                 cancelCraftButton.onClick.AddListener(CancelCrafting);
             }
         }
+
+        // CraftButton'ı bul ve ses bağla
+        Transform craftButtonT = mainInventoryObject.transform.Find("CraftPanel/CraftButton");
+        if (craftButtonT == null)
+        {
+            craftButtonT = craftSite.Find("CraftButton");
+            if (craftButtonT == null)
+            {
+                Transform craftPanel = mainInventoryObject.transform.Find("CraftPanel");
+                if (craftPanel != null)
+                {
+                    craftButtonT = craftPanel.Find("CraftButton");
+                }
+                if (craftButtonT == null)
+                {
+                    var all = Resources.FindObjectsOfTypeAll<Transform>();
+                    foreach (var tr in all)
+                    {
+                        if (tr != null && tr.name == "CraftButton")
+                        {
+                            craftButtonT = tr;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (craftButtonT != null)
+        {
+            Button craftButton = craftButtonT.GetComponent<Button>();
+            if (craftButton != null)
+            {
+                craftButton.onClick.AddListener(PlayCraftSound);
+            }
+        }
+    }
+
+    private void PlayCraftSound()
+    {
+        GameAudio.PlayCraft();
     }
 
     private string GetChildrenNames(Transform parent)

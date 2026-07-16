@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler
 {
     [Header("Slot Info")]
     public bool isHotbarSlot = false; // true = hotbar slot, false = inventory slot
@@ -279,6 +279,11 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
         {
             inventoryManager.AddItemToCraftingInput(dropHandler.slotIndex, sourceItem, isHotbarSlot, slotIndex);
         }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        GameAudio.PlayClick();
     }
 }
 

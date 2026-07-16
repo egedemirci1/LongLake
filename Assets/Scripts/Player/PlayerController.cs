@@ -192,7 +192,10 @@ public class PlayerController : NetworkBehaviour
             if (_verticalVelocity < 0.0f) _verticalVelocity = -2f;
 
             if (Input.GetKeyDown(KeyCode.Space))
+            {
                 _verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
+                GameAudio.PlayJump();
+            }
         }
 
         if (_verticalVelocity < 53f)

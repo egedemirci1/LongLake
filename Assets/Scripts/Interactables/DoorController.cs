@@ -141,16 +141,32 @@ public class DoorController : NetworkBehaviour, IInteractable
         if (!knockOnlyForQuest) return;
         _targetLocalZ = current ? knockOpenZRotation : closeRotation;
         ApplyNavMeshCarveState();
+
         if (current)
+        {
+            GameAudio.PlayOpen();
             StartCoroutine(RefreshLinkAfterOpenRoutine());
+        }
+        else
+        {
+            GameAudio.PlayClose();
+        }
     }
 
     private void OnIsOpenChanged(bool previous, bool current)
     {
         if (knockOnlyForQuest) return;
         ApplyNavMeshCarveState();
+
         if (current)
+        {
+            GameAudio.PlayOpen();
             StartCoroutine(RefreshLinkAfterOpenRoutine());
+        }
+        else
+        {
+            GameAudio.PlayClose();
+        }
     }
 
     private System.Collections.IEnumerator RefreshLinkAfterOpenRoutine()
