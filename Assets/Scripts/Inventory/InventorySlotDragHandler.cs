@@ -83,8 +83,6 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
             dropTarget = eventData.pointerEnter;
         }
         
-        Debug.Log($"[Inventory] OnEndDrag: dropTarget={(dropTarget != null ? dropTarget.name : "NULL")}, pointerEnter={(eventData.pointerEnter != null ? eventData.pointerEnter.name : "NULL")}");
-        
         bool itemDropped = false;
         
         if (dropTarget != null)
@@ -103,14 +101,12 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
                 if (allHandlers != null && allHandlers.Length > 0)
                 {
                     craftingDropHandler = allHandlers[0];
-                    Debug.Log($"[Inventory] OnEndDrag: Found CraftingSlotDropHandler in children: {craftingDropHandler.name}");
                 }
             }
             
             if (craftingDropHandler != null)
             {
                 // Crafting slot'a drop
-                Debug.Log($"[Inventory] OnEndDrag: Dropping to crafting slot {craftingDropHandler.slotIndex + 1}, isInputSlot={craftingDropHandler.isInputSlot}");
                 HandleCraftingDrop(craftingDropHandler);
                 DestroyDragVisual();
                 return; // Crafting drop yapıldı, inventory drop'a geçme
@@ -133,8 +129,6 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
                     parent = parent.parent;
                 }
             }
-            
-            Debug.Log($"[Inventory] OnEndDrag: inventoryDropHandler={(inventoryDropHandler != null ? inventoryDropHandler.name + " (slot " + (inventoryDropHandler.slotIndex + 1) + ", isHotbar=" + inventoryDropHandler.isHotbarSlot + ")" : "NULL")}");
             
             if (inventoryDropHandler != null)
             {
@@ -159,12 +153,7 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
                 
                 if (!isUIElement)
                 {
-                    Debug.Log($"[Inventory] Dropping item '{item.itemName}' to ground (outside UI)");
                     inventoryManager.DropItemToGround(item, isHotbarSlot, slotIndex);
-                }
-                else
-                {
-                    Debug.LogWarning($"[Inventory] OnEndDrag: No drop handler found on {dropTarget.name}! Make sure InventorySlotDropHandler component is added to slot.");
                 }
             }
         }
@@ -239,7 +228,6 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
         // Aynı slot'a drop edilirse iptal
         if (isHotbarSlot == dropHandler.isHotbarSlot && slotIndex == dropHandler.slotIndex)
         {
-            Debug.Log("[Inventory] Cannot drop item on itself!");
             return;
         }
         
@@ -268,42 +256,28 @@ public class InventorySlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
     
     private void HandleCraftingDrop(CraftingSlotDropHandler dropHandler)
     {
-        Debug.Log($"[Inventory] HandleCraftingDrop called. inventoryManager={(inventoryManager != null)}, IsOwner={(inventoryManager != null && inventoryManager.IsOwner)}, isHotbarSlot={isHotbarSlot}, slotIndex={slotIndex}");
-        
         if (inventoryManager == null || !inventoryManager.IsOwner) 
         {
-            Debug.LogWarning("[Inventory] HandleCraftingDrop: inventoryManager is null or not owner!");
             return;
         }
         
         ItemData sourceItem = GetItemFromSlot();
-        Debug.Log($"[Inventory] HandleCraftingDrop: sourceItem={(sourceItem != null ? sourceItem.itemName : "NULL")}, isMaterial={(sourceItem != null && sourceItem.isMaterial)}");
-        
         if (sourceItem == null) 
         {
-            Debug.LogWarning("[Inventory] HandleCraftingDrop: sourceItem is null!");
             return;
         }
         
         // Crafting slot sadece craft malzemesi kabul eder
         bool canAccept = dropHandler.CanAcceptItem(sourceItem);
-        Debug.Log($"[Inventory] HandleCraftingDrop: CanAcceptItem={canAccept}, isInputSlot={dropHandler.isInputSlot}, slotIndex={dropHandler.slotIndex}");
-        
         if (!canAccept)
         {
-            Debug.LogWarning($"[Inventory] Item '{sourceItem.itemName}' is not a craft material! Cannot drop to crafting slot. isMaterial={sourceItem.isMaterial}");
             return;
         }
         
         // Input slot'a item ekle
         if (dropHandler.isInputSlot)
         {
-            Debug.Log($"<color=green>[Inventory]</color> Adding item '{sourceItem.itemName}' to crafting input slot {dropHandler.slotIndex + 1}");
             inventoryManager.AddItemToCraftingInput(dropHandler.slotIndex, sourceItem, isHotbarSlot, slotIndex);
-        }
-        else
-        {
-            Debug.LogWarning("[Inventory] HandleCraftingDrop: Cannot drop to output slot!");
         }
     }
 }

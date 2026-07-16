@@ -76,7 +76,6 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
     {
         if (isPickedUp.Value)
         {
-            Debug.LogWarning($"[ItemPickUp] Client {clientId} tried to pick up item but it's already taken. Denied.");
             return;
         }
 
@@ -88,7 +87,6 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
                 var inventoryManager = playerObject.GetComponentInChildren<InventoryManager>();
                 if (inventoryManager != null && IsUniqueItemBlocked(inventoryManager))
                 {
-                    Debug.LogWarning($"[ItemPickUp] Client {clientId} already has '{itemToGive.itemID}'. Request denied.");
                     return;
                 }
             }
@@ -102,11 +100,13 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
 
         AddItemToClientClientRpc(clientId);
 
+        // In-scene NetworkObject'lerde Despawn(true)/Destroy beklenmedik davranışa yol açar.
+        // Despawn(false) ağdan çıkarır, GameObject sahne içinde kalır (görünürlük zaten kapatıldı).
         var no = GetComponent<NetworkObject>();
         if (no != null && no.IsSpawned)
-            no.Despawn();
+            no.Despawn(false);
         else
-            Destroy(gameObject);
+            SetVisibility(false);
     }
 
     [ClientRpc]
@@ -126,7 +126,6 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
 
         inventoryManager.AddItem(itemToGive);
         GameAudio.PlayPickup();
-        Debug.Log($"<color=green>[ItemPickUp]</color> Item '{itemToGive.itemName}' added to inventory.");
     }
 
     public string GetInteractText()

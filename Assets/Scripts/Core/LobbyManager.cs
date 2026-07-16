@@ -304,6 +304,10 @@ public class LobbyManager : NetworkBehaviour
             loading.ShowLoadingScreenForScene("CrashSite_Main", "Bölüm 1: Uzungöl Tatili");
         else
             Debug.LogError("[LobbyManager] LoadingScreenManager not found — client cannot show loading UI.");
+
+        // Host GameplaySceneLoader.BeginHostLoad ile ilerler; client sadece UI + progress hook.
+        if (!IsServer && GameplaySceneLoader.Instance != null)
+            GameplaySceneLoader.Instance.BeginClientLoadingUi("CrashSite_Main");
     }
 
     private void AddReady(ulong clientId)

@@ -174,11 +174,6 @@ public class InventoryManager : NetworkBehaviour
             }
         }
         
-        if (remainingToRemove > 0)
-        {
-            Debug.LogWarning($"[Inventory] Could not remove {remainingToRemove} items of {itemID}! Not enough items.");
-        }
-        
         UpdateUI();
     }
 
@@ -187,7 +182,6 @@ public class InventoryManager : NetworkBehaviour
         if (!IsOwner) return;
         
         // Durability sistemi için (ileride eklenebilir)
-        Debug.Log($"[Inventory] Item {itemID} durability reduced by {amount}");
     }
 
     public override void OnNetworkSpawn()
@@ -231,7 +225,6 @@ public class InventoryManager : NetworkBehaviour
             // Backpack kontrolü - backpack yoksa envanter açılmaz
             if (!HasItem("backpack"))
             {
-                Debug.LogWarning("[Inventory] You need a backpack to open inventory!");
                 return;
             }
             
@@ -279,7 +272,6 @@ public class InventoryManager : NetworkBehaviour
         // Slot geçerli mi kontrol et (hotbar slot index)
         if (slotIndex < 0 || slotIndex >= HOTBAR_SIZE)
         {
-            Debug.LogWarning($"[Inventory] Invalid hotbar slot index: {slotIndex}");
             return;
         }
         
@@ -298,7 +290,6 @@ public class InventoryManager : NetworkBehaviour
             {
                 selectedSlotIndex = -1;
                 OnItemDeselected?.Invoke();
-                Debug.Log($"<color=yellow>[Inventory]</color> Hotbar Slot {slotIndex + 1} DESELECTED (toggle off)");
             }
             else
             {
@@ -311,7 +302,6 @@ public class InventoryManager : NetworkBehaviour
                 
                 selectedSlotIndex = slotIndex;
                 OnItemSelected?.Invoke(item, slotIndex);
-                Debug.Log($"<color=green>[Inventory]</color> Hotbar Slot {slotIndex + 1} SELECTED: {item.itemName} (inventory index: {inventoryIndex})");
             }
         }
         else
@@ -321,7 +311,6 @@ public class InventoryManager : NetworkBehaviour
             {
                 selectedSlotIndex = -1;
                 OnItemDeselected?.Invoke();
-                Debug.Log($"<color=yellow>[Inventory]</color> Hotbar Slot {slotIndex + 1} is empty, selection cleared");
             }
         }
         
@@ -439,26 +428,15 @@ public class InventoryManager : NetworkBehaviour
                 Debug.LogError($"[Inventory] {slotName}/ItemIcon not found!");
 
             nameTexts[i] = nameT != null ? nameT.GetComponent<TextMeshProUGUI>() : null;
-            if (nameT != null && nameTexts[i] == null)
-            {
-                Debug.LogWarning($"[Inventory] {slotName}/ItemName GameObject found but TextMeshProUGUI component is missing!");
-            }
-            
             iconImages[i] = iconT != null ? iconT.GetComponent<Image>() : null;
 
             if (iconT != null && iconImages[i] == null)
             {
-                Debug.LogWarning($"[Inventory] {slotName}/ItemIcon GameObject found but Image component is missing. Adding Image component...");
                 iconImages[i] = iconT.gameObject.AddComponent<Image>();
             }
 
             // Slot frame'ini al
             slotFrames[i] = slot.GetComponent<Image>();
-            if (slotFrames[i] == null)
-            {
-                Debug.LogWarning($"[Inventory] {slotName} has no Image component for frame!");
-            }
-
             // Initialize text and icon (will be updated by UpdateUI)
             if (nameTexts[i] != null) nameTexts[i].text = "";
             if (iconImages[i] != null)
@@ -479,9 +457,6 @@ public class InventoryManager : NetworkBehaviour
         // (Bind ne zaman gerçekleşirse gerçekleşsin sahnedeki başlangıç durumuna güvenme.)
         hotbarObject.SetActive(HasItem("backpack"));
 
-        Debug.Log("<color=green>[Inventory]</color> Hotbar UI runtime bound.");
-        Debug.Log($"[Inventory] Hotbar binding summary: nameTexts={nameTexts.Count(t => t != null)}/{HOTBAR_SIZE}, iconImages={iconImages.Count(i => i != null)}/{HOTBAR_SIZE}");
-        
         // 4) Find main inventory grid slots
         if (mainInventoryObject != null)
         {
@@ -521,7 +496,6 @@ public class InventoryManager : NetworkBehaviour
 
         if (inventoryGrid == null)
         {
-            Debug.LogWarning("[Inventory] InventoryGrid not found! Main inventory UI will not update.");
             return;
         }
 
@@ -555,7 +529,6 @@ public class InventoryManager : NetworkBehaviour
                             !child.name.Contains("Border"))
                         {
                             iconT = child;
-                            Debug.Log($"[Inventory] Main inventory slot {i + 1}: Using child '{child.name}' as ItemIcon (ItemIcon child not found)");
                             break;
                         }
                     }
@@ -575,7 +548,6 @@ public class InventoryManager : NetworkBehaviour
                     iconT = iconGO.transform;
                     Image iconImage = iconGO.AddComponent<Image>();
                     iconImage.raycastTarget = false; // Drag-drop için raycast'i kapat
-                    Debug.Log($"[Inventory] Main inventory slot {i + 1}: Created ItemIcon GameObject (not found in slot structure)");
                 }
 
                 // ItemName child'ını bul (önce ItemName_Text, sonra ItemName_Tex, sonra ItemName)
@@ -604,13 +576,8 @@ public class InventoryManager : NetworkBehaviour
 
                 inventorySlotIcons[i] = iconT != null ? iconT.GetComponent<Image>() : null;
                 inventorySlotNames[i] = nameT != null ? nameT.GetComponent<TextMeshProUGUI>() : null;
-                
-                // Icon bulunamazsa uyar
-                if (inventorySlotIcons[i] == null)
-                {
-                    Debug.LogWarning($"[Inventory] Main inventory slot {i + 1} ({slot.name}): ItemIcon Image component not found! Slot children: {GetChildrenNames(slot)}");
-                }
-                else
+
+                if (inventorySlotIcons[i] != null)
                 {
                     // Icon'u başlangıçta hazırla
                     inventorySlotIcons[i].enabled = true;
@@ -618,7 +585,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         inventorySlotIcons[i].gameObject.SetActive(true);
                     }
-                    Debug.Log($"[Inventory] Main inventory slot {i + 1} ({slot.name}): ItemIcon bound successfully");
                 }
                 
                 // Slot frame'ini al (boş slot görseli için)
@@ -643,7 +609,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         frameImage = slot.gameObject.AddComponent<Image>();
                         frameImage.color = FrameEmptyColor;
-                        Debug.Log($"[Inventory] Main inventory slot {i + 1}: Created Image component for frame");
                     }
                     inventorySlotFrames[i] = frameImage;
                 }
@@ -657,7 +622,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         inventorySlotFrames[i].gameObject.SetActive(true);
                     }
-                    Debug.Log($"[Inventory] Main inventory slot {i + 1}: Frame bound successfully");
                 }
                 
                 // Drag & Drop handler'ları ekle (eğer yoksa)
@@ -677,15 +641,9 @@ public class InventoryManager : NetworkBehaviour
                 dropHandler.isHotbarSlot = false;
                 dropHandler.slotIndex = i;
                 
-                Debug.Log($"[Inventory] Main inventory slot {i + 1} ({slot.name}) bound with drag-drop handlers");
-            }
-            else
-            {
-                Debug.LogWarning($"[Inventory] Main inventory slot {i + 1} (InvSlot_{i + 1}) not found in InventoryGrid!");
             }
         }
 
-        Debug.Log($"<color=green>[Inventory]</color> Main Inventory UI bound. Icons: {inventorySlotIcons.Count(i => i != null)}/{MAX_INVENTORY_SIZE}, Names: {inventorySlotNames.Count(t => t != null)}/{MAX_INVENTORY_SIZE}, Frames: {inventorySlotFrames.Count(f => f != null)}/{MAX_INVENTORY_SIZE}");
     }
 
     private void BindCraftingUI()
@@ -712,7 +670,6 @@ public class InventoryManager : NetworkBehaviour
 
         if (craftSite == null)
         {
-            Debug.LogWarning("[Inventory] CraftSite not found! Crafting UI will not update.");
             return;
         }
 
@@ -794,7 +751,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         frameImage = slot.gameObject.AddComponent<Image>();
                         frameImage.color = FrameEmptyColor;
-                        Debug.Log($"[Inventory] Crafting input slot {i + 1}: Created Image component for frame");
                     }
                     craftingInputFrames[i] = frameImage;
                 }
@@ -808,7 +764,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         craftingInputFrames[i].gameObject.SetActive(true);
                     }
-                    Debug.Log($"[Inventory] Crafting input slot {i + 1}: Frame bound successfully");
                 }
             }
         }
@@ -889,7 +844,6 @@ public class InventoryManager : NetworkBehaviour
                 {
                     frameImage = outputSlot.gameObject.AddComponent<Image>();
                     frameImage.color = FrameEmptyColor;
-                    Debug.Log("[Inventory] Crafting output slot: Created Image component for frame");
                 }
                 craftingOutputFrame = frameImage;
             }
@@ -903,7 +857,6 @@ public class InventoryManager : NetworkBehaviour
                 {
                     craftingOutputFrame.gameObject.SetActive(true);
                 }
-                Debug.Log("[Inventory] Crafting output slot: Frame bound successfully");
             }
         }
 
@@ -942,19 +895,8 @@ public class InventoryManager : NetworkBehaviour
             {
                 cancelCraftButton.onClick.RemoveAllListeners();
                 cancelCraftButton.onClick.AddListener(CancelCrafting);
-                Debug.Log("<color=green>[Inventory]</color> CancelButton bound successfully");
-            }
-            else
-            {
-                Debug.LogWarning("[Inventory] CancelButton found but Button component is missing!");
             }
         }
-        else
-        {
-            Debug.LogWarning("[Inventory] CancelButton not found! Craft cancel functionality will not work.");
-        }
-
-        Debug.Log($"<color=green>[Inventory]</color> Crafting UI bound. Input Icons: {craftingInputIcons.Count(i => i != null)}/3, Output Icon: {craftingOutputIcon != null}, Input Frames: {craftingInputFrames.Count(f => f != null)}/3, Output Frame: {craftingOutputFrame != null}");
     }
 
     private string GetChildrenNames(Transform parent)
@@ -973,7 +915,6 @@ public class InventoryManager : NetworkBehaviour
     {
         if (!IsOwner) 
         {
-            Debug.LogWarning($"[Inventory] AddItem called but not owner. IsOwner={IsOwner}");
             return; // only our own inventory
         }
         if (newItem == null) 
@@ -992,7 +933,6 @@ public class InventoryManager : NetworkBehaviour
                 {
                     // Stack et
                     items[i].quantity++;
-                    Debug.Log($"<color=green>[Inventory]</color> Item stacked: {newItem.itemName} (x{items[i].quantity})");
             UpdateUI();
                     return;
                 }
@@ -1004,8 +944,6 @@ public class InventoryManager : NetworkBehaviour
         {
             items.Add(new InventorySlot(newItem, 1));
             int addedIndex = items.Count - 1;
-            Debug.Log($"<color=green>[Inventory]</color> Item added to inventory slot {addedIndex}: {newItem.itemName} (x1) (ID: {newItem.itemID}). Total slots: {items.Count}");
-            
             // Eğer hotbar'da boş slot varsa, yeni eklenen item'ı ilk boş hotbar slot'una ata
             int assignedHotbar = -1;
             for (int i = 0; i < HOTBAR_SIZE; i++)
@@ -1014,7 +952,6 @@ public class InventoryManager : NetworkBehaviour
                 {
                     hotbarSlots[i] = addedIndex;
                     assignedHotbar = i;
-                    Debug.Log($"<color=green>[Inventory]</color> Item automatically assigned to hotbar slot {i + 1}");
                     break;
                 }
             }
@@ -1027,13 +964,11 @@ public class InventoryManager : NetworkBehaviour
             if (newItem.itemID == "backpack" && hotbarObject != null)
             {
                 hotbarObject.SetActive(true);
-                Debug.Log("[Inventory] Backpack acquired! Hotbar unlocked.");
             }
             
             // Bind UI if not bound
             if (nameTexts == null || iconImages == null || nameTexts.Length == 0 || iconImages.Length == 0)
             {
-                Debug.LogWarning("[Inventory] UI not bound, calling BindUIRuntime()...");
                 BindUIRuntime();
             }
             
@@ -1045,10 +980,6 @@ public class InventoryManager : NetworkBehaviour
             
             UpdateUI();
         }
-        else
-        {
-            Debug.LogWarning($"[Inventory] Cannot add item {newItem.itemName}: Inventory full ({MAX_INVENTORY_SIZE}/{MAX_INVENTORY_SIZE})");
-        }
     }
 
     private void UpdateUI()
@@ -1056,7 +987,6 @@ public class InventoryManager : NetworkBehaviour
         // Don't update if UI not bound
         if (nameTexts == null || iconImages == null || nameTexts.Length == 0 || iconImages.Length == 0)
         {
-            Debug.LogWarning("[Inventory] UpdateUI called but UI not bound. BindUIRuntime() should be called.");
             return;
         }
 
@@ -1084,22 +1014,15 @@ public class InventoryManager : NetworkBehaviour
                     nameTexts[i].text = slot.quantity > 1 ? $"{item.itemName} x{slot.quantity}" : item.itemName;
                 }
 
-                if (iconImages[i] != null)
+                if (iconImages[i] != null && item.itemIcon != null)
                 {
-                    if (item.itemIcon == null)
+                    iconImages[i].sprite = item.itemIcon;
+                    iconImages[i].color = Color.white; // visible
+                    iconImages[i].enabled = true;
+
+                    if (iconImages[i].gameObject != null)
                     {
-                        Debug.LogWarning($"[Inventory] Item '{item.itemName}' has null itemIcon!");
-                    }
-                    else
-                    {
-                        iconImages[i].sprite = item.itemIcon;
-                        iconImages[i].color = Color.white; // visible
-                        iconImages[i].enabled = true;
-                        
-                        if (iconImages[i].gameObject != null)
-                        {
-                            iconImages[i].gameObject.SetActive(true);
-                        }
+                        iconImages[i].gameObject.SetActive(true);
                     }
                 }
 
@@ -1152,16 +1075,7 @@ public class InventoryManager : NetworkBehaviour
                                 inventorySlotIcons[i].gameObject.SetActive(true);
                             }
                         }
-                        else
-                        {
-                            Debug.LogWarning($"[Inventory] Item '{item.itemName}' has null itemIcon!");
-                        }
                     }
-                    else
-                    {
-                        Debug.LogWarning($"[Inventory] UpdateUI: Main inventory slot {i + 1} icon is NULL! Item: {item.itemName}");
-                    }
-
                     if (inventorySlotFrames[i] != null)
                     {
                         inventorySlotFrames[i].enabled = true;
@@ -1195,11 +1109,6 @@ public class InventoryManager : NetworkBehaviour
                 }
             }
         }
-        else
-        {
-            Debug.LogWarning($"[Inventory] UpdateUI: Main Inventory UI not fully bound! Icons: {inventorySlotIcons != null && inventorySlotIcons.Length == MAX_INVENTORY_SIZE}, Names: {inventorySlotNames != null && inventorySlotNames.Length == MAX_INVENTORY_SIZE}, Frames: {inventorySlotFrames != null && inventorySlotFrames.Length == MAX_INVENTORY_SIZE}");
-        }
-        
         // Update Crafting UI
         UpdateCraftingUI();
     }
@@ -1214,7 +1123,6 @@ public class InventoryManager : NetworkBehaviour
         hotbarSlots[slot1] = hotbarSlots[slot2];
         hotbarSlots[slot2] = temp;
         
-        Debug.Log($"<color=green>[Inventory]</color> Swapped hotbar slots {slot1 + 1} and {slot2 + 1}");
         UpdateUI();
     }
 
@@ -1230,7 +1138,6 @@ public class InventoryManager : NetworkBehaviour
         // Hotbar referanslarını güncelle
         UpdateHotbarReferences(slot1, slot2);
         
-        Debug.Log($"<color=green>[Inventory]</color> Swapped inventory slots {slot1 + 1} and {slot2 + 1}");
         UpdateUI();
     }
 
@@ -1239,12 +1146,10 @@ public class InventoryManager : NetworkBehaviour
         if (!IsOwner) return;
         if (inventoryIndex < 0 || inventoryIndex >= items.Count || items[inventoryIndex] == null || items[inventoryIndex].IsEmpty) 
         {
-            Debug.LogWarning($"[Inventory] MoveItemFromInventoryToHotbar: Invalid inventoryIndex {inventoryIndex} or empty slot");
             return;
         }
         if (hotbarIndex < 0 || hotbarIndex >= HOTBAR_SIZE) 
         {
-            Debug.LogWarning($"[Inventory] MoveItemFromInventoryToHotbar: Invalid hotbarIndex {hotbarIndex}");
             return;
         }
         
@@ -1262,7 +1167,6 @@ public class InventoryManager : NetworkBehaviour
         // Eğer item zaten hotbar'da bir slot'taysa, o slot'u temizle
         if (existingHotbarSlot >= 0)
         {
-            Debug.Log($"<color=yellow>[Inventory]</color> Item already in hotbar slot {existingHotbarSlot + 1}, clearing old slot");
             hotbarSlots[existingHotbarSlot] = -1;
         }
         
@@ -1271,12 +1175,10 @@ public class InventoryManager : NetworkBehaviour
         {
             int oldInventoryIndex = hotbarSlots[hotbarIndex];
             hotbarSlots[hotbarIndex] = inventoryIndex;
-            Debug.Log($"<color=green>[Inventory]</color> Replaced: Hotbar slot {hotbarIndex + 1} now references Inventory slot {inventoryIndex + 1} (old: {oldInventoryIndex + 1})");
         }
         else
         {
             hotbarSlots[hotbarIndex] = inventoryIndex;
-            Debug.Log($"<color=green>[Inventory]</color> Moved item from inventory slot {inventoryIndex + 1} to hotbar slot {hotbarIndex + 1}");
         }
         
         UpdateUI();
@@ -1287,12 +1189,10 @@ public class InventoryManager : NetworkBehaviour
         if (!IsOwner) return;
         if (hotbarIndex < 0 || hotbarIndex >= HOTBAR_SIZE || hotbarSlots[hotbarIndex] < 0) 
         {
-            Debug.LogWarning($"[Inventory] MoveItemFromHotbarToInventory: Invalid hotbarIndex {hotbarIndex} or empty slot");
             return;
         }
         if (inventoryIndex < 0 || inventoryIndex >= MAX_INVENTORY_SIZE) 
         {
-            Debug.LogWarning($"[Inventory] MoveItemFromHotbarToInventory: Invalid inventoryIndex {inventoryIndex}");
             return;
         }
         
@@ -1315,18 +1215,15 @@ public class InventoryManager : NetworkBehaviour
             {
                 hotbarSlots[hotbarIndex] = inventoryIndex;
                 hotbarSlots[otherHotbarIndex] = itemInventoryIndex;
-                Debug.Log($"<color=green>[Inventory]</color> Swapped: Hotbar slot {hotbarIndex + 1} <-> Inventory slot {inventoryIndex + 1}");
             }
             else
             {
                 hotbarSlots[hotbarIndex] = inventoryIndex;
-                Debug.Log($"<color=green>[Inventory]</color> Replaced: Hotbar slot {hotbarIndex + 1} now references Inventory slot {inventoryIndex + 1}");
             }
         }
         else
         {
             hotbarSlots[hotbarIndex] = -1;
-            Debug.Log($"<color=green>[Inventory]</color> Moved item from hotbar slot {hotbarIndex + 1} to empty inventory slot {inventoryIndex + 1}");
         }
         
         UpdateUI();
@@ -1365,7 +1262,6 @@ public class InventoryManager : NetworkBehaviour
         if (craftingInputItems[inputSlotIndex] != null && 
             craftingInputItems[inputSlotIndex].itemID == item.itemID)
         {
-            Debug.Log($"<color=yellow>[Inventory]</color> Item '{item.itemName}' already in crafting slot {inputSlotIndex + 1}. Ignoring duplicate.");
             UpdateUI();
             return;
         }
@@ -1453,7 +1349,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         // Quantity'den 1 azalt
                         items[inventoryIndex].quantity--;
-                        Debug.Log($"<color=green>[Inventory]</color> Removed 1x '{item.itemName}' from inventory (quantity now: {items[inventoryIndex].quantity})");
                     }
                     else
                     {
@@ -1473,7 +1368,6 @@ public class InventoryManager : NetworkBehaviour
                             }
                         }
                         
-                        Debug.Log($"<color=green>[Inventory]</color> Removed last '{item.itemName}' from inventory slot {inventoryIndex + 1}");
                     }
                 }
             }
@@ -1488,7 +1382,6 @@ public class InventoryManager : NetworkBehaviour
                 {
                     // Quantity'den 1 azalt
                     items[sourceSlotIndex].quantity--;
-                    Debug.Log($"<color=green>[Inventory]</color> Removed 1x '{item.itemName}' from inventory slot {sourceSlotIndex + 1} (quantity now: {items[sourceSlotIndex].quantity})");
                 }
                 else
                 {
@@ -1508,12 +1401,10 @@ public class InventoryManager : NetworkBehaviour
                         }
                     }
                     
-                    Debug.Log($"<color=green>[Inventory]</color> Removed last '{item.itemName}' from inventory slot {sourceSlotIndex + 1}");
                 }
             }
         }
         
-        Debug.Log($"<color=green>[Inventory]</color> Selected item '{item.itemName}' for crafting input slot {inputSlotIndex + 1}");
         UpdateUI();
         UpdateCraftingUI();
     }
@@ -1626,8 +1517,6 @@ public class InventoryManager : NetworkBehaviour
     {
         if (!IsOwner) return;
 
-        bool itemsReturned = false;
-
         // Craft alanındaki tüm input item'ları envantere geri ekle
         for (int i = 0; i < 3; i++)
         {
@@ -1645,8 +1534,6 @@ public class InventoryManager : NetworkBehaviour
                         {
                             items[j].quantity++;
                             stacked = true;
-                            itemsReturned = true;
-                            Debug.Log($"<color=green>[Inventory]</color> Returned '{item.itemName}' to inventory slot {j + 1} (stacked, quantity now: {items[j].quantity})");
                             break;
                         }
                     }
@@ -1659,9 +1546,6 @@ public class InventoryManager : NetworkBehaviour
                     {
                         items.Add(new InventorySlot(item, 1));
                         int addedIndex = items.Count - 1;
-                        itemsReturned = true;
-                        Debug.Log($"<color=green>[Inventory]</color> Returned '{item.itemName}' to new inventory slot {addedIndex + 1}");
-                        
                         // Eğer hotbar'da boş slot varsa, yeni eklenen item'ı ilk boş hotbar slot'una ata
                         for (int k = 0; k < HOTBAR_SIZE; k++)
                         {
@@ -1671,10 +1555,6 @@ public class InventoryManager : NetworkBehaviour
                                 break;
                             }
                         }
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[Inventory] Cannot return '{item.itemName}' to inventory: Inventory full!");
                     }
                 }
                 
@@ -1687,15 +1567,6 @@ public class InventoryManager : NetworkBehaviour
         if (craftingOutputItem != null)
         {
             craftingOutputItem = null;
-        }
-        
-        if (itemsReturned)
-        {
-            Debug.Log($"<color=green>[Inventory]</color> Craft cancelled. All items returned to inventory.");
-        }
-        else
-        {
-            Debug.Log($"<color=yellow>[Inventory]</color> Craft cancelled. No items to return.");
         }
         
         // UI'ı güncelle
@@ -1720,7 +1591,6 @@ public class InventoryManager : NetworkBehaviour
         // Sadece owner bu RPC'yi çağırabilir (güvenlik kontrolü)
         if (!IsOwner)
         {
-            Debug.LogWarning($"[Inventory] Client {NetworkManager.Singleton.LocalClientId} tried to drop item but is not owner!");
             return;
         }
         
@@ -1753,7 +1623,6 @@ public class InventoryManager : NetworkBehaviour
         
         if (item == null || item.itemID != itemID)
         {
-            Debug.LogWarning($"[Inventory] Item '{itemID}' not found in slot!");
             return;
         }
         
@@ -1817,7 +1686,6 @@ public class InventoryManager : NetworkBehaviour
             return;
         }
         
-        Debug.Log($"<color=green>[Inventory]</color> Dropped '{item.itemName}' (quantity: {quantity}) to ground at {spawnPosition}");
     }
     
     private Vector3 GetDropPosition(ulong clientId)
@@ -1826,7 +1694,6 @@ public class InventoryManager : NetworkBehaviour
         NetworkObject playerObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
         if (playerObj == null)
         {
-            Debug.LogWarning("[Inventory] Player not found, using default drop position");
             return Vector3.zero;
         }
         
@@ -1839,7 +1706,6 @@ public class InventoryManager : NetworkBehaviour
         
         if (cam == null)
         {
-            Debug.LogWarning("[Inventory] Camera not found, using player position");
             return playerObj.transform.position + playerObj.transform.forward * 2f;
         }
         

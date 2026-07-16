@@ -25,11 +25,20 @@ public class NetworkLocalSetup : NetworkBehaviour
     private bool controlsEnabled = false;
     private InventoryManager inventoryManager;
     private NotebookUI notebookUI;
+    private bool _lobbyVisualsHidden;
 
     public Vector3 YamanSpawnPosition => yamanSpawnPosition;
 
     public override void OnNetworkSpawn()
     {
+        bool inGameplay = IsGameplayScene();
+
+        // MainMenu / lobide PlayerCapsule hiç görünmesin (owner + remote).
+        if (!inGameplay)
+            SetWorldVisualsVisible(false);
+
+        HookSceneEventsWithRetry();
+
         if (!IsOwner)
         {
             DisableControls();
@@ -39,33 +48,48 @@ public class NetworkLocalSetup : NetworkBehaviour
 
         inventoryManager = GetComponent<InventoryManager>();
 
-        // Lobby'de (main menu) spawn olunduysa mouse görünür olmalı.
-        // Gameplay sahnesinde ise EnterGameplay zaten kilitleyecek; burada gösterip
-        // hemen kilitlemek başlangıçta imlecin yanıp sönmesine yol açıyordu.
-        if (SceneManager.GetActiveScene().name != gameplaySceneName)
+        if (!inGameplay)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            if (vcam != null) vcam.enabled = false;
         }
-
-        SetupCameraRig();
+        else
+        {
+            SetupCameraRig();
+        }
 
         // Karakter seçimi lobby'de yapılır; gameplay sahnesine geçilene kadar kontroller kapalı.
         DisableControls();
         SafeDisableInteraction();
         controlsEnabled = false;
 
-        HookSceneEventsWithRetry();
         TryEnableControlsIfAlreadyInGameplayScene();
+    }
+
+    private bool IsGameplayScene()
+    {
+        return SceneManager.GetActiveScene().name == gameplaySceneName;
+    }
+
+    /// <summary>
+    /// Lobide mesh/capsule gizle; GameObject kapatma (NetworkAnimator uyarısı olmasın).
+    /// </summary>
+    private void SetWorldVisualsVisible(bool visible)
+    {
+        _lobbyVisualsHidden = !visible;
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+                renderers[i].enabled = visible;
+        }
     }
 
     private void SetupCameraRig()
     {
-        // Y�n sorunu ��z�m�: Kameray� PlayerController'a ba�l�yoruz
-        if (playerController != null)
-        {
+        if (playerController != null && Camera.main != null)
             playerController.cameraTransform = Camera.main.transform;
-        }
 
         if (vcam != null && cameraRoot != null)
         {
@@ -80,14 +104,13 @@ public class NetworkLocalSetup : NetworkBehaviour
     {
         var cc = GetComponent<CharacterController>();
         if (cc != null) cc.enabled = false;
-        
-        // Her oyuncu için farklı spawn pozisyonu hesapla
+
         Vector3 spawnPos = GetSpawnPosition();
         transform.position = spawnPos;
-        
+
         if (cc != null) cc.enabled = true;
     }
-    
+
     private Vector3 GetSpawnPosition()
     {
         int selectedCharacter = playerController != null
@@ -109,14 +132,23 @@ public class NetworkLocalSetup : NetworkBehaviour
 
     private void OnNetcodeSceneLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        if (!IsOwner) return;
-        if (sceneName == gameplaySceneName) EnterGameplay();
-        else SafeDisableInteraction();
+        if (sceneName != gameplaySceneName)
+        {
+            if (IsOwner)
+                SafeDisableInteraction();
+            return;
+        }
+
+        SetWorldVisualsVisible(true);
+        if (IsOwner)
+            EnterGameplay();
     }
 
     /// <summary>Karakter lobby'de seçildi; gameplay sahnesine girince doğru noktaya taşı, kontrolleri aç ve görevi başlat.</summary>
     private void EnterGameplay()
     {
+        SetWorldVisualsVisible(true);
+        SetupCameraRig();
         TryTeleportToStart();
         EnableControlsAfterCharacterSelection();
 
@@ -132,8 +164,13 @@ public class NetworkLocalSetup : NetworkBehaviour
     private void HookSceneEventsWithRetry() => StartCoroutine(SceneHookRetryRoutine(5, 0.2f));
     private System.Collections.IEnumerator SceneHookRetryRoutine(int tries, float waitSeconds)
     {
-        for (int i = 0; i < tries; i++) { if (TryHookSceneEvents()) yield break; yield return new WaitForSeconds(waitSeconds); }
+        for (int i = 0; i < tries; i++)
+        {
+            if (TryHookSceneEvents()) yield break;
+            yield return new WaitForSeconds(waitSeconds);
+        }
     }
+
     private bool TryHookSceneEvents()
     {
         if (sceneEventHooked) return true;
@@ -143,31 +180,41 @@ public class NetworkLocalSetup : NetworkBehaviour
         sceneEventHooked = true;
         return true;
     }
+
     private void SafeEnableInteraction() { if (playerInteraction) playerInteraction.enabled = true; }
     private void SafeDisableInteraction() { if (playerInteraction) playerInteraction.enabled = false; }
-    private void TryEnableControlsIfAlreadyInGameplayScene() { if (SceneManager.GetActiveScene().name == gameplaySceneName) EnterGameplay(); }
+
+    private void TryEnableControlsIfAlreadyInGameplayScene()
+    {
+        if (IsGameplayScene())
+            EnterGameplay();
+    }
 
     public void EnableControlsAfterCharacterSelection()
     {
         if (!IsOwner) return;
-        
+
         EnableControlsWithoutInteraction();
         SafeEnableInteraction();
         controlsEnabled = true;
-        
-        // Mouse'u kilitle
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
+
+    private void LateUpdate()
+    {
+        // Karakter modeli seçilince Renderer'lar tekrar açılabilir — lobide kapalı tut.
+        if (_lobbyVisualsHidden && !IsGameplayScene())
+            SetWorldVisualsVisible(false);
     }
 
     private void Update()
     {
         if (!IsOwner || !controlsEnabled) return;
 
-        // Açık bir UI paneli cursor'u serbest bırakmışsa ona karışma.
         if (AnyUiWantsCursor()) return;
 
-        // Kontroller aktifse cursor'un lock olduğundan emin ol
         if (Cursor.lockState != CursorLockMode.Locked)
         {
             Cursor.lockState = CursorLockMode.Locked;
@@ -191,5 +238,13 @@ public class NetworkLocalSetup : NetworkBehaviour
         if (QuestManager.Instance != null && QuestManager.Instance.IsPanelOpen) return true;
 
         return false;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (sceneEventHooked && NetworkManager.Singleton?.SceneManager != null)
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnNetcodeSceneLoadCompleted;
+        sceneEventHooked = false;
+        base.OnNetworkDespawn();
     }
 }

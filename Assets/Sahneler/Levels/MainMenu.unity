@@ -2114,8 +2114,8 @@ MonoBehaviour:
   screenshotSprites: []
   defaultBaslik: "Oyun Y\xFCkleniyor"
   defaultAciklama: "B\xF6l\xFCm 1: Uzung\xF6l Tatili"
-  tipHoldSeconds: 4.2
-  tipFadeSeconds: 0.45
+  tipHoldSeconds: 2
+  tipFadeSeconds: 0.35
   tips:
   - "Ko\u015Fma hakk\u0131n s\u0131n\u0131rl\u0131d\u0131r \u2014 stamina bitince biraz beklemen gerekir."
   - Envanter ve craft paneli I tu\u015Fu ile a\u00E7\u0131l\u0131r.

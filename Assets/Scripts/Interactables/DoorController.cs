@@ -38,8 +38,9 @@ public class DoorController : NetworkBehaviour, IInteractable
     [SerializeField] private NavMeshObstacle navMeshObstacle;
 
     [Header("Co-op Proximity")]
-    [Tooltip("All connected players must stand near the door to knock.")]
+    [Tooltip("Co-op'ta tüm oyuncular kapıya yakın olmalı. Solo'da otomatik sadece 1 kişi yeter.")]
     [SerializeField] private bool requireAllPlayersNearby = true;
+    [Tooltip("Co-op'ta gereken minimum oyuncu. Solo'da 1'e düşer.")]
     [SerializeField] private int minimumPlayersRequired = 2;
     [SerializeField] private float nearbyRadius = 6f;
 
@@ -300,7 +301,8 @@ public class DoorController : NetworkBehaviour, IInteractable
     }
 
     /// <summary>
-    /// True when enough players are connected and every connected player is within nearbyRadius.
+    /// True when every connected player is within nearbyRadius.
+    /// Solo: 1 oyuncu yeter. Co-op: minimumPlayersRequired (genelde 2).
     /// Client-safe: does not use GetPlayerNetworkObject (server-only for remote clients).
     /// </summary>
     private bool AreAllPlayersNearby()
@@ -308,6 +310,7 @@ public class DoorController : NetworkBehaviour, IInteractable
         if (!requireAllPlayersNearby)
             return true;
 
+        int required = GetMinimumPlayersRequired();
         int playerCount = 0;
         foreach (var pc in FindObjectsByType<PlayerController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {
@@ -319,7 +322,16 @@ public class DoorController : NetworkBehaviour, IInteractable
             playerCount++;
         }
 
-        return playerCount >= minimumPlayersRequired;
+        return playerCount >= required;
+    }
+
+    private int GetMinimumPlayersRequired()
+    {
+        int connected = 1;
+        if (NetworkManager.Singleton != null)
+            connected = Mathf.Max(1, NetworkManager.Singleton.ConnectedClientsIds.Count);
+
+        return Mathf.Clamp(connected, 1, Mathf.Max(1, minimumPlayersRequired));
     }
 
     private bool IsWithinNearbyRadius(Vector3 worldPos)

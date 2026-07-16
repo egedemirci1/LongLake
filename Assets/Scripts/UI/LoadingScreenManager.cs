@@ -5,8 +5,9 @@ using UnityEngine.UI;
 using UnityEngine.Video;
 
 /// <summary>
-/// Yükleme ekranı: loop video arka plan, ortada bölüm başlığı, altta dönen ipuçları.
-/// Video RenderTexture + RawImage ile oynar (main menu CameraFarPlane ile çakışmaz).
+/// Yükleme ekranı: loop video + bölüm başlığı + dönen ipuçları.
+/// CrashSite gibi ağır sahnelerde ana thread kısa süre kilitlenebilir;
+/// video/ipucu UnscaledTime + Update ile ayakta tutulur, donma sonrası Play yenilenir.
 /// </summary>
 public class LoadingScreenManager : MonoBehaviour
 {
@@ -33,8 +34,8 @@ public class LoadingScreenManager : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private string defaultBaslik = "Oyun Yükleniyor";
     [SerializeField] private string defaultAciklama = "";
-    [SerializeField] private float tipHoldSeconds = 4.2f;
-    [SerializeField] private float tipFadeSeconds = 0.45f;
+    [SerializeField] private float tipHoldSeconds = 2.0f;
+    [SerializeField] private float tipFadeSeconds = 0.35f;
 
     [SerializeField]
     private string[] tips =
@@ -55,17 +56,37 @@ public class LoadingScreenManager : MonoBehaviour
     private static LoadingScreenManager instance;
     public static LoadingScreenManager Instance => instance != null ? instance : Resolve();
 
-    private Coroutine _tipRoutine;
-    private Coroutine _showRoutine;
     private int _tipIndex;
     private bool _layoutReady;
     private bool _isShowing;
+    private bool _tipsActive;
+    private float _tipPhaseStart;
+    private float _tipFadeFrom = 1f;
+    private float _tipFadeTo = 1f;
+    private bool _tipFading;
+    private enum TipPhase { Hold, FadeOut, FadeIn }
+    private TipPhase _tipPhase = TipPhase.Hold;
 
     private VideoPlayer _videoPlayer;
     private RawImage _videoRaw;
     private Image _posterImage;
     private RenderTexture _videoRt;
     private bool _videoHooks;
+    private float _nextVideoKickUnscaled;
+    private long _lastVideoFrame = -1;
+    private float _videoStallTimer;
+    private bool _videoRecovering;
+    private Coroutine _videoRecoverRoutine;
+    private float _nextRecoverAllowedUnscaled;
+
+    private Image _progressFill;
+    private TextMeshProUGUI _progressLabel;
+    private float _progressTarget;
+    private float _progressShown;
+    private Canvas _dedicatedCanvas;
+
+    /// <summary>Poster açıldı / video hazır veya timeout — sahne yüklemeye geçilebilir.</summary>
+    public bool IsVisualReady { get; private set; }
 
     public static LoadingScreenManager Resolve()
     {
@@ -84,7 +105,8 @@ public class LoadingScreenManager : MonoBehaviour
 
         instance = this;
         DontDestroyOnLoad(gameObject);
-        PersistLoadingCanvas();
+        // Dedicated canvas'ı Awake'te taşıma — HDRP/UI native crash riski.
+        // ShowLoadingScreen içinde taşınır.
 
         if (loadingScreenPanel != null)
             loadingScreenPanel.SetActive(false);
@@ -92,9 +114,60 @@ public class LoadingScreenManager : MonoBehaviour
 
     private void Start()
     {
-        // Panel kapalıyken layout + video hazırla — Show anında eski UI flash etmesin.
         WarmUp();
     }
+
+    private void Update()
+    {
+        if (!_isShowing) return;
+
+        TickTips();
+        KeepVideoAlive();
+        TickProgressBar();
+    }
+
+    private void LateUpdate()
+    {
+        // Scene load spike'ından sonra VideoPlayer çoğu zaman LateUpdate'de toparlanır.
+        if (_isShowing)
+            KeepVideoAlive();
+    }
+
+    /// <summary>GameplaySceneLoader yükleme boyunca her frame çağırır.</summary>
+    public void PulseVideo()
+    {
+        if (!_isShowing) return;
+        KeepVideoAlive();
+    }
+
+    private void TickProgressBar()
+    {
+        if (_progressFill == null) return;
+        _progressShown = Mathf.MoveTowards(_progressShown, _progressTarget, Time.unscaledDeltaTime * 1.1f);
+        _progressFill.fillAmount = Mathf.Clamp01(_progressShown);
+        if (_progressLabel != null)
+            _progressLabel.text = $"{Mathf.RoundToInt(_progressShown * 100f)}%";
+    }
+
+    /// <summary>0..1 yükleme ilerlemesi (GameplaySceneLoader besler).</summary>
+    public void SetProgress(float normalized, bool snap = false)
+    {
+        _progressTarget = Mathf.Clamp01(normalized);
+        if (snap)
+        {
+            _progressShown = _progressTarget;
+            if (_progressFill != null)
+                _progressFill.fillAmount = _progressShown;
+            if (_progressLabel != null)
+                _progressLabel.text = $"{Mathf.RoundToInt(_progressShown * 100f)}%";
+            return;
+        }
+
+        if (_progressShown < 0.01f && _progressTarget > 0f)
+            _progressShown = Mathf.Min(_progressTarget, 0.05f);
+    }
+
+    public float ShownProgress => _progressShown;
 
     private void OnDestroy()
     {
@@ -103,14 +176,43 @@ public class LoadingScreenManager : MonoBehaviour
             instance = null;
     }
 
-    /// <summary>Panel canvas'ını DDOL yap — aksi halde MainMenu unload olunca panel yok olur.</summary>
-    private void PersistLoadingCanvas()
+    /// <summary>
+    /// MainMenu canvas'ından ayır — Single LoadScene MainMenu'yu silince loading UI yaşasın.
+    /// </summary>
+    private void EnsureDedicatedCanvas()
     {
         if (loadingScreenPanel == null) return;
 
-        Canvas canvas = loadingScreenPanel.GetComponentInParent<Canvas>();
-        if (canvas != null && canvas.gameObject != gameObject)
-            DontDestroyOnLoad(canvas.gameObject);
+        if (_dedicatedCanvas != null)
+        {
+            if (loadingScreenPanel.transform.parent != _dedicatedCanvas.transform)
+                loadingScreenPanel.transform.SetParent(_dedicatedCanvas.transform, false);
+            return;
+        }
+
+        // Sadece loading panel'i taşı — tüm MainMenu canvas'ını DDOL yapma.
+        var go = new GameObject("LoadingCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        DontDestroyOnLoad(go);
+        _dedicatedCanvas = go.GetComponent<Canvas>();
+        _dedicatedCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        _dedicatedCanvas.sortingOrder = 5000;
+
+        var scaler = go.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        loadingScreenPanel.transform.SetParent(go.transform, false);
+        StretchFull(loadingScreenPanel.GetComponent<RectTransform>());
+
+        // Manager + VideoPlayer da aynı DDOL kökünde yaşasın (MainMenu unload'da kaybolmasın).
+        if (transform.parent != go.transform)
+            transform.SetParent(go.transform, true);
+    }
+
+    private void PersistLoadingCanvas()
+    {
+        EnsureDedicatedCanvas();
     }
 
     private void WarmUp()
@@ -130,6 +232,11 @@ public class LoadingScreenManager : MonoBehaviour
         EnsureLayout();
         HideLegacyChrome();
         ApplyPosterOnly(screenshot);
+        IsVisualReady = false;
+        _progressTarget = 0.02f;
+        _progressShown = 0f;
+        if (_progressFill != null)
+            _progressFill.fillAmount = 0f;
 
         string chapter = string.IsNullOrWhiteSpace(customAciklama) ? defaultAciklama : customAciklama;
         if (string.IsNullOrWhiteSpace(chapter))
@@ -157,10 +264,23 @@ public class LoadingScreenManager : MonoBehaviour
         }
 
         PauseMainMenuVideo();
+        RevealPanel();
+        StartTipRotation();
 
-        if (_showRoutine != null)
-            StopCoroutine(_showRoutine);
-        _showRoutine = StartCoroutine(ShowWhenReady());
+        _lastVideoFrame = -1;
+        _videoStallTimer = 0f;
+        _videoRecovering = false;
+        if (_videoRecoverRoutine != null)
+        {
+            StopCoroutine(_videoRecoverRoutine);
+            _videoRecoverRoutine = null;
+        }
+
+        BeginVideoWarmup();
+        KickVideoPlay();
+
+        // Video hazır olmasa bile kısa süre sonra yüklemeye izin ver (poster + ipucu çalışır).
+        StartCoroutine(MarkReadyWhenAble());
     }
 
     public void ShowLoadingScreenForScene(string sceneName, string customAciklama = null)
@@ -188,38 +308,44 @@ public class LoadingScreenManager : MonoBehaviour
     public void HideLoadingScreen()
     {
         _isShowing = false;
-        if (_showRoutine != null)
+        IsVisualReady = false;
+        _videoRecovering = false;
+        if (_videoRecoverRoutine != null)
         {
-            StopCoroutine(_showRoutine);
-            _showRoutine = null;
+            StopCoroutine(_videoRecoverRoutine);
+            _videoRecoverRoutine = null;
         }
-
         StopTipRotation();
         StopLoadingVideo();
         if (loadingScreenPanel != null)
             loadingScreenPanel.SetActive(false);
     }
 
-    private IEnumerator ShowWhenReady()
+    private IEnumerator MarkReadyWhenAble()
     {
-        BeginVideoWarmup();
-
-        // Eski footer flash etmesin: önce yeni layout + poster ile paneli aç.
-        RevealPanel();
-        StartTipRotation();
-
-        float timeout = 2f;
         float t = 0f;
-        while (loadingVideoClip != null && _videoPlayer != null && !_videoPlayer.isPrepared && t < timeout)
+        const float minVisible = 0.35f;
+        const float timeout = 2.5f;
+
+        while (t < timeout)
         {
             t += Time.unscaledDeltaTime;
+
+            bool videoOk = loadingVideoClip == null
+                           || _videoPlayer == null
+                           || _videoPlayer.isPlaying
+                           || (_videoPlayer.isPrepared && t > 0.6f);
+
+            if (t >= minVisible && videoOk)
+            {
+                IsVisualReady = true;
+                yield break;
+            }
+
             yield return null;
         }
 
-        if (_videoPlayer != null && _videoPlayer.isPrepared && !_videoPlayer.isPlaying)
-            _videoPlayer.Play();
-
-        _showRoutine = null;
+        IsVisualReady = true;
     }
 
     private void RevealPanel()
@@ -231,12 +357,16 @@ public class LoadingScreenManager : MonoBehaviour
         loadingScreenPanel.SetActive(true);
         _isShowing = true;
 
-        Canvas canvas = loadingScreenPanel.GetComponentInParent<Canvas>();
+        Canvas canvas = _dedicatedCanvas != null
+            ? _dedicatedCanvas
+            : loadingScreenPanel.GetComponentInParent<Canvas>();
         if (canvas != null)
-            canvas.sortingOrder = Mathf.Max(canvas.sortingOrder, 500);
+        {
+            canvas.sortingOrder = Mathf.Max(canvas.sortingOrder, 5000);
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        }
     }
 
-    /// <summary>Eski prefab "Oyun Yükleniyor" footer / background — flash kaynağı.</summary>
     private void HideLegacyChrome()
     {
         if (loadingScreenPanel == null) return;
@@ -343,6 +473,70 @@ public class LoadingScreenManager : MonoBehaviour
         ruleImg.raycastTarget = false;
 
         BuildTipPanel(panelRt);
+        BuildProgressBar(panelRt);
+    }
+
+    private void BuildProgressBar(RectTransform parent)
+    {
+        if (_progressFill != null) return;
+
+        var root = new GameObject("ProgressRoot", typeof(RectTransform));
+        root.transform.SetParent(parent, false);
+        var rootRt = root.GetComponent<RectTransform>();
+        rootRt.anchorMin = new Vector2(0.5f, 0f);
+        rootRt.anchorMax = new Vector2(0.5f, 0f);
+        rootRt.pivot = new Vector2(0.5f, 0f);
+        rootRt.anchoredPosition = new Vector2(0f, 170f);
+        rootRt.sizeDelta = new Vector2(520f, 28f);
+
+        var track = new GameObject("Track", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        track.transform.SetParent(root.transform, false);
+        StretchFull(track.GetComponent<RectTransform>());
+        var trackImg = track.GetComponent<Image>();
+        trackImg.sprite = RuntimeUiSprites.GetRoundedSprite(6);
+        trackImg.type = Image.Type.Sliced;
+        trackImg.color = new Color(0.08f, 0.09f, 0.10f, 0.9f);
+        trackImg.raycastTarget = false;
+
+        var fillGo = new GameObject("Fill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        fillGo.transform.SetParent(track.transform, false);
+        var fillRt = fillGo.GetComponent<RectTransform>();
+        StretchFull(fillRt);
+        fillRt.offsetMin = new Vector2(3f, 3f);
+        fillRt.offsetMax = new Vector2(-3f, -3f);
+        _progressFill = fillGo.GetComponent<Image>();
+        _progressFill.sprite = RuntimeUiSprites.GetRoundedSprite(4);
+        _progressFill.type = Image.Type.Filled;
+        _progressFill.fillMethod = Image.FillMethod.Horizontal;
+        _progressFill.fillOrigin = 0;
+        _progressFill.fillAmount = 0f;
+        _progressFill.color = AccentColor;
+        _progressFill.raycastTarget = false;
+
+        _progressLabel = CreateTmpSimple(root.transform, "ProgressLabel", 13f, FontStyles.Bold, MutedProgressColor());
+        var lblRt = _progressLabel.rectTransform;
+        lblRt.anchorMin = new Vector2(0f, 1f);
+        lblRt.anchorMax = new Vector2(1f, 1f);
+        lblRt.pivot = new Vector2(0.5f, 0f);
+        lblRt.anchoredPosition = new Vector2(0f, 8f);
+        lblRt.sizeDelta = new Vector2(0f, 18f);
+        _progressLabel.alignment = TextAlignmentOptions.Center;
+        _progressLabel.text = "0%";
+        _progressLabel.characterSpacing = 2f;
+    }
+
+    private static Color MutedProgressColor() => new Color(0.75f, 0.76f, 0.72f, 0.9f);
+
+    private static TextMeshProUGUI CreateTmpSimple(Transform parent, string name, float size, FontStyles style, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        go.transform.SetParent(parent, false);
+        var tmp = go.GetComponent<TextMeshProUGUI>();
+        tmp.fontSize = size;
+        tmp.fontStyle = style;
+        tmp.color = color;
+        tmp.raycastTarget = false;
+        return tmp;
     }
 
     private void EnsureVideoLayer(RectTransform parent)
@@ -366,12 +560,9 @@ public class LoadingScreenManager : MonoBehaviour
             _posterImage.sprite = loadingPosterSprite;
 
         if (loadingVideoClip == null)
-        {
-            Debug.LogWarning("[LoadingScreenManager] loadingVideoClip atanmamış — sadece poster kullanılır.");
             return;
-        }
 
-        _videoRt = new RenderTexture(1920, 1080, 0, RenderTextureFormat.ARGB32)
+        _videoRt = new RenderTexture(1280, 720, 0, RenderTextureFormat.ARGB32)
         {
             name = "LoadingScreenVideoRT",
             hideFlags = HideFlags.HideAndDontSave
@@ -390,15 +581,18 @@ public class LoadingScreenManager : MonoBehaviour
         _videoPlayer.renderMode = VideoRenderMode.RenderTexture;
         _videoPlayer.targetTexture = _videoRt;
         _videoPlayer.aspectRatio = VideoAspectRatio.FitOutside;
+        _videoPlayer.skipOnDrop = true;
+        _videoPlayer.playbackSpeed = 1f;
+        _videoPlayer.timeUpdateMode = VideoTimeUpdateMode.UnscaledGameTime;
         _videoPlayer.audioOutputMode = muteVideo
             ? VideoAudioOutputMode.None
             : VideoAudioOutputMode.Direct;
-        _videoPlayer.skipOnDrop = true;
 
         if (!_videoHooks)
         {
             _videoPlayer.prepareCompleted += OnVideoPrepared;
             _videoPlayer.started += OnVideoStarted;
+            _videoPlayer.loopPointReached += OnVideoLoop;
             _videoPlayer.errorReceived += OnVideoError;
             _videoHooks = true;
         }
@@ -408,8 +602,163 @@ public class LoadingScreenManager : MonoBehaviour
     {
         if (_videoPlayer == null || loadingVideoClip == null) return;
         if (_videoPlayer.isPrepared || _videoPlayer.isPlaying) return;
-
         _videoPlayer.Prepare();
+    }
+
+    private void KickVideoPlay()
+    {
+        if (_videoPlayer == null || loadingVideoClip == null) return;
+
+        if (_videoPlayer.isPrepared)
+            _videoPlayer.Play();
+        else
+            _videoPlayer.Prepare();
+    }
+
+    private void KeepVideoAlive()
+    {
+        if (_videoPlayer == null || loadingVideoClip == null) return;
+        if (_videoRecovering) return;
+
+        if (!_videoPlayer.isPrepared)
+        {
+            if (Time.unscaledTime >= _nextVideoKickUnscaled)
+            {
+                _nextVideoKickUnscaled = Time.unscaledTime + 0.4f;
+                try { _videoPlayer.Prepare(); }
+                catch { /* ignore */ }
+            }
+            return;
+        }
+
+        long frame = -1;
+        try { frame = _videoPlayer.frame; }
+        catch
+        {
+            RequestVideoRecover();
+            return;
+        }
+
+        bool advancing = frame != _lastVideoFrame && frame >= 0;
+        if (advancing)
+        {
+            _lastVideoFrame = frame;
+            _videoStallTimer = 0f;
+            if (_posterImage != null)
+                _posterImage.enabled = false;
+            return;
+        }
+
+        if (!_videoPlayer.isPlaying)
+        {
+            try { _videoPlayer.Play(); }
+            catch
+            {
+                RequestVideoRecover();
+                return;
+            }
+        }
+
+        // Play diyor ama kare ilerlemiyor → LoadScene spike sonrası tipik durum
+        _videoStallTimer += Time.unscaledDeltaTime;
+        if (_videoStallTimer >= 0.25f)
+        {
+            _videoStallTimer = 0f;
+            RequestVideoRecover();
+        }
+    }
+
+    private void RequestVideoRecover()
+    {
+        if (_videoRecovering || !_isShowing) return;
+        if (Time.unscaledTime < _nextRecoverAllowedUnscaled) return;
+        _nextRecoverAllowedUnscaled = Time.unscaledTime + 0.6f;
+        if (_videoRecoverRoutine != null)
+            StopCoroutine(_videoRecoverRoutine);
+        _videoRecoverRoutine = StartCoroutine(RecoverVideoRoutine());
+    }
+
+    private IEnumerator RecoverVideoRoutine()
+    {
+        _videoRecovering = true;
+
+        if (_videoPlayer != null)
+        {
+            try
+            {
+                _videoPlayer.Stop();
+            }
+            catch { /* ignore */ }
+        }
+
+        // RT kaybolmuş olabilir
+        if (_videoRt == null || !_videoRt.IsCreated())
+        {
+            if (_videoRt != null)
+            {
+                _videoRt.Release();
+                Destroy(_videoRt);
+            }
+
+            _videoRt = new RenderTexture(1280, 720, 0, RenderTextureFormat.ARGB32)
+            {
+                name = "LoadingScreenVideoRT",
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            _videoRt.Create();
+            if (_videoRaw != null)
+                _videoRaw.texture = _videoRt;
+        }
+
+        if (_videoPlayer == null)
+            _videoPlayer = gameObject.AddComponent<VideoPlayer>();
+
+        _videoPlayer.playOnAwake = false;
+        _videoPlayer.waitForFirstFrame = true;
+        _videoPlayer.isLooping = true;
+        _videoPlayer.clip = loadingVideoClip;
+        _videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+        _videoPlayer.targetTexture = _videoRt;
+        _videoPlayer.aspectRatio = VideoAspectRatio.FitOutside;
+        _videoPlayer.skipOnDrop = true;
+        _videoPlayer.playbackSpeed = 1f;
+        _videoPlayer.timeUpdateMode = VideoTimeUpdateMode.UnscaledGameTime;
+        _videoPlayer.audioOutputMode = muteVideo
+            ? VideoAudioOutputMode.None
+            : VideoAudioOutputMode.Direct;
+
+        bool prepared = false;
+        void OnPrep(VideoPlayer vp)
+        {
+            prepared = true;
+            vp.Play();
+            if (_posterImage != null)
+                _posterImage.enabled = false;
+        }
+
+        _videoPlayer.prepareCompleted += OnPrep;
+        _videoPlayer.Prepare();
+
+        float t = 0f;
+        while (!prepared && t < 2f)
+        {
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        _videoPlayer.prepareCompleted -= OnPrep;
+
+        if (!prepared && _videoPlayer.isPrepared)
+        {
+            _videoPlayer.Play();
+            if (_posterImage != null)
+                _posterImage.enabled = false;
+        }
+
+        _lastVideoFrame = -1;
+        _videoStallTimer = 0f;
+        _videoRecovering = false;
+        _videoRecoverRoutine = null;
     }
 
     private void StopLoadingVideo()
@@ -422,7 +771,7 @@ public class LoadingScreenManager : MonoBehaviour
 
     private void OnVideoPrepared(VideoPlayer source)
     {
-        if (_isShowing || (loadingScreenPanel != null && loadingScreenPanel.activeInHierarchy))
+        if (_isShowing)
             source.Play();
     }
 
@@ -430,6 +779,13 @@ public class LoadingScreenManager : MonoBehaviour
     {
         if (_posterImage != null)
             _posterImage.enabled = false;
+    }
+
+    private void OnVideoLoop(VideoPlayer source)
+    {
+        // Loop noktası bazı platformlarda pause bırakabiliyor.
+        if (_isShowing && !source.isPlaying)
+            source.Play();
     }
 
     private void OnVideoError(VideoPlayer source, string message)
@@ -445,6 +801,7 @@ public class LoadingScreenManager : MonoBehaviour
         {
             _videoPlayer.prepareCompleted -= OnVideoPrepared;
             _videoPlayer.started -= OnVideoStarted;
+            _videoPlayer.loopPointReached -= OnVideoLoop;
             _videoPlayer.errorReceived -= OnVideoError;
             _videoHooks = false;
             _videoPlayer.Stop();
@@ -510,7 +867,6 @@ public class LoadingScreenManager : MonoBehaviour
         aImg.color = AccentColor;
         aImg.raycastTarget = false;
 
-        // topInset pozitif pixel — kart üstünden aşağı (negatif verilirse yazı kartın üstüne taşar).
         tipEyebrowText = CreateCardLabel(go.transform, "TipEyebrow",
             left: 28f, topInset: 14f, right: 28f, height: 22f,
             13f, FontStyles.Bold, AccentColor, TextAlignmentOptions.MidlineLeft);
@@ -524,7 +880,6 @@ public class LoadingScreenManager : MonoBehaviour
         tipBodyText.overflowMode = TextOverflowModes.Ellipsis;
     }
 
-    /// <summary>Kart içinde üstten inset ile TMP label. topInset her zaman pozitif olmalı.</summary>
     private static TextMeshProUGUI CreateCardLabel(
         Transform parent, string name, float left, float topInset, float right, float height,
         float fontSize, FontStyles style, Color color, TextAlignmentOptions align)
@@ -554,54 +909,82 @@ public class LoadingScreenManager : MonoBehaviour
 
     private void StartTipRotation()
     {
-        StopTipRotation();
-        if (tips == null || tips.Length == 0 || tipBodyText == null) return;
+        if (tips == null || tips.Length == 0 || tipBodyText == null)
+        {
+            _tipsActive = false;
+            return;
+        }
 
         _tipIndex = Random.Range(0, tips.Length);
         tipBodyText.text = tips[_tipIndex];
         if (tipGroup != null) tipGroup.alpha = 1f;
-        _tipRoutine = StartCoroutine(TipRotationRoutine());
+
+        _tipsActive = true;
+        _tipPhase = TipPhase.Hold;
+        _tipPhaseStart = Time.unscaledTime;
+        _tipFading = false;
     }
 
     private void StopTipRotation()
     {
-        if (_tipRoutine != null)
-        {
-            StopCoroutine(_tipRoutine);
-            _tipRoutine = null;
-        }
+        _tipsActive = false;
+        _tipFading = false;
     }
 
-    private IEnumerator TipRotationRoutine()
+    private void TickTips()
     {
-        while (true)
+        if (!_tipsActive || tipBodyText == null) return;
+
+        float elapsed = Time.unscaledTime - _tipPhaseStart;
+
+        if (_tipPhase == TipPhase.Hold)
         {
-            yield return new WaitForSecondsRealtime(tipHoldSeconds);
-
-            if (tipGroup != null)
-                yield return FadeTip(1f, 0f);
-
-            _tipIndex = (_tipIndex + 1) % tips.Length;
-            tipBodyText.text = tips[_tipIndex];
-            if (tipEyebrowText != null)
-                tipEyebrowText.text = "İPUCU";
-
-            if (tipGroup != null)
-                yield return FadeTip(0f, 1f);
+            if (elapsed >= tipHoldSeconds)
+            {
+                _tipPhase = TipPhase.FadeOut;
+                _tipPhaseStart = Time.unscaledTime;
+                _tipFadeFrom = tipGroup != null ? tipGroup.alpha : 1f;
+                _tipFadeTo = 0f;
+                _tipFading = tipGroup != null;
+            }
+            return;
         }
-    }
 
-    private IEnumerator FadeTip(float from, float to)
-    {
-        float t = 0f;
-        while (t < tipFadeSeconds)
+        if (_tipPhase == TipPhase.FadeOut)
         {
-            t += Time.unscaledDeltaTime;
-            float u = Mathf.Clamp01(t / tipFadeSeconds);
+            float u = tipFadeSeconds <= 0.01f ? 1f : Mathf.Clamp01(elapsed / tipFadeSeconds);
             u = u * u * (3f - 2f * u);
-            tipGroup.alpha = Mathf.Lerp(from, to, u);
-            yield return null;
+            if (_tipFading)
+                tipGroup.alpha = Mathf.Lerp(_tipFadeFrom, _tipFadeTo, u);
+
+            if (u >= 1f)
+            {
+                _tipIndex = (_tipIndex + 1) % tips.Length;
+                tipBodyText.text = tips[_tipIndex];
+                if (tipEyebrowText != null)
+                    tipEyebrowText.text = "İPUCU";
+
+                _tipPhase = TipPhase.FadeIn;
+                _tipPhaseStart = Time.unscaledTime;
+                _tipFadeFrom = 0f;
+                _tipFadeTo = 1f;
+            }
+            return;
         }
-        tipGroup.alpha = to;
+
+        if (_tipPhase == TipPhase.FadeIn)
+        {
+            float u = tipFadeSeconds <= 0.01f ? 1f : Mathf.Clamp01(elapsed / tipFadeSeconds);
+            u = u * u * (3f - 2f * u);
+            if (_tipFading)
+                tipGroup.alpha = Mathf.Lerp(_tipFadeFrom, _tipFadeTo, u);
+
+            if (u >= 1f)
+            {
+                if (tipGroup != null) tipGroup.alpha = 1f;
+                _tipPhase = TipPhase.Hold;
+                _tipPhaseStart = Time.unscaledTime;
+            }
+        }
     }
 }

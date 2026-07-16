@@ -19,6 +19,7 @@ public class QuestManager : NetworkBehaviour
 
     [Header("Opening Quest Objective")]
     [SerializeField] private string crashBagItemId = "backpack";
+    [Tooltip("Co-op'ta gereken çanta sayısı. Solo'da otomatik 1 olur.")]
     [SerializeField] private int bagsRequired = 2;
 
     [Header("UI References (optional — auto-created if missing)")]
@@ -84,11 +85,15 @@ public class QuestManager : NetworkBehaviour
         bagsCollected.OnValueChanged += OnBagsCollectedChanged;
         completedQuestIndices.OnListChanged += OnCompletedQuestsChanged;
 
+        if (NetworkManager != null)
+        {
+            NetworkManager.OnClientConnectedCallback += OnClientCountChanged;
+            NetworkManager.OnClientDisconnectCallback += OnClientCountChanged;
+        }
+
         EnsureUiExists();
         CloseQuestPanel();
         RefreshAllUi();
-
-        Debug.Log($"[QuestManager] Spawned. IsServer={IsServer} currentQuest={currentQuestIndex.Value}");
     }
 
     public override void OnNetworkDespawn()
@@ -97,8 +102,28 @@ public class QuestManager : NetworkBehaviour
         bagsCollected.OnValueChanged -= OnBagsCollectedChanged;
         completedQuestIndices.OnListChanged -= OnCompletedQuestsChanged;
 
+        if (NetworkManager != null)
+        {
+            NetworkManager.OnClientConnectedCallback -= OnClientCountChanged;
+            NetworkManager.OnClientDisconnectCallback -= OnClientCountChanged;
+        }
+
         if (Instance == this)
             Instance = null;
+    }
+
+    private void OnClientCountChanged(ulong _)
+    {
+        RefreshAllUi();
+
+        // Solo'ya düşünce 1 çanta yetiyorsa görevi tamamla
+        if (IsServer &&
+            currentQuestIndex.Value == openingQuestIndex &&
+            !completedQuestIndices.Contains(openingQuestIndex) &&
+            bagsCollected.Value >= GetBagsRequired())
+        {
+            CompleteOpeningQuestOnServer();
+        }
     }
 
     public override void OnDestroy()
@@ -162,12 +187,23 @@ public class QuestManager : NetworkBehaviour
 
         bagsCollected.Value = 0;
         currentQuestIndex.Value = openingQuestIndex;
-        Debug.Log($"[QuestManager] Opening quest started for all players: {availableQuests[openingQuestIndex].questTitle}");
+    }
+
+    /// <summary>
+    /// Solo: 1 çanta. Co-op: bağlı oyuncu sayısı (en fazla bagsRequired).
+    /// </summary>
+    private int GetBagsRequired()
+    {
+        int players = 1;
+        if (NetworkManager != null)
+            players = Mathf.Max(1, NetworkManager.ConnectedClientsIds.Count);
+
+        return Mathf.Clamp(players, 1, Mathf.Max(1, bagsRequired));
     }
 
     /// <summary>
     /// Server-only. Call from ItemPickUp after a successful world pickup.
-    /// Collecting both crash-site bags completes the opening quest for everyone.
+    /// Collecting enough crash-site bags (1 solo / 2 co-op) completes the opening quest.
     /// </summary>
     public void NotifyQuestItemCollectedServer(string itemId)
     {
@@ -177,10 +213,10 @@ public class QuestManager : NetworkBehaviour
         if (currentQuestIndex.Value != openingQuestIndex) return;
         if (completedQuestIndices.Contains(openingQuestIndex)) return;
 
-        bagsCollected.Value = Mathf.Min(bagsCollected.Value + 1, bagsRequired);
-        Debug.Log($"[QuestManager] Crash bag collected: {bagsCollected.Value}/{bagsRequired}");
+        int required = GetBagsRequired();
+        bagsCollected.Value = Mathf.Min(bagsCollected.Value + 1, required);
 
-        if (bagsCollected.Value >= bagsRequired)
+        if (bagsCollected.Value >= required)
             CompleteOpeningQuestOnServer();
     }
 
@@ -201,12 +237,10 @@ public class QuestManager : NetworkBehaviour
             !completedQuestIndices.Contains(nextIndex))
         {
             currentQuestIndex.Value = nextIndex;
-            Debug.Log($"[QuestManager] Quest {completedIndex} completed. Next quest started: {availableQuests[nextIndex].questTitle}");
         }
         else
         {
             currentQuestIndex.Value = -1;
-            Debug.Log($"[QuestManager] Quest {completedIndex} completed for all players. No next quest.");
         }
     }
 
@@ -372,7 +406,7 @@ public class QuestManager : NetworkBehaviour
         if (quest == null) return string.Empty;
 
         if (currentQuestIndex.Value == openingQuestIndex)
-            return $"Sırt çantası   <color=#F2C452>{bagsCollected.Value} / {bagsRequired}</color>";
+            return $"Sırt çantası   <color=#F2C452>{bagsCollected.Value} / {GetBagsRequired()}</color>";
 
         return string.Empty;
     }

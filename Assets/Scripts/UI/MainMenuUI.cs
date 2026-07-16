@@ -1,4 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -36,6 +39,11 @@ public class MainMenuUI : MonoBehaviour
     private bool callbacksRegistered;
     private bool sceneEventsHooked;
     private bool isTryingToConnectClient;
+    private bool isStartingHost;
+    private ushort hostPortBase;
+    private ushort hostPortAttempt;
+    private int hostPortRetries;
+    private Coroutine hostStartRoutine;
 
     private void Awake()
     {
@@ -57,6 +65,10 @@ public class MainMenuUI : MonoBehaviour
             return;
         }
 
+        // Önceki Play'den asılı kalan loading / host state'i temizle
+        if (GameplaySceneLoader.Instance != null)
+            GameplaySceneLoader.Instance.ResetForMenu();
+
         HookUiButtons();
         RegisterCallbacksOnce();
         SetStatus("");
@@ -66,6 +78,11 @@ public class MainMenuUI : MonoBehaviour
     {
         UnhookSceneEvents();
         UnregisterCallbacks();
+    }
+
+    private void OnApplicationQuit()
+    {
+        EnsureNetworkStopped();
     }
 
     private void HookUiButtons()
@@ -103,24 +120,113 @@ public class MainMenuUI : MonoBehaviour
 
     public void StartHost()
     {
-        ushort port = ResolvePort();
+        if (hostStartRoutine != null)
+            StopCoroutine(hostStartRoutine);
 
-        // Host always listens on all interfaces (LAN + ZeroTier).
-        ApplyTransportTuning();
-        unityTransport.SetConnectionData("0.0.0.0", port, "0.0.0.0");
+        EnsureNetworkStopped();
+        hostPortRetries = 0;
+        hostPortBase = ResolvePreferredPort();
+        hostPortAttempt = FindFreeUdpPort(hostPortBase, 32);
+        hostStartRoutine = StartCoroutine(StartHostRoutine(hostPortAttempt));
+    }
 
-        SetStatus("Oda açılıyor…");
+    private IEnumerator StartHostRoutine(ushort port)
+    {
+        isStartingHost = true;
+        hostPortAttempt = port;
 
-        bool ok = networkManager.StartHost();
-        if (!ok)
+        // Shutdown bitmeden StartHost çağırma — aksi halde aynı 7777'ye tekrar yapışır.
+        float wait = 0f;
+        while (networkManager != null && networkManager.ShutdownInProgress && wait < 2f)
         {
-            Debug.LogError("[MainMenuUI] StartHost() failed.");
-            SetStatus("Oda açılamadı.");
-            return;
+            wait += Time.unscaledDeltaTime;
+            yield return null;
         }
 
-        TryHookSceneEventsWithRetry();
-        SetStatus("Lobi: karakter seç → Hazırım. Herkes hazır olunca Oyunu Başlat.");
+        yield return null;
+        yield return null;
+
+        ApplyTransportTuning();
+        unityTransport.SetConnectionData("0.0.0.0", port, "0.0.0.0");
+        SetStatus(hostPortRetries == 0
+            ? "Oda açılıyor…"
+            : $"Port {port} deneniyor…");
+
+        bool ok = networkManager.StartHost();
+        hostStartRoutine = null;
+
+        if (ok)
+            yield break;
+
+        // NGO çoğu zaman OnTransportFailure'ı StartHost içinde çağırır (retry orada).
+        // Çağrılmadıysa burada yedekle.
+        yield return null;
+        if (isStartingHost && hostStartRoutine == null)
+        {
+            if (!ScheduleNextHostPort())
+            {
+                isStartingHost = false;
+                SetStatus("Oda açılamadı (port meşgul). Unity'yi kapatıp aç.");
+            }
+        }
+    }
+
+    private bool ScheduleNextHostPort()
+    {
+        if (!isStartingHost) return false;
+        if (hostPortRetries >= 8) return false;
+        if (hostStartRoutine != null) return true; // zaten planlandı
+
+        hostPortRetries++;
+        ushort next = FindFreeUdpPort((ushort)(hostPortBase + hostPortRetries), 32);
+        EnsureNetworkStopped();
+        hostStartRoutine = StartCoroutine(StartHostRoutine(next));
+        return true;
+    }
+
+    /// <summary>Transport.ConnectionData.Port değil — sabit tercih + boş port ara.</summary>
+    private ushort ResolvePreferredPort()
+    {
+        if (portInput != null && !string.IsNullOrWhiteSpace(portInput.text) &&
+            ushort.TryParse(portInput.text.Trim(), out ushort uiPort))
+            return uiPort;
+
+        return defaultPort;
+    }
+
+    private static ushort FindFreeUdpPort(ushort start, int span)
+    {
+        for (int i = 0; i < span; i++)
+        {
+            ushort port = (ushort)(start + i);
+            if (IsUdpPortFree(port))
+                return port;
+        }
+
+        return start;
+    }
+
+    private static bool IsUdpPortFree(ushort port)
+    {
+        Socket socket = null;
+        try
+        {
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Bind(new IPEndPoint(IPAddress.Any, port));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (socket != null)
+            {
+                try { socket.Close(); }
+                catch { /* ignore */ }
+            }
+        }
     }
 
     /// <summary>Called by LobbyManager when host starts the session (server only).</summary>
@@ -289,6 +395,8 @@ public class MainMenuUI : MonoBehaviour
 
     public void StartClient()
     {
+        EnsureNetworkStopped();
+
         if (!ApplyClientConnectionData(out string ip, out ushort port))
             return;
 
@@ -301,7 +409,6 @@ public class MainMenuUI : MonoBehaviour
         bool ok = networkManager.StartClient();
         if (!ok)
         {
-            Debug.LogError("[MainMenuUI] StartClient() failed.");
             SetStatus("Bağlantı başarısız.");
             isTryingToConnectClient = false;
             return;
@@ -312,6 +419,18 @@ public class MainMenuUI : MonoBehaviour
     }
 
     // ---- Connection data ----
+
+    /// <summary>
+    /// Play Mode / önceki host bitmeden tekrar StartHost denenirse UDP 7777 meşgul kalır.
+    /// </summary>
+    private void EnsureNetworkStopped()
+    {
+        if (networkManager == null) return;
+        if (networkManager.ShutdownInProgress) return;
+
+        if (networkManager.IsListening || networkManager.IsServer || networkManager.IsClient)
+            networkManager.Shutdown();
+    }
 
     private ushort ResolvePort()
     {
@@ -399,11 +518,6 @@ public class MainMenuUI : MonoBehaviour
             return;
         }
 
-        StartCoroutine(LoadSceneWithLoadingScreen());
-    }
-
-    private System.Collections.IEnumerator LoadSceneWithLoadingScreen()
-    {
         // Lobi + ana panel (Rpc zaten kapatmış olabilir; yine de garanti).
         var lobbyUi = FindFirstObjectByType<LobbyUI>();
         if (lobbyUi != null)
@@ -421,26 +535,19 @@ public class MainMenuUI : MonoBehaviour
                 lobbyTransform.gameObject.SetActive(false);
         }
 
-        // Loading Rpc / NetworkVariable ile gelmiş olabilir; yoksa host'ta da göster.
-        var loading = LoadingScreenManager.Resolve();
-        if (loading != null)
-            loading.ShowLoadingScreenForScene(gameplaySceneName, "Bölüm 1: Uzungöl Tatili");
-
-        // Video warm-up + UI layout için kısa bekle — client ile senkron.
-        Canvas.ForceUpdateCanvases();
-        yield return null;
-        yield return new WaitForEndOfFrame();
-        // Video prepare için ekstra frame (client flash önleme).
-        yield return null;
-
         SetStatus("Yükleniyor…");
-        networkManager.SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
+
+        if (GameplaySceneLoader.Instance != null)
+            GameplaySceneLoader.Instance.BeginHostLoad(gameplaySceneName);
+        else
+            Debug.LogError("[MainMenuUI] GameplaySceneLoader missing.");
     }
 
     private void TryHookSceneEventsWithRetry()
     {
-        // SceneManager in some versions becomes ready the frame after StartHost/StartClient call
-        // So try 5 times
+        if (GameplaySceneLoader.Instance != null)
+            GameplaySceneLoader.Instance.TryHookWhenNetworkReady();
+
         const int maxTries = 5;
         StartCoroutine(SceneHookRetryRoutine(maxTries, 0.2f));
     }
@@ -487,29 +594,29 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnNetcodeSceneEvent(SceneEvent sceneEvent)
     {
-        // Client: host sahne yüklemeyi başlattığında yükleme ekranını göster.
-        // (Host kendi coroutine'inde zaten gösteriyor.)
+        // Client fallback: loader henüz UI açmadıysa SceneEvent Load'da aç.
         if (networkManager.IsServer) return;
         if (sceneEvent.SceneEventType != SceneEventType.Load) return;
         if (sceneEvent.SceneName != gameplaySceneName) return;
 
-        var loading = LoadingScreenManager.Resolve();
-        if (loading != null)
-            loading.ShowLoadingScreenForScene(sceneEvent.SceneName, "Bölüm 1: Uzungöl Tatili");
+        if (GameplaySceneLoader.Instance != null)
+            GameplaySceneLoader.Instance.BeginClientLoadingUi(sceneEvent.SceneName);
     }
 
     private void OnNetcodeSceneLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         SetStatus("");
-
-        var loading = LoadingScreenManager.Resolve();
-        if (loading != null)
-            loading.HideLoadingScreen();
+        // Hide LoadingScreenManager → GameplaySceneLoader yapar (progress + min süre).
     }
 
     private void OnServerStarted()
     {
-        SetStatus("Lobi hazır.");
+        isStartingHost = false;
+        TryHookSceneEventsWithRetry();
+        string portNote = hostPortAttempt != hostPortBase && hostPortBase != 0
+            ? $" (port {hostPortAttempt})"
+            : "";
+        SetStatus($"Lobi: karakter seç → Hazırım. Herkes hazır olunca Oyunu Başlat.{portNote}");
     }
 
     private void OnClientConnected(ulong clientId)
@@ -530,9 +637,18 @@ public class MainMenuUI : MonoBehaviour
 
     private void OnTransportFailure()
     {
-        Debug.LogError("[MainMenuUI] Transport failure (firewall / UDP / VPN?).");
-        SetStatus("Bağlantı hatası.");
         isTryingToConnectClient = false;
+
+        // StartHost içinde senkron fail + async failure çakışmasın diye gecikmeli dene.
+        if (isStartingHost && hostPortRetries < 8)
+        {
+            ScheduleNextHostPort();
+            return;
+        }
+
+        isStartingHost = false;
+        SetStatus("Bağlantı hatası (port meşgul). Unity'yi kapatıp aç, sonra tekrar Host.");
+        EnsureNetworkStopped();
     }
 
     private void LogClientStillConnecting()
@@ -553,6 +669,8 @@ public class MainMenuUI : MonoBehaviour
 
     private void QuitGame()
     {
+        EnsureNetworkStopped();
+
         if (menuMusic != null)
             menuMusic.FadeOut();
 

@@ -69,7 +69,6 @@ public class PlayerInteraction : NetworkBehaviour
         if (promptRect != null)
             promptBasePosition = promptRect.anchoredPosition;
 
-        Debug.Log("<color=green>[Interaction]</color> UI bağlandı -> " + interactionText.gameObject.name);
         interactionText.text = "";
         promptRoot.SetActive(false);
     }
