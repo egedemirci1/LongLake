@@ -22,12 +22,14 @@ public static class PrepareDoorNavMeshMenu
         {
             int doors = PrepareDoorsInScene(scene, addObstacles: true);
             int stripped = StripBrokenDoorGroupMeshColliders(scene);
+            int thresholds = EnsureDoorThresholds(scene);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             EditorUtility.DisplayDialog(
                 "Hazır",
                 $"{doors} kapı obstacle Size → (0.01, 0.001, 0.03).\n" +
-                $"{stripped} boş/kırık Door_Group MeshCollider kaldırıldı.\n\n" +
+                $"{stripped} boş/kırık Door_Group MeshCollider kaldırıldı.\n" +
+                $"{thresholds} DoorThreshold eklendi/güncellendi.\n\n" +
                 "Şimdi: LongLake → Bake CrashSite NavMesh (Doors Open)",
                 "Tamam");
         }
@@ -45,13 +47,15 @@ public static class PrepareDoorNavMeshMenu
         {
             int doors = PrepareDoorsInScene(scene, addObstacles: true);
             int stripped = StripBrokenDoorGroupMeshColliders(scene);
+            int thresholds = EnsureDoorThresholds(scene);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             EditorUtility.DisplayDialog(
                 "Kapı NavMesh düzeltildi",
                 $"{doors} obstacle Size → (0.01, 0.001, 0.03).\n" +
-                $"{stripped} Door_Group boş MeshCollider silindi.\n\n" +
-                "Sahneyi kaydet, sonra Play / Bake.",
+                $"{stripped} Door_Group boş MeshCollider silindi.\n" +
+                $"{thresholds} DoorThreshold eklendi/güncellendi.\n\n" +
+                "Sonra: LongLake → Bake CrashSite NavMesh (Doors Open)",
                 "Tamam");
         }
         finally
@@ -60,18 +64,47 @@ public static class PrepareDoorNavMeshMenu
         }
     }
 
+    [MenuItem("LongLake/Prepare Door Thresholds (No Bake)")]
+    public static void PrepareDoorThresholdsOnly()
+    {
+        var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
+        try
+        {
+            int stripped = StripBrokenDoorGroupMeshColliders(scene);
+            int n = EnsureDoorThresholds(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            EditorUtility.DisplayDialog(
+                "Kapı eşikleri hazır",
+                $"{n} Door_Group → Remove Object + DoorThreshold child.\n" +
+                $"{stripped} boş MeshCollider silindi.\n\n" +
+                "Sonra: LongLake → Bake CrashSite NavMesh (Doors Open)",
+                "Tamam");
+        }
+        finally
+        {
+            EditorSceneManager.CloseScene(scene, true);
+        }
+    }
+
+    [MenuItem("LongLake/Add Doorway Nav Floors (No Bake)")]
+    public static void AddDoorwayNavFloorsOnly()
+    {
+        PrepareDoorThresholdsOnly();
+    }
+
     [MenuItem("LongLake/Bake CrashSite NavMesh (Doors Open)")]
     public static void BakeWithDoorsOpen()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
         var savedDoorRotations = new List<(Transform t, Quaternion rot, bool active)>();
+        var savedDoorMeshColliders = new List<(MeshCollider col, bool enabled)>();
 
         try
         {
             PrepareDoorsInScene(scene, addObstacles: true);
             StripBrokenDoorGroupMeshColliders(scene);
-            // Yol proxy / eşik köprüsü otomatik DEĞİL — tüm sahneyi bozuyordu.
-            // Kapı geçidi için runtime NavMeshLink kullan (DoorController).
+            int thresholds = EnsureDoorThresholds(scene);
 
             foreach (var root in scene.GetRootGameObjects())
             {
@@ -88,6 +121,24 @@ public static class PrepareDoorNavMeshMenu
                     if (obstacle != null)
                         obstacle.enabled = false;
 
+                    foreach (var mc in door.GetComponents<MeshCollider>())
+                    {
+                        savedDoorMeshColliders.Add((mc, mc.enabled));
+                        mc.enabled = false;
+                    }
+
+                    var link = door.GetComponentInParent<NavMeshLink>(true);
+                    if (link == null)
+                    {
+                        var group = door.transform;
+                        while (group != null && (group.name == null || !group.name.StartsWith("Door_Group")))
+                            group = group.parent;
+                        if (group != null)
+                            link = group.GetComponent<NavMeshLink>();
+                    }
+                    if (link != null)
+                        link.activated = false;
+
                     if (knock)
                         door.transform.localRotation = Quaternion.Euler(0f, 0f, openZ);
                     else
@@ -96,6 +147,7 @@ public static class PrepareDoorNavMeshMenu
             }
 
             var surface = EnsureNavMeshSurface(scene);
+            surface.enabled = true;
             surface.agentTypeID = 0;
             surface.collectObjects = CollectObjects.All;
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
@@ -103,7 +155,7 @@ public static class PrepareDoorNavMeshMenu
             surface.defaultArea = 0;
             surface.ignoreNavMeshAgent = true;
             surface.ignoreNavMeshObstacle = true;
-            surface.minRegionArea = 0.5f;
+            surface.minRegionArea = 0.1f;
 
             Undo.RegisterCompleteObjectUndo(surface, "Bake NavMesh");
             surface.BuildNavMesh();
@@ -120,15 +172,22 @@ public static class PrepareDoorNavMeshMenu
                 }
             }
 
+            foreach (var (col, wasEnabled) in savedDoorMeshColliders)
+            {
+                if (col != null)
+                    col.enabled = wasEnabled;
+            }
+
             EditorUtility.SetDirty(surface);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
 
             EditorUtility.DisplayDialog(
                 "NavMesh Bake tamam",
-                "Sade bake (kapılar açık, obstacle kapalı).\n" +
-                "Yol proxy / eşik köprüsü EKLENMEDİ.\n\n" +
-                "Kapı eşiği için: DoorController NavMeshLink (açılınca aktif).",
+                $"{thresholds} kapı eşiği güncellendi.\n" +
+                "Bake: eşikte mavi koridor.\n" +
+                "Play: kapı açıkken NavMeshLink köprüsü de aktif.\n\n" +
+                "Eşik hâlâ boşsa Scene'de DoorThreshold'un yatay plaka olduğunu kontrol et.",
                 "Tamam");
         }
         finally
@@ -139,8 +198,23 @@ public static class PrepareDoorNavMeshMenu
                     t.localRotation = rot;
             }
 
+            foreach (var (col, wasEnabled) in savedDoorMeshColliders)
+            {
+                if (col != null)
+                    col.enabled = wasEnabled;
+            }
+
             EditorSceneManager.CloseScene(scene, true);
         }
+    }
+
+    /// <summary>Unity -executeMethod ile sahneye uygular (dialog yok).</summary>
+    public static void BatchPrepareDoorThresholds()
+    {
+        var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+        StripBrokenDoorGroupMeshColliders(scene);
+        EnsureDoorThresholds(scene);
+        EditorSceneManager.SaveScene(scene);
     }
 
     [MenuItem("LongLake/Add Walkable Proxies Under Roads (No Bake)")]
@@ -351,8 +425,8 @@ public static class PrepareDoorNavMeshMenu
     }
 
     /// <summary>
-    /// Door_Group* üzerindeki Mesh=None / anlamsız MeshCollider'ları kaldırır
-    /// (Scene'de koca bounds + NavMesh deliği üretiyorlardı).
+    /// Door_Group* üzerindeki tüm MeshCollider'ları kaldırır (boş mesh dahil).
+    /// Bake'te duvar gibi davranıp eşiği blokluyorlardı.
     /// </summary>
     private static int StripBrokenDoorGroupMeshColliders(UnityEngine.SceneManagement.Scene scene)
     {
@@ -368,7 +442,6 @@ public static class PrepareDoorNavMeshMenu
                 foreach (var mc in t.GetComponents<MeshCollider>())
                 {
                     if (mc == null) continue;
-                    if (mc.sharedMesh != null) continue;
                     Undo.DestroyObjectImmediate(mc);
                     removed++;
                 }
@@ -376,6 +449,159 @@ public static class PrepareDoorNavMeshMenu
         }
 
         return removed;
+    }
+
+    /// <summary>
+    /// Door_Group: Mode Remove Object (bake'ten duvar collider'ları çıkar).
+    /// DoorThreshold child: yatay BoxCollider + Walkable — eşikte mavi koridor.
+    /// </summary>
+    private static int EnsureDoorThresholds(UnityEngine.SceneManagement.Scene scene)
+    {
+        const string thresholdName = "DoorThreshold";
+        const string legacyFloorName = "DoorwayNavFloor";
+        Vector3 defaultThroughA = new Vector3(0f, 0.61f, 0f);
+        Vector3 defaultThroughB = new Vector3(0f, -0.59f, 0f);
+
+        int count = 0;
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            foreach (var doorGroup in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (doorGroup == null || doorGroup.name == null) continue;
+                if (!doorGroup.name.StartsWith("Door_Group", System.StringComparison.Ordinal))
+                    continue;
+
+                Vector3 localThroughA = defaultThroughA;
+                Vector3 localThroughB = defaultThroughB;
+                float linkWidth = 1.6f;
+                var doorCtrl = doorGroup.GetComponentInChildren<DoorController>(true);
+                if (doorCtrl != null)
+                {
+                    var so = new SerializedObject(doorCtrl);
+                    localThroughA = so.FindProperty("doorwayLinkStartPoint")?.vector3Value ?? defaultThroughA;
+                    localThroughB = so.FindProperty("doorwayLinkEndPoint")?.vector3Value ?? defaultThroughB;
+                    linkWidth = so.FindProperty("doorwayLinkWidth")?.floatValue ?? 1.6f;
+                }
+
+                var groupModifier = doorGroup.GetComponent<NavMeshModifier>();
+                if (groupModifier == null)
+                    groupModifier = Undo.AddComponent<NavMeshModifier>(doorGroup.gameObject);
+                groupModifier.ignoreFromBuild = true;
+                groupModifier.applyToChildren = true;
+                groupModifier.overrideArea = false;
+                EditorUtility.SetDirty(doorGroup.gameObject);
+
+                if (doorCtrl != null)
+                    EnsureDoorPanelExcludedFromBake(doorCtrl);
+
+                Transform legacy = doorGroup.Find(legacyFloorName);
+                if (legacy != null)
+                {
+                    legacy.name = thresholdName;
+                    EditorUtility.SetDirty(legacy.gameObject);
+                }
+
+                Transform existing = doorGroup.Find(thresholdName);
+                GameObject thresholdGo;
+                if (existing != null)
+                    thresholdGo = existing.gameObject;
+                else
+                {
+                    thresholdGo = new GameObject(thresholdName);
+                    Undo.RegisterCreatedObjectUndo(thresholdGo, "Create DoorThreshold");
+                    thresholdGo.transform.SetParent(doorGroup, false);
+                }
+
+                thresholdGo.layer = 0;
+                thresholdGo.transform.localScale = Vector3.one;
+
+                Vector3 worldA = doorGroup.TransformPoint(localThroughA);
+                Vector3 worldB = doorGroup.TransformPoint(localThroughB);
+                Vector3 mid = (worldA + worldB) * 0.5f;
+                Vector3 through = worldA - worldB;
+                if (through.sqrMagnitude < 0.01f)
+                    through = doorGroup.forward;
+                through.Normalize();
+
+                thresholdGo.transform.SetParent(null, true);
+                thresholdGo.transform.position = mid;
+                thresholdGo.transform.rotation = Quaternion.LookRotation(through, Vector3.up);
+                thresholdGo.transform.SetParent(doorGroup, true);
+
+                var box = thresholdGo.GetComponent<BoxCollider>();
+                if (box == null)
+                    box = Undo.AddComponent<BoxCollider>(thresholdGo);
+
+                float depth = Mathf.Max(1.5f, Vector3.Distance(worldA, worldB) + 0.4f);
+                box.center = Vector3.zero;
+                box.size = new Vector3(Mathf.Max(linkWidth, 1.5f), 0.28f, depth);
+                box.isTrigger = false;
+
+                var thresholdModifier = thresholdGo.GetComponent<NavMeshModifier>();
+                if (thresholdModifier == null)
+                    thresholdModifier = Undo.AddComponent<NavMeshModifier>(thresholdGo);
+                thresholdModifier.ignoreFromBuild = false;
+                thresholdModifier.applyToChildren = false;
+                thresholdModifier.overrideArea = true;
+                thresholdModifier.area = 0;
+
+                EnsureDoorGroupNavMeshLink(doorGroup, localThroughA, localThroughB, linkWidth);
+
+                EditorUtility.SetDirty(thresholdGo);
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static void EnsureDoorPanelExcludedFromBake(DoorController door)
+    {
+        if (door == null) return;
+
+        var modifier = door.GetComponent<NavMeshModifier>();
+        if (modifier == null)
+            modifier = Undo.AddComponent<NavMeshModifier>(door.gameObject);
+        modifier.ignoreFromBuild = true;
+        modifier.applyToChildren = false;
+        modifier.overrideArea = false;
+        EditorUtility.SetDirty(door);
+    }
+
+    private static void EnsureDoorGroupNavMeshLink(
+        Transform doorGroup,
+        Vector3 localStart,
+        Vector3 localEnd,
+        float width)
+    {
+        var link = doorGroup.GetComponent<NavMeshLink>();
+        if (link == null)
+            link = Undo.AddComponent<NavMeshLink>(doorGroup.gameObject);
+
+        link.agentTypeID = 0;
+        link.startPoint = localStart;
+        link.endPoint = localEnd;
+        link.width = Mathf.Max(width, 1.4f);
+        link.bidirectional = true;
+        link.autoUpdate = false;
+        link.area = 0;
+        link.activated = false;
+
+        var doorCtrl = doorGroup.GetComponentInChildren<DoorController>(true);
+        if (doorCtrl != null)
+        {
+            var so = new SerializedObject(doorCtrl);
+            var linkProp = so.FindProperty("doorwayNavMeshLink");
+            var useLinkProp = so.FindProperty("useDoorwayNavMeshLink");
+            if (linkProp != null)
+                linkProp.objectReferenceValue = link;
+            if (useLinkProp != null)
+                useLinkProp.boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(doorCtrl);
+        }
+
+        EditorUtility.SetDirty(link);
     }
 
     private static NavMeshSurface EnsureNavMeshSurface(UnityEngine.SceneManagement.Scene scene)

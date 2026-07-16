@@ -37,7 +37,7 @@ public class DoorController : NetworkBehaviour, IInteractable
     [Tooltip("Kapalıyken geçidi keser, açılınca serbest bırakır. Bake'te kapı Navigation Static olmamalı.")]
     [SerializeField] private bool carveNavMeshWhenClosed = true;
     [SerializeField] private NavMeshObstacle navMeshObstacle;
-    [Tooltip("Eşikte bake deliği varsa NavMeshLink ile içeri-dışarı bağlar (tüm sahneyi yeniden bake etmez).")]
+    [Tooltip("Bake koridoru yetmezse runtime'da iki NavMesh adasını köprüler.")]
     [SerializeField] private bool useDoorwayNavMeshLink = true;
     [SerializeField] private NavMeshLink doorwayNavMeshLink;
     [Tooltip("Door_Group local Start — Ismail kapısı için Y üzerinden geçiş.")]
@@ -242,14 +242,31 @@ public class DoorController : NetworkBehaviour, IInteractable
             if (doorwayNavMeshLink != null)
                 doorwayNavMeshLink.activated = IsNavMeshPassageOpen;
         }
+        else if (doorwayNavMeshLink != null)
+        {
+            doorwayNavMeshLink.activated = false;
+        }
     }
 
     /// <summary>Kapı açılınca / yolculuk öncesi link uçlarını NavMesh adalarına oturt.</summary>
     public void RefreshDoorwayNavMeshLink()
     {
         EnsureDoorwayNavMeshLink();
-        if (doorwayNavMeshLink != null)
-            doorwayNavMeshLink.activated = IsNavMeshPassageOpen;
+        if (doorwayNavMeshLink == null) return;
+
+        Transform host = FindDoorGroupHost();
+        if (host != null)
+        {
+            Vector3 worldStart = host.TransformPoint(doorwayLinkStartPoint);
+            Vector3 worldEnd = host.TransformPoint(doorwayLinkEndPoint);
+
+            if (NavMesh.SamplePosition(worldStart, out NavMeshHit startHit, 1.75f, NavMesh.AllAreas))
+                doorwayNavMeshLink.startPoint = host.InverseTransformPoint(startHit.position);
+            if (NavMesh.SamplePosition(worldEnd, out NavMeshHit endHit, 1.75f, NavMesh.AllAreas))
+                doorwayNavMeshLink.endPoint = host.InverseTransformPoint(endHit.position);
+        }
+
+        doorwayNavMeshLink.activated = IsNavMeshPassageOpen;
     }
 
     /// <summary>
