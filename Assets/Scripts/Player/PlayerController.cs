@@ -194,7 +194,7 @@ public class PlayerController : NetworkBehaviour
             if (Input.GetKeyDown(KeyCode.Space))
             {
                 _verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                GameAudio.PlayJump();
+                GameAudio.PlayJump(characterIndex.Value);
             }
         }
 

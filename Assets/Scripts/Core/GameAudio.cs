@@ -19,6 +19,10 @@ public class GameAudio : MonoBehaviour
     [SerializeField] private AudioClip buttonClickClip;
     [SerializeField] private AudioClip craftingClip;
     [SerializeField] private AudioClip jumpingClip;
+    [SerializeField] private AudioClip femaleJumpClip;
+    [SerializeField] private AudioClip maleJumpClip;
+    [SerializeField] private AudioClip femaleLandingClip;
+    [SerializeField] private AudioClip maleLandingClip;
     [SerializeField] private AudioClip questStartClip;
     [SerializeField] private AudioClip questFinishClip;
 
@@ -76,6 +80,14 @@ public class GameAudio : MonoBehaviour
             craftingClip = Resources.Load<AudioClip>("SFX/crafting");
         if (jumpingClip == null)
             jumpingClip = Resources.Load<AudioClip>("SFX/jumping");
+        if (femaleJumpClip == null)
+            femaleJumpClip = Resources.Load<AudioClip>("SFX/female-jump");
+        if (maleJumpClip == null)
+            maleJumpClip = Resources.Load<AudioClip>("SFX/male-jump");
+        if (femaleLandingClip == null)
+            femaleLandingClip = Resources.Load<AudioClip>("SFX/female-landing");
+        if (maleLandingClip == null)
+            maleLandingClip = Resources.Load<AudioClip>("SFX/male-landing");
         if (questStartClip == null)
             questStartClip = Resources.Load<AudioClip>("SFX/quest-start");
         if (questFinishClip == null)
@@ -146,9 +158,41 @@ public class GameAudio : MonoBehaviour
         PlayOneShot(craftingClip);
     }
 
-    public void PlayJumping()
+    public void PlayJumping(int characterIndex = -1)
     {
-        PlayOneShot(jumpingClip);
+        AudioClip jumpClip = null;
+        AudioClip landingClip = null;
+
+        if (characterIndex == 0) // Ahu (Female)
+        {
+            jumpClip = femaleJumpClip;
+            landingClip = femaleLandingClip;
+        }
+        else if (characterIndex == 1) // Yaman (Male)
+        {
+            jumpClip = maleJumpClip;
+            landingClip = maleLandingClip;
+        }
+        else
+        {
+            jumpClip = jumpingClip;
+        }
+
+        if (jumpClip != null)
+        {
+            PlayOneShot(jumpClip);
+        }
+
+        if (landingClip != null)
+        {
+            StartCoroutine(PlayLandingDelayed(landingClip, 0.75f));
+        }
+    }
+
+    private System.Collections.IEnumerator PlayLandingDelayed(AudioClip clip, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        PlayOneShot(clip);
     }
 
     public void PlayQuestStart()
@@ -227,10 +271,10 @@ public class GameAudio : MonoBehaviour
             Instance.PlayCrafting();
     }
 
-    public static void PlayJump()
+    public static void PlayJump(int characterIndex = -1)
     {
         if (Instance != null)
-            Instance.PlayJumping();
+            Instance.PlayJumping(characterIndex);
     }
 
     public static void PlayQStart()
