@@ -43,6 +43,7 @@ public class DialogueManager : NetworkBehaviour
     private Dictionary<string, DialogueNode> _nodeById;
 
     private DialogueSequence _activeSequence;
+    private string _cachedSequenceIdForNodes;
     private bool _disconnectHooked;
 
     public static bool IsDialogueOpen => Instance != null && Instance.isActive.Value;
@@ -117,8 +118,19 @@ public class DialogueManager : NetworkBehaviour
         }
     }
 
-    private void OnAnyChanged(bool _, bool __) => OnDialogueStateChanged?.Invoke();
-    private void OnAnyChangedFs(FixedString64Bytes _, FixedString64Bytes __) => OnDialogueStateChanged?.Invoke();
+    private void OnAnyChanged(bool _, bool __)
+    {
+        if (!isActive.Value)
+            ClearLocalDialogueCache();
+        OnDialogueStateChanged?.Invoke();
+    }
+
+    private void OnAnyChangedFs(FixedString64Bytes _, FixedString64Bytes __)
+    {
+        // Sequence değişince eski node cache (aynı n1/n2 id'leri) client'ta yanlış metin gösterir.
+        ClearLocalDialogueCache();
+        OnDialogueStateChanged?.Invoke();
+    }
     private void OnAnyChangedInt(int _, int __) => OnDialogueStateChanged?.Invoke();
     private void OnListChanged(NetworkListEvent<ulong> _) => OnDialogueStateChanged?.Invoke();
     private void OnChoicesChanged(NetworkListEvent<DialoguePlayerChoice> _) => OnDialogueStateChanged?.Invoke();
@@ -231,13 +243,13 @@ public class DialogueManager : NetworkBehaviour
         }
 
         _activeSequence = seq;
+        _cachedSequenceIdForNodes = sequenceId;
         BuildNodeCache(seq);
 
         if (!_nodeById.ContainsKey(seq.startNodeId))
         {
             Debug.LogWarning($"[DialogueManager] startNodeId '{seq.startNodeId}' missing in '{sequenceId}'.");
-            _activeSequence = null;
-            _nodeById = null;
+            ClearLocalDialogueCache();
             return;
         }
 
@@ -480,8 +492,14 @@ public class DialogueManager : NetworkBehaviour
         nodeIdNv.Value = default;
         sequenceIdNv.Value = default;
         isActive.Value = false;
+        ClearLocalDialogueCache();
+    }
+
+    private void ClearLocalDialogueCache()
+    {
         _activeSequence = null;
         _nodeById = null;
+        _cachedSequenceIdForNodes = null;
     }
 
     private DialogueNode GetCurrentNodeServer()
@@ -495,13 +513,36 @@ public class DialogueManager : NetworkBehaviour
 
     private void EnsureNodeCacheForActiveSequence()
     {
-        if (_nodeById != null) return;
-        string id = sequenceIdNv.Value.ToString();
-        if (_sequenceById.TryGetValue(id, out var seq) && seq != null)
+        if (!isActive.Value)
         {
-            _activeSequence = seq;
-            BuildNodeCache(seq);
+            ClearLocalDialogueCache();
+            return;
         }
+
+        string sequenceId = sequenceIdNv.Value.ToString();
+        if (string.IsNullOrEmpty(sequenceId))
+        {
+            ClearLocalDialogueCache();
+            return;
+        }
+
+        if (_nodeById != null && _cachedSequenceIdForNodes == sequenceId)
+            return;
+
+        if (!_sequenceById.TryGetValue(sequenceId, out var seq) || seq == null)
+        {
+            // Sequence henüz cache'te yoksa Resources'tan tekrar dene.
+            RebuildSequenceCache();
+            if (!_sequenceById.TryGetValue(sequenceId, out seq) || seq == null)
+            {
+                ClearLocalDialogueCache();
+                return;
+            }
+        }
+
+        _activeSequence = seq;
+        _cachedSequenceIdForNodes = sequenceId;
+        BuildNodeCache(seq);
     }
 
     private void BuildNodeCache(DialogueSequence seq)

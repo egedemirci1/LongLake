@@ -145,10 +145,12 @@ public class DialogueUI : MonoBehaviour
             return;
         }
 
-        // Yeni satıra geçince hafif yeniden intro (kart zaten açıksa daha kısa his).
-        if (_lastNodeId != node.id)
+        // Yeni satıra / sequence'e geçince hafif pulse.
+        string seqId = _manager.CurrentSequenceId;
+        string nodeKey = seqId + "/" + node.id;
+        if (_lastNodeId != nodeKey)
         {
-            _lastNodeId = node.id;
+            _lastNodeId = nodeKey;
             if (_cardGroup != null && _introStart < 0f)
                 PlayNodePulse();
         }
