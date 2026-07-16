@@ -26,6 +26,8 @@ public class NetworkLocalSetup : NetworkBehaviour
     private InventoryManager inventoryManager;
     private NotebookUI notebookUI;
 
+    public Vector3 YamanSpawnPosition => yamanSpawnPosition;
+
     public override void OnNetworkSpawn()
     {
         if (!IsOwner)

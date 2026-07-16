@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.AI;
 
 public class DoorController : NetworkBehaviour, IInteractable
 {
@@ -16,6 +17,8 @@ public class DoorController : NetworkBehaviour, IInteractable
     [Header("Quest Knock (optional)")]
     [Tooltip("If true, door cannot open/close. Only knockable while the required quest is active.")]
     [SerializeField] private bool knockOnlyForQuest = false;
+    /// <summary>Npc/quest tetikleri için: bu kapı quest-knock kapısı mı?</summary>
+    public bool IsQuestKnockDoor => knockOnlyForQuest;
     [SerializeField] private string requiredQuestId = "quest_002";
     [SerializeField] private string knockPrompt = "Kapıyı Çal";
     [SerializeField] private string waitingForPartnerPrompt = "Diğer oyuncu da yakında olmalı";
@@ -28,6 +31,11 @@ public class DoorController : NetworkBehaviour, IInteractable
     [SerializeField] private float knockAnimSmoothTime = 0.55f;
     [Tooltip("Seconds to wait after knock SFX before the door starts opening.")]
     [SerializeField] private float knockOpenDelaySeconds = 4.5f;
+
+    [Header("NavMesh")]
+    [Tooltip("Kapalıyken geçidi keser, açılınca serbest bırakır. Bake'te kapı Navigation Static olmamalı.")]
+    [SerializeField] private bool carveNavMeshWhenClosed = true;
+    [SerializeField] private NavMeshObstacle navMeshObstacle;
 
     [Header("Co-op Proximity")]
     [Tooltip("All connected players must stand near the door to knock.")]
@@ -64,6 +72,10 @@ public class DoorController : NetworkBehaviour, IInteractable
     private float _currentLocalZ;
     private float _knockZVelocity;
 
+    /// <summary>NavMesh açısından kapı şu an geçite izin veriyor mu?</summary>
+    public bool IsNavMeshPassageOpen =>
+        knockOnlyForQuest ? knockDoorOpened.Value : IsOpen.Value;
+
     public override void OnNetworkSpawn()
     {
         if (IsServer)
@@ -76,6 +88,10 @@ public class DoorController : NetworkBehaviour, IInteractable
 
         hasBeenKnocked.OnValueChanged += OnHasBeenKnockedChanged;
         knockDoorOpened.OnValueChanged += OnKnockDoorOpenedChanged;
+        IsOpen.OnValueChanged += OnIsOpenChanged;
+
+        EnsureNavMeshObstacle();
+        ApplyNavMeshCarveState();
 
         _currentLocalZ = transform.localEulerAngles.z;
         // Normalize to signed range for SmoothDampAngle
@@ -96,6 +112,7 @@ public class DoorController : NetworkBehaviour, IInteractable
     {
         hasBeenKnocked.OnValueChanged -= OnHasBeenKnockedChanged;
         knockDoorOpened.OnValueChanged -= OnKnockDoorOpenedChanged;
+        IsOpen.OnValueChanged -= OnIsOpenChanged;
     }
 
     private void OnHasBeenKnockedChanged(bool previous, bool current)
@@ -111,6 +128,13 @@ public class DoorController : NetworkBehaviour, IInteractable
     {
         if (!knockOnlyForQuest) return;
         _targetLocalZ = current ? knockOpenZRotation : closeRotation;
+        ApplyNavMeshCarveState();
+    }
+
+    private void OnIsOpenChanged(bool previous, bool current)
+    {
+        if (knockOnlyForQuest) return;
+        ApplyNavMeshCarveState();
     }
 
     private void Update()
@@ -135,6 +159,57 @@ public class DoorController : NetworkBehaviour, IInteractable
     private void ApplyLocalZ(float zDegrees)
     {
         transform.localRotation = Quaternion.Euler(0f, 0f, zDegrees);
+    }
+
+    /// <summary>
+    /// Kapalıyken NavMesh geçidini keser; açıkken carve'i kapatır.
+    /// Bake'te kapı eşiği walkable olmalıdır — aksi halde carve kapatmak yol açmaz.
+    /// </summary>
+    private void EnsureNavMeshObstacle()
+    {
+        if (!carveNavMeshWhenClosed) return;
+
+        if (navMeshObstacle == null)
+            navMeshObstacle = GetComponent<NavMeshObstacle>();
+        if (navMeshObstacle == null)
+            navMeshObstacle = gameObject.AddComponent<NavMeshObstacle>();
+
+        navMeshObstacle.shape = NavMeshObstacleShape.Box;
+        navMeshObstacle.carving = true;
+        navMeshObstacle.carveOnlyStationary = false;
+        navMeshObstacle.carvingMoveThreshold = 0.05f;
+        navMeshObstacle.carvingTimeToStationary = 0.15f;
+
+        // Kapı mesh boyutuna göre carve kutusu — yoksa makul varsayılan.
+        if (TryGetComponent<Collider>(out var col))
+        {
+            Bounds b = col.bounds;
+            Vector3 localSize = transform.InverseTransformVector(b.size);
+            localSize = new Vector3(Mathf.Abs(localSize.x), Mathf.Abs(localSize.y), Mathf.Abs(localSize.z));
+            // Çok ince eksenleri agent'ın geçemeyeceği kadar kalınlaştır.
+            localSize.x = Mathf.Max(localSize.x, 0.25f);
+            localSize.y = Mathf.Max(localSize.y, 1.8f);
+            localSize.z = Mathf.Max(localSize.z, 0.25f);
+            navMeshObstacle.size = localSize;
+            navMeshObstacle.center = transform.InverseTransformPoint(b.center);
+        }
+        else
+        {
+            navMeshObstacle.size = new Vector3(1.1f, 2.2f, 0.35f);
+            navMeshObstacle.center = new Vector3(0f, 1.1f, 0f);
+        }
+    }
+
+    private void ApplyNavMeshCarveState()
+    {
+        if (!carveNavMeshWhenClosed) return;
+        EnsureNavMeshObstacle();
+        if (navMeshObstacle == null) return;
+
+        // Kapalıysa carve aktif (yol kesik); açıksa carve kapalı (bake'teki geçit kullanılır).
+        bool passageOpen = IsNavMeshPassageOpen;
+        navMeshObstacle.carving = !passageOpen;
+        navMeshObstacle.enabled = !passageOpen;
     }
 
     public void Interact(InventoryManager interactorInventory)
