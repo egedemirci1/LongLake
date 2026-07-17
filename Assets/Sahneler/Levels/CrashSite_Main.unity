@@ -70983,6 +70983,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: maxDrawDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: lodSwitchDistance
+      value: 35
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
