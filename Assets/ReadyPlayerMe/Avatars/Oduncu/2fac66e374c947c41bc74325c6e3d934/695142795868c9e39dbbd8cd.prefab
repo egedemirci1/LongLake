@@ -1634,6 +1634,7 @@ GameObject:
   - component: {fileID: 7606597654758158236}
   - component: {fileID: 81755441845863387}
   - component: {fileID: 5500756778638498364}
+  - component: {fileID: 5524523852254929890}
   m_Layer: 0
   m_Name: 695142795868c9e39dbbd8cd
   m_TagString: Untagged
@@ -1706,6 +1707,20 @@ MonoBehaviour:
     BodyType: 1
     OutfitGender: 1
     SkinTone: '#a56f5a'
+--- !u!114 &5524523852254929890
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4100531783061169287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c20a561a5cab2744b6fc62be3ce812f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcDialogueAnimator
+  npcName: ismail
+  animator: {fileID: 0}
 --- !u!1 &4363590213243629217
 GameObject:
   m_ObjectHideFlags: 0
