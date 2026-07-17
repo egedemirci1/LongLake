@@ -12,7 +12,7 @@ namespace ReadyPlayerMe.Core.Editor
         private const string PRELOADED_SHADER_PROPERTY = "m_PreloadedShaders";
         private const string GRAPHICS_SETTING_PATH = "ProjectSettings/GraphicsSettings.asset";
 
-        private const string SHADER_VARIANT_ASSETS_FOLDER = "Assets/Ready Player Me/Core/Runtime/Core/Shaders";
+        private const string SHADER_VARIANT_ASSETS_FOLDER = "Assets/ReadyPlayerMe/Core/Runtime/Core/Shaders";
         private const string SHADER_VARIANT_PACKAGES_FOLDER = "Packages/com.readyplayerme.core/Runtime/Core/Shaders";
 
         private const string SHADER_VARIANTS_STANDARD = "glTFastShaderVariants";
@@ -61,7 +61,8 @@ namespace ReadyPlayerMe.Core.Editor
 
                 foreach (SerializedProperty shaderInclude in shaderPreloadArray)
                 {
-                    if (shaderInclude.objectReferenceValue.name == serializedVariants.targetObject.name)
+                    if (shaderInclude.objectReferenceValue != null &&
+                        shaderInclude.objectReferenceValue.name == serializedVariants.targetObject.name)
                     {
                         SDKLogger.Log(TAG, VARIANTS_FOUND_LOG);
                         shadersMissing = false;
@@ -87,12 +88,18 @@ namespace ReadyPlayerMe.Core.Editor
             SerializedProperty shaderPreloadArray = serializedGraphicsObject.FindProperty(PRELOADED_SHADER_PROPERTY);
 
             var shaderVariants = AssetDatabase.LoadAssetAtPath<ShaderVariantCollection>(GetTargetShaderPath());
+            if (shaderVariants == null)
+            {
+                Debug.LogWarning($"Shader variants not found at {GetTargetShaderPath()}");
+                return false;
+            }
             var shadersMissing = true;
             var serializedVariants = new SerializedObject(shaderVariants);
 
             foreach (SerializedProperty shaderInclude in shaderPreloadArray)
             {
-                if (shaderInclude.objectReferenceValue.name == serializedVariants.targetObject.name)
+                if (shaderInclude.objectReferenceValue != null &&
+                    shaderInclude.objectReferenceValue.name == serializedVariants.targetObject.name)
                 {
                     SDKLogger.Log(TAG, VARIANTS_FOUND_LOG);
 

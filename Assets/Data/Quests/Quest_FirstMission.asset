@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestData
   questID: quest_001
   questTitle: "Kaza Alan\u0131n\u0131 Ara\u015Ft\u0131r"
-  questDescription: "Kaza alan\u0131ndaki 2 s\u0131rt \xE7antas\u0131n\u0131 toplay\u0131n (her oyuncu bir \xE7anta)."
+  questDescription: "Etrafa sa\xE7\u0131lm\u0131\u015F e\u015Fyalar\u0131n\u0131z\u0131 toplay\u0131n."
   initialStatus: 0

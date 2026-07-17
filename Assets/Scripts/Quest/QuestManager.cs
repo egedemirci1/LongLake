@@ -448,13 +448,9 @@ public class QuestManager : NetworkBehaviour
     }
 
     /// <summary>İlerleme bilgisini açıklamadan ayrı, kendi satırı olarak üretir (yoksa boş).</summary>
+    /// <remarks>Açılış görevinde çanta sayısı bilerek gösterilmez; oyuncu görevi keşfederek öğrenmelidir.</remarks>
     private string BuildProgressText(QuestData quest)
     {
-        if (quest == null) return string.Empty;
-
-        if (currentQuestIndex.Value == openingQuestIndex)
-            return $"Sırt çantası   <color=#F2C452>{bagsCollected.Value} / {GetBagsRequired()}</color>";
-
         return string.Empty;
     }
 

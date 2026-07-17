@@ -30,7 +30,9 @@ public class LobbyUI : MonoBehaviour
     private static readonly Color ScrimColor = new Color(0.02f, 0.03f, 0.04f, 0.72f);
     private static readonly Color CardColor = new Color(0.06f, 0.07f, 0.09f, 0.94f);
     private static readonly Color CharCardIdle = new Color(0.10f, 0.11f, 0.13f, 0.98f);
-    private static readonly Color CharCardSelected = new Color(0.14f, 0.13f, 0.10f, 1f);
+    private static readonly Color CharCardSelected = new Color(0.035f, 0.055f, 0.065f, 1f);
+    private static readonly Color SelectionOverlay = new Color(0.025f, 0.045f, 0.055f, 0.96f);
+    private static readonly Color SelectedMetaText = new Color(0.82f, 0.86f, 0.88f, 1f);
     private static readonly Color CharCardTaken = new Color(0.07f, 0.07f, 0.08f, 0.75f);
     private static readonly Color MutedText = new Color(0.62f, 0.64f, 0.60f, 1f);
     private static readonly Color BodyText = new Color(0.93f, 0.94f, 0.92f, 1f);
@@ -430,14 +432,19 @@ public class LobbyUI : MonoBehaviour
         if (ring != null)
         {
             ring.enabled = selected;
-            ring.color = AccentColor;
+            // Rounded sprite dolu bir gorsel oldugu icin sari kullanmak kartin
+            // tamamini boyuyordu. Koyu katman metin kontrastini korur;
+            // secim vurgusu alttaki sari badge ile verilir.
+            ring.color = SelectionOverlay;
         }
 
         if (name != null)
-            name.color = takenByOther ? MutedText : BodyText;
+            name.color = takenByOther ? MutedText : (selected ? Color.white : BodyText);
 
         if (meta != null)
-            meta.color = takenByOther ? new Color(MutedText.r, MutedText.g, MutedText.b, 0.55f) : MutedText;
+            meta.color = takenByOther
+                ? new Color(MutedText.r, MutedText.g, MutedText.b, 0.55f)
+                : (selected ? SelectedMetaText : MutedText);
 
         if (badge != null)
         {
@@ -445,16 +452,19 @@ public class LobbyUI : MonoBehaviour
             {
                 badge.text = "SEÇİLDİ";
                 badge.color = AccentColor;
+                badge.fontSize = 13f;
             }
             else if (takenByOther)
             {
                 badge.text = "ALINDI";
                 badge.color = new Color(0.75f, 0.35f, 0.35f, 1f);
+                badge.fontSize = 12f;
             }
             else
             {
                 badge.text = "SEÇ";
                 badge.color = tone;
+                badge.fontSize = 12f;
             }
         }
     }
@@ -865,13 +875,13 @@ public class LobbyUI : MonoBehaviour
         nameTmp.text = displayName;
         nameTmp.fontSize = 26f;
 
-        metaTmp = CreateTmp(button.transform, "Meta", 13f, FontStyles.Normal, MutedText);
+        metaTmp = CreateTmp(button.transform, "Meta", 15f, FontStyles.Bold, MutedText);
         var metaRt = metaTmp.rectTransform;
         metaRt.anchorMin = new Vector2(0f, 0f);
         metaRt.anchorMax = new Vector2(1f, 0f);
         metaRt.pivot = new Vector2(0.5f, 0f);
-        metaRt.anchoredPosition = new Vector2(0f, 44f);
-        metaRt.sizeDelta = new Vector2(-32f, 20f);
+        metaRt.anchoredPosition = new Vector2(0f, 42f);
+        metaRt.sizeDelta = new Vector2(-24f, 24f);
         metaTmp.alignment = TextAlignmentOptions.Center;
         metaTmp.text = meta;
 
@@ -880,10 +890,10 @@ public class LobbyUI : MonoBehaviour
         badgeRt.anchorMin = new Vector2(0f, 0f);
         badgeRt.anchorMax = new Vector2(1f, 0f);
         badgeRt.pivot = new Vector2(0.5f, 0f);
-        badgeRt.anchoredPosition = new Vector2(0f, 16f);
+        badgeRt.anchoredPosition = new Vector2(0f, 14f);
         badgeRt.sizeDelta = new Vector2(-32f, 20f);
         badgeTmp.alignment = TextAlignmentOptions.Center;
-        badgeTmp.characterSpacing = 6f;
+        badgeTmp.characterSpacing = 3f;
         badgeTmp.text = "SEÇ";
     }
 

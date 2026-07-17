@@ -100,13 +100,10 @@ public class ItemPickUp : NetworkBehaviour, IInteractable
 
         AddItemToClientClientRpc(clientId);
 
-        // In-scene NetworkObject'lerde Despawn(true)/Destroy beklenmedik davranışa yol açar.
-        // Despawn(false) ağdan çıkarır, GameObject sahne içinde kalır (görünürlük zaten kapatıldı).
-        var no = GetComponent<NetworkObject>();
-        if (no != null && no.IsSpawned)
-            no.Despawn(false);
-        else
-            SetVisibility(false);
+        // NOT: Burada Despawn ÇAĞIRMA. isPickedUp delta'sı client'lara bir sonraki
+        // tick'te gider; aynı frame'de despawn edilirse delta hiç ulaşmaz ve obje
+        // diğer oyuncularda görünür kalır. Obje spawned kalır, görünürlüğü
+        // isPickedUp üzerinden tüm taraflarda kapatılır (late-join dahil).
     }
 
     [ClientRpc]
