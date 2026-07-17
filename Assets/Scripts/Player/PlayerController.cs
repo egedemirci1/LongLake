@@ -66,7 +66,26 @@ public class PlayerController : NetworkBehaviour
     {
         _controller = GetComponent<CharacterController>();
         _stamina = GetComponent<PlayerStamina>();
+        EnsureNavObstacle();
         UpdateCharacterModel(characterIndex.Value);
+    }
+
+    /// <summary>
+    /// NPC NavMeshAgent'ları (İsmail) oyuncunun içinden geçmesin diye engel kapsülü.
+    /// Carving bilerek kapalı: oyuncu kapı eşiğinde dururken mesh'te delik açılırsa
+    /// NPC'nin rotası Partial kalır ve yürüyüş hiç başlamaz; carve'siz engel sadece
+    /// yerel kaçınmayı (steering) etkiler, NPC oyuncunun etrafından dolaşır.
+    /// </summary>
+    private void EnsureNavObstacle()
+    {
+        if (!TryGetComponent(out UnityEngine.AI.NavMeshObstacle obstacle))
+            obstacle = gameObject.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+
+        obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Capsule;
+        obstacle.radius = 0.45f;
+        obstacle.height = 1.8f;
+        obstacle.center = new Vector3(0f, 0.9f, 0f);
+        obstacle.carving = false;
     }
 
     public override void OnNetworkSpawn()

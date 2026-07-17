@@ -291,6 +291,10 @@ public class NpcWalkToPoint : NetworkBehaviour
             ResolveNpc();
         if (_npc == null) yield break;
 
+        // Yürüyüş boyunca oyuncular içinden geçmesin — collider'ı baştan tak
+        // (önceden sadece varışta, konuşma etkileşimi için ekleniyordu).
+        EnsureNpcHasCollider();
+
         // Kapı carve'inin NavMesh'e yazılması için kısa bir nefes.
         // (Obstacle kapandıktan sonra Unity carve güncellemesi bir frame sürebilir.)
         for (int i = 0; i < 8; i++)
