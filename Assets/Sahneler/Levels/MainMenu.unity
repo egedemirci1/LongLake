@@ -2117,14 +2117,14 @@ MonoBehaviour:
   tipHoldSeconds: 2
   tipFadeSeconds: 0.35
   tips:
-  - "Ko\u015Fma hakk\u0131n s\u0131n\u0131rl\u0131d\u0131r \u2014 stamina bitince biraz beklemen gerekir."
-  - Envanter ve craft paneli I tu\u015Fu ile a\u00E7\u0131l\u0131r.
-  - E tu\u015Fu ile kap\u0131, \u00E7ekmece ve e\u015Fyalara etkile\u015Fime girersin.
-  - G\xF6rev g\xFCnl\xFC\u011F\xFCn\xFC M tu\u015Fu ile a\u00E7\u0131p kapatabilirsin.
-  - S\u0131rt \u00E7antas\u0131 bulunca hotbar a\u00E7\u0131l\u0131r; slotlar 1\u20138 ile se\u00E7ilir.
-  - Kap\u0131y\u0131 \u00E7almak i\u00E7in iki oyuncu da kap\u0131n\u0131n yak\u0131n\u0131nda olmal\u0131.
-  - Diyalogda her iki oyuncu da Devam demeli veya ayn\u0131 se\u00E7imi onaylamal\u0131.
-  - Not defterini L tu\u015Fu ile a\u00E7abilirsin \u2014 ipu\u00E7lar\u0131 orada birikir.
+  - "Ko\u015Fma hakk\u0131n s\u0131n\u0131rl\u0131d\u0131r; stamina bitince biraz beklemen gerekir."
+  - "Envanter ve craft paneli I tu\u015Fu ile a\u00E7\u0131l\u0131r."
+  - "E tu\u015Fu ile kap\u0131, \u00E7ekmece ve e\u015Fyalara etkile\u015Fime girersin."
+  - "G\xF6rev g\xFCnl\xFC\u011F\xFCn\xFC M tu\u015Fu ile a\u00E7\u0131p kapatabilirsin."
+  - "S\u0131rt \u00E7antas\u0131 bulunca hotbar a\u00E7\u0131l\u0131r; slotlar 1-8 ile se\u00E7ilir."
+  - "Kap\u0131y\u0131 \u00E7almak i\u00E7in iki oyuncu da kap\u0131n\u0131n yak\u0131n\u0131nda olmal\u0131."
+  - "Diyalogda her iki oyuncu da Devam demeli veya ayn\u0131 se\u00E7imi onaylamal\u0131."
+  - "Not defterini L tu\u015Fu ile a\u00E7abilirsin; ipu\u00E7lar\u0131 orada birikir."
 --- !u!4 &1501989226
 Transform:
   m_ObjectHideFlags: 0

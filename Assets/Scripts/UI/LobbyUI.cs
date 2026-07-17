@@ -317,10 +317,11 @@ public class LobbyUI : MonoBehaviour
             int ready = _lobby != null ? _lobby.ReadyCount : 0;
             int needed = _lobby != null ? _lobby.ConnectedCount : 0;
             string role = isHost ? "Oda sahibi" : "Misafir";
-            string startHint = isHost
-                ? (canStart ? " — Oyunu başlatabilirsin" : " — Herkes hazır olunca başlat")
-                : " — Oda sahibi başlatacak";
-            statusText.text = $"{role} · Hazır {ready}/{needed}{startHint}";
+            bool everyoneReady = needed > 0 && ready == needed;
+            string readyLine = everyoneReady
+                ? $"<color=#52B87A>Hazır {ready}/{needed}</color>"
+                : $"Hazır {ready}/{needed}";
+            statusText.text = $"{role}\n{readyLine}";
         }
 
         if (hostIpText != null)
@@ -623,28 +624,30 @@ public class LobbyUI : MonoBehaviour
             startLabel.alignment = TextAlignmentOptions.Center;
         }
 
-        // Status + IP — en altta, butonların altında
+        // Oda durumu sağ üstte; rol ve hazır sayısı iki ayrı satırda.
         if (statusText != null)
         {
             statusText.transform.SetParent(card.transform, false);
             statusText.transform.SetAsLastSibling();
             statusText.gameObject.SetActive(true);
-            Place(statusText.rectTransform, 36f, 44f, 36f, 24f, fromBottom: true);
+            Place(statusText.rectTransform, 600f, -28f, 36f, 48f);
             statusText.fontSize = 14f;
-            statusText.fontStyle = FontStyles.Normal;
+            statusText.fontStyle = FontStyles.Bold;
             statusText.color = MutedText;
-            statusText.alignment = TextAlignmentOptions.Center;
+            statusText.alignment = TextAlignmentOptions.TopRight;
+            statusText.lineSpacing = 4f;
             statusText.raycastTarget = false;
         }
 
+        // Oda IP'si alt merkezdeki sabit konumunu korur.
         if (hostIpText != null)
         {
             hostIpText.transform.SetParent(card.transform, false);
             hostIpText.transform.SetAsLastSibling();
             hostIpText.gameObject.SetActive(true);
             Place(hostIpText.rectTransform, 36f, 18f, 36f, 20f, fromBottom: true);
-            hostIpText.fontSize = 12f;
-            hostIpText.fontStyle = FontStyles.Normal;
+            hostIpText.fontSize = 17f;
+            hostIpText.fontStyle = FontStyles.Bold;
             hostIpText.color = new Color(MutedText.r, MutedText.g, MutedText.b, 0.85f);
             hostIpText.alignment = TextAlignmentOptions.Center;
             hostIpText.characterSpacing = 1f;

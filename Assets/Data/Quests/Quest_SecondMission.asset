@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::QuestData
   questID: quest_002
   questTitle: "Yard\u0131m Ara"
-  questDescription: "Oduncu kul\xFCbesine birlikte gidin ve kap\u0131y\u0131 \xE7al\u0131n (ikiniz de yak\u0131n olmal\u0131)."
+  questDescription: "\xC7evrede yard\u0131m alabilece\u011Finiz birini aray\u0131n."
   initialStatus: 0

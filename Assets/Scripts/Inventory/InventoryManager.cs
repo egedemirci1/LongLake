@@ -74,6 +74,9 @@ public class InventoryManager : NetworkBehaviour
     private static readonly Color FrameEmptyColor = new Color(0.06f, 0.07f, 0.09f, 0.45f);   // boş: koyu, soluk
     private static readonly Color FrameFilledColor = new Color(0.13f, 0.15f, 0.19f, 0.85f);  // dolu: koyu, belirgin
     private static readonly Color FrameSelectedColor = new Color(0.95f, 0.77f, 0.32f, 0.95f); // seçili: kehribar vurgu
+    private static readonly Color CraftOutputEmptyColor = new Color(0.12f, 0.15f, 0.18f, 0.96f);
+    private static readonly Color CraftOutputFilledColor = new Color(0.24f, 0.20f, 0.10f, 0.98f);
+    private static readonly Color CraftAccentColor = new Color(0.95f, 0.69f, 0.25f, 1f);
     
     // Seçili eşyaya erişim için property (hotbar slot'undan)
     public ItemData SelectedItem
@@ -786,23 +789,19 @@ public class InventoryManager : NetworkBehaviour
             Transform iconT = outputSlot.Find("ItemIcon");
             if (iconT == null)
             {
-                // Fallback: OutputSlot'un kendisinde Image varsa onu kullan
-                if (outputSlot.GetComponent<Image>() != null)
-                {
-                    iconT = outputSlot;
-                }
-                else
-                {
-                    for (int j = 0; j < outputSlot.childCount; j++)
-                    {
-                        Transform child = outputSlot.GetChild(j);
-                        if (child.GetComponent<Image>() != null && !child.name.Contains("ItemName"))
-                        {
-                            iconT = child;
-                            break;
-                        }
-                    }
-                }
+                // Çerçeve ile ikon aynı Image olursa boş ikon gizlenirken çerçeve de kaybolur.
+                GameObject iconGO = new GameObject("ItemIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                iconGO.transform.SetParent(outputSlot, false);
+                RectTransform iconRect = iconGO.GetComponent<RectTransform>();
+                iconRect.anchorMin = new Vector2(0.5f, 0.5f);
+                iconRect.anchorMax = new Vector2(0.5f, 0.5f);
+                iconRect.pivot = new Vector2(0.5f, 0.5f);
+                iconRect.sizeDelta = new Vector2(48f, 48f);
+                iconRect.anchoredPosition = Vector2.zero;
+                Image iconImage = iconGO.GetComponent<Image>();
+                iconImage.preserveAspect = true;
+                iconImage.raycastTarget = false;
+                iconT = iconGO.transform;
             }
 
             Transform nameT = outputSlot.Find("ItemName_Text");
@@ -811,15 +810,21 @@ public class InventoryManager : NetworkBehaviour
             
             if (nameT == null)
             {
-                for (int j = 0; j < outputSlot.childCount; j++)
-                {
-                    Transform child = outputSlot.GetChild(j);
-                    if (child.GetComponent<TextMeshProUGUI>() != null)
-                    {
-                        nameT = child;
-                        break;
-                    }
-                }
+                GameObject nameGO = new GameObject("ItemName", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                nameGO.transform.SetParent(outputSlot, false);
+                RectTransform nameRect = nameGO.GetComponent<RectTransform>();
+                nameRect.anchorMin = new Vector2(0f, 0f);
+                nameRect.anchorMax = new Vector2(1f, 0f);
+                nameRect.pivot = new Vector2(0.5f, 0f);
+                nameRect.anchoredPosition = new Vector2(0f, 3f);
+                nameRect.sizeDelta = new Vector2(0f, 16f);
+                TextMeshProUGUI nameText = nameGO.GetComponent<TextMeshProUGUI>();
+                nameText.fontSize = 10f;
+                nameText.fontStyle = FontStyles.Bold;
+                nameText.alignment = TextAlignmentOptions.Center;
+                nameText.color = Color.white;
+                nameText.raycastTarget = false;
+                nameT = nameGO.transform;
             }
 
             craftingOutputIcon = iconT != null ? iconT.GetComponent<Image>() : null;
@@ -854,11 +859,19 @@ public class InventoryManager : NetworkBehaviour
             if (craftingOutputFrame != null)
             {
                 craftingOutputFrame.enabled = true;
-                craftingOutputFrame.color = FrameEmptyColor;
+                craftingOutputFrame.color = CraftOutputEmptyColor;
+                craftingOutputFrame.raycastTarget = false;
                 if (craftingOutputFrame.gameObject != null)
                 {
                     craftingOutputFrame.gameObject.SetActive(true);
                 }
+
+                Outline outline = craftingOutputFrame.GetComponent<Outline>();
+                if (outline == null)
+                    outline = craftingOutputFrame.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(CraftAccentColor.r, CraftAccentColor.g, CraftAccentColor.b, 0.72f);
+                outline.effectDistance = new Vector2(2f, -2f);
+                outline.useGraphicAlpha = false;
             }
         }
 
@@ -897,6 +910,7 @@ public class InventoryManager : NetworkBehaviour
             {
                 cancelCraftButton.onClick.RemoveAllListeners();
                 cancelCraftButton.onClick.AddListener(CancelCrafting);
+                StyleCraftButton(cancelCraftButton, false);
             }
         }
 
@@ -932,9 +946,59 @@ public class InventoryManager : NetworkBehaviour
             Button craftButton = craftButtonT.GetComponent<Button>();
             if (craftButton != null)
             {
+                craftButton.onClick.RemoveListener(PlayCraftSound);
                 craftButton.onClick.AddListener(PlayCraftSound);
+                StyleCraftButton(craftButton, true);
             }
         }
+    }
+
+    private static void StyleCraftButton(Button button, bool primary)
+    {
+        if (button == null) return;
+
+        Image background = button.GetComponent<Image>();
+        if (background != null)
+        {
+            background.color = primary
+                ? new Color(0.82f, 0.52f, 0.16f, 1f)
+                : new Color(0.12f, 0.14f, 0.17f, 0.98f);
+        }
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = primary
+            ? new Color(1f, 0.88f, 0.68f, 1f)
+            : new Color(1.18f, 1.18f, 1.18f, 1f);
+        colors.pressedColor = new Color(0.72f, 0.72f, 0.72f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.45f, 0.45f, 0.45f, 0.55f);
+        colors.colorMultiplier = 1f;
+        colors.fadeDuration = 0.12f;
+        button.colors = colors;
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        if (rect != null)
+            rect.sizeDelta = new Vector2(160f, 38f);
+
+        TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null)
+        {
+            label.fontSize = 18f;
+            label.fontStyle = FontStyles.Bold;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = primary ? new Color(0.08f, 0.07f, 0.05f, 1f) : new Color(0.9f, 0.92f, 0.95f, 1f);
+            label.text = primary ? "BİRLEŞTİR" : "İPTAL";
+        }
+
+        Outline outline = button.GetComponent<Outline>();
+        if (outline == null)
+            outline = button.gameObject.AddComponent<Outline>();
+        outline.effectColor = primary
+            ? new Color(1f, 0.76f, 0.34f, 0.65f)
+            : new Color(0.42f, 0.47f, 0.54f, 0.65f);
+        outline.effectDistance = new Vector2(1f, -1f);
+        outline.useGraphicAlpha = false;
     }
 
     private void PlayCraftSound()
@@ -1515,10 +1579,19 @@ public class InventoryManager : NetworkBehaviour
             if (craftingOutputFrame != null)
             {
                 craftingOutputFrame.enabled = true;
-                craftingOutputFrame.color = hasOutput ? FrameFilledColor : FrameEmptyColor;
+                craftingOutputFrame.color = hasOutput ? CraftOutputFilledColor : CraftOutputEmptyColor;
                 if (craftingOutputFrame.gameObject != null)
                 {
                     craftingOutputFrame.gameObject.SetActive(true);
+                }
+
+                Outline outline = craftingOutputFrame.GetComponent<Outline>();
+                if (outline != null)
+                {
+                    outline.effectColor = hasOutput
+                        ? CraftAccentColor
+                        : new Color(CraftAccentColor.r, CraftAccentColor.g, CraftAccentColor.b, 0.72f);
+                    outline.effectDistance = hasOutput ? new Vector2(3f, -3f) : new Vector2(2f, -2f);
                 }
             }
             
@@ -1623,7 +1696,11 @@ public class InventoryManager : NetworkBehaviour
     public void DropItemToGround(ItemData item, bool isHotbarSlot, int slotIndex)
     {
         if (!IsOwner) return;
-        
+
+        // Sırt çantası oyunun ilerleme anahtarı (hotbar/envanter erişimi ona bağlı) — yere atılamaz.
+        if (item != null && item.itemID == "backpack")
+            return;
+
         // Server'a istek gönder
         DropItemToGroundServerRpc(item.itemID, isHotbarSlot, slotIndex);
     }
@@ -1665,6 +1742,12 @@ public class InventoryManager : NetworkBehaviour
         }
         
         if (item == null || item.itemID != itemID)
+        {
+            return;
+        }
+
+        // Sırt çantası atılamaz (client tarafı da engelliyor; RPC sınırında ikinci kontrol)
+        if (item.itemID == "backpack")
         {
             return;
         }

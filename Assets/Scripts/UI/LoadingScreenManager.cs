@@ -40,14 +40,14 @@ public class LoadingScreenManager : MonoBehaviour
     [SerializeField]
     private string[] tips =
     {
-        "Koşma hakkın sınırlıdır — stamina bitince biraz beklemen gerekir.",
+        "Koşma hakkın sınırlıdır; stamina bitince biraz beklemen gerekir.",
         "Envanter ve craft paneli I tuşu ile açılır.",
         "E tuşu ile kapı, çekmece ve eşyalara etkileşime girersin.",
         "Görev günlüğünü M tuşu ile açıp kapatabilirsin.",
-        "Sırt çantası bulunca hotbar açılır; slotlar 1–8 ile seçilir.",
+        "Sırt çantası bulunca hotbar açılır; slotlar 1-8 ile seçilir.",
         "Kapıyı çalmak için iki oyuncu da kapının yakınında olmalı.",
         "Diyalogda her iki oyuncu da Devam demeli veya aynı seçimi onaylamalı.",
-        "Not defterini L tuşu ile açabilirsin — ipuçları orada birikir."
+        "Not defterini L tuşu ile açabilirsin; ipuçları orada birikir."
     };
 
     private static readonly Color AccentColor = new Color(0.95f, 0.77f, 0.32f, 1f);
