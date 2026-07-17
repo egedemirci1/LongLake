@@ -77,7 +77,8 @@ public class NetworkLocalSetup : NetworkBehaviour
 
     private bool IsGameplayScene()
     {
-        return SceneManager.GetActiveScene().name == gameplaySceneName;
+        string sceneName = SceneManager.GetActiveScene().name;
+        return sceneName == gameplaySceneName || sceneName == "TestScene";
     }
 
     /// <summary>
@@ -443,6 +444,8 @@ public class NetworkLocalSetup : NetworkBehaviour
         if (notebookUI != null && notebookUI.IsNotebookOpen) return true;
 
         if (QuestManager.Instance != null && QuestManager.Instance.IsPanelOpen) return true;
+
+        if (SceneManager.GetActiveScene().name == "TestScene" && TestSceneHelper.UnlockCursor) return true;
 
         return false;
     }

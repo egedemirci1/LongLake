@@ -143,6 +143,12 @@ public class PlayerController : NetworkBehaviour
     {
         if (cinemachineCameraTarget == null) return;
 
+        // TestScene'de cursor serbestken kamera dönmesin
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "TestScene" && TestSceneHelper.UnlockCursor)
+        {
+            return;
+        }
+
         // Envanter açıksa kamera dönmesin
         InventoryManager inventoryManager = GetComponent<InventoryManager>();
         if (inventoryManager != null && inventoryManager.mainInventoryObject != null && inventoryManager.mainInventoryObject.activeSelf)
