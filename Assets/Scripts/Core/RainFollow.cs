@@ -8,14 +8,23 @@ using UnityEngine;
 public class RainFollow : MonoBehaviour
 {
     [SerializeField] private float heightAboveCamera = 9f;
-    [SerializeField] private float forwardOffset = 4f;
+    [Tooltip("0 = yağmur alanı oyuncuyu merkezler; >0 bakış yönüne kaydırır (dönünce arkada boşluk bırakır).")]
+    [SerializeField] private float forwardOffset = 0f;
     [Header("Rain Appearance")]
-    [SerializeField] private float emissionRate = 850f;
+    [Tooltip("Karakterin çevresinde yağmur yağan yatay yarıçap (metre).")]
+    [SerializeField] private float rainRadius = 8f;
+    [SerializeField] private float emissionRate = 950f;
     [SerializeField] private Vector2 lifetimeRange = new Vector2(1.3f, 1.8f);
     [SerializeField] private Vector2 speedRange = new Vector2(18f, 26f);
     [SerializeField] private Vector2 sizeRange = new Vector2(0.025f, 0.045f);
     [SerializeField] private float windX = 1.2f;
     [SerializeField] private float windZ = 0.4f;
+
+    [Header("Rain Splash")]
+    [SerializeField] private bool enableGroundSplashes = true;
+    [SerializeField] private LayerMask rainCollisionLayers = ~0;
+    [SerializeField] private Vector2 splashLifetimeRange = new Vector2(0.12f, 0.24f);
+    [SerializeField] private Vector2 splashSizeRange = new Vector2(0.025f, 0.06f);
 
     [Header("Rain Audio")]
     [SerializeField] private AudioClip rainLoopClip;
@@ -52,7 +61,7 @@ public class RainFollow : MonoBehaviour
 
         var main = particles.main;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 2500;
+        main.maxParticles = 3500;
         main.startLifetime = new ParticleSystem.MinMaxCurve(lifetimeRange.x, lifetimeRange.y);
         main.startSpeed = new ParticleSystem.MinMaxCurve(speedRange.x, speedRange.y);
         main.startSize = new ParticleSystem.MinMaxCurve(sizeRange.x, sizeRange.y);
@@ -64,8 +73,11 @@ public class RainFollow : MonoBehaviour
         emission.rateOverTime = emissionRate;
 
         var shape = particles.shape;
+        // Box şekli damlaları local +Z'ye fırlatır; Rain objesi X'te 90° döndürüldüğü için
+        // bu dünya-aşağı demektir. Aynı dönüş yüzünden yatay taban local X-Y düzlemidir:
+        // scale = (genişlik, derinlik, dikey kalınlık) olarak verilmeli.
         shape.shapeType = ParticleSystemShapeType.Box;
-        shape.scale = new Vector3(20f, 1f, 20f);
+        shape.scale = new Vector3(rainRadius * 2f, rainRadius * 2f, 1f);
 
         var velocity = particles.velocityOverLifetime;
         velocity.enabled = true;
@@ -82,6 +94,101 @@ public class RainFollow : MonoBehaviour
         renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         renderer.receiveShadows = false;
         renderer.enableGPUInstancing = true;
+
+        if (enableGroundSplashes)
+            ConfigureGroundSplashes(particles, renderer.sharedMaterial);
+    }
+
+    private void ConfigureGroundSplashes(ParticleSystem rain, Material rainMaterial)
+    {
+        var collision = rain.collision;
+        collision.enabled = true;
+        collision.type = ParticleSystemCollisionType.World;
+        collision.mode = ParticleSystemCollisionMode.Collision3D;
+        // Low/Medium kalite yalnızca statik geometri önbelleğiyle çarpışır ve damlaları
+        // sık sık ıskalar; High her parçacık için gerçek raycast yapar (n≈2-3k, job'larda).
+        collision.quality = ParticleSystemCollisionQuality.High;
+        collision.collidesWith = rainCollisionLayers;
+        collision.dampen = 0f;
+        collision.bounce = 0f;
+        collision.lifetimeLoss = 1f;
+        collision.radiusScale = 0.3f;
+        collision.maxCollisionShapes = 64;
+        collision.sendCollisionMessages = false;
+
+        Transform existing = transform.Find("RainSplash");
+        ParticleSystem splash;
+        if (existing != null && existing.TryGetComponent(out splash))
+        {
+            // Domain reload kapalıyken tekrar alt sistem üretme.
+        }
+        else
+        {
+            GameObject splashObject = new GameObject("RainSplash", typeof(ParticleSystem));
+            splashObject.transform.SetParent(transform, false);
+            splashObject.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            splash = splashObject.GetComponent<ParticleSystem>();
+        }
+
+        // Yeni ParticleSystem oluşur oluşmaz çalmaya başlar; duration gibi ana
+        // ayarlar ancak sistem tamamen durmuşken değiştirilebilir.
+        splash.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var splashMain = splash.main;
+        splashMain.loop = false;
+        splashMain.playOnAwake = false;
+        splashMain.duration = 0.3f;
+        splashMain.simulationSpace = ParticleSystemSimulationSpace.World;
+        splashMain.maxParticles = 700;
+        splashMain.startLifetime = new ParticleSystem.MinMaxCurve(
+            splashLifetimeRange.x, splashLifetimeRange.y);
+        splashMain.startSpeed = new ParticleSystem.MinMaxCurve(0.45f, 1.1f);
+        splashMain.startSize = new ParticleSystem.MinMaxCurve(
+            splashSizeRange.x, splashSizeRange.y);
+        splashMain.startColor = new ParticleSystem.MinMaxGradient(
+            new Color(0.72f, 0.82f, 0.9f, 0.3f),
+            new Color(0.92f, 0.96f, 1f, 0.6f));
+        splashMain.gravityModifier = 1.2f;
+
+        var splashEmission = splash.emission;
+        splashEmission.enabled = true;
+        splashEmission.rateOverTime = 0f;
+        splashEmission.SetBursts(new[]
+        {
+            new ParticleSystem.Burst(0f, 2, 4)
+        });
+
+        var splashShape = splash.shape;
+        splashShape.enabled = true;
+        splashShape.shapeType = ParticleSystemShapeType.Hemisphere;
+        splashShape.radius = 0.04f;
+
+        var splashRenderer = splash.GetComponent<ParticleSystemRenderer>();
+        splashRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+        splashRenderer.sharedMaterial = rainMaterial;
+        splashRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        splashRenderer.receiveShadows = false;
+        splashRenderer.enableGPUInstancing = true;
+
+        var subEmitters = rain.subEmitters;
+        subEmitters.enabled = true;
+        bool alreadyAdded = false;
+        for (int i = 0; i < subEmitters.subEmittersCount; i++)
+        {
+            if (subEmitters.GetSubEmitterSystem(i) == splash)
+            {
+                alreadyAdded = true;
+                break;
+            }
+        }
+
+        if (!alreadyAdded)
+        {
+            subEmitters.AddSubEmitter(
+                splash,
+                ParticleSystemSubEmitterType.Collision,
+                ParticleSystemSubEmitterProperties.InheritNothing);
+        }
     }
 
     private void ConfigureRainAudio()
