@@ -17,11 +17,32 @@ public class RainFollow : MonoBehaviour
     [SerializeField] private float windX = 1.2f;
     [SerializeField] private float windZ = 0.4f;
 
+    [Header("Rain Audio")]
+    [SerializeField] private AudioClip rainLoopClip;
+    [SerializeField] private string rainResourcesPath = "SFX/rain_loop";
+    [Range(0f, 1f)]
+    [SerializeField] private float rainVolume = 0.42f;
+    [Range(0f, 1f)]
+    [Tooltip("Kapalı alanda dışarıdaki yağmurun duyulma oranı.")]
+    [SerializeField] private float indoorVolumeFactor = 0.12f;
+
+    [Header("Indoor Detection")]
+    [Tooltip("Kameradan yukarı bu mesafede çatı/tavan aranır.")]
+    [SerializeField] private float roofCheckDistance = 60f;
+    [Tooltip("Kapalı alana girince/çıkınca emisyonun sönme-açılma hızı (birim/sn oranı).")]
+    [SerializeField] private float emissionFadeSpeed = 3f;
+    [SerializeField] private LayerMask roofLayers = ~0;
+
     private Transform _cam;
+    private ParticleSystem _particles;
+    private AudioSource _rainAudio;
+    private float _emissionFactor = 1f; // 1 = açık alan, 0 = kapalı alan
 
     private void Awake()
     {
+        _particles = GetComponent<ParticleSystem>();
         ConfigureRain();
+        ConfigureRainAudio();
     }
 
     private void ConfigureRain()
@@ -63,6 +84,29 @@ public class RainFollow : MonoBehaviour
         renderer.enableGPUInstancing = true;
     }
 
+    private void ConfigureRainAudio()
+    {
+        if (rainLoopClip == null)
+            rainLoopClip = Resources.Load<AudioClip>(rainResourcesPath);
+        if (rainLoopClip == null)
+        {
+            Debug.LogWarning($"[Rain] Audio clip bulunamadı: Resources/{rainResourcesPath}");
+            return;
+        }
+
+        _rainAudio = GetComponent<AudioSource>();
+        if (_rainAudio == null)
+            _rainAudio = gameObject.AddComponent<AudioSource>();
+
+        _rainAudio.clip = rainLoopClip;
+        _rainAudio.loop = true;
+        _rainAudio.playOnAwake = false;
+        _rainAudio.spatialBlend = 0f;
+        _rainAudio.volume = rainVolume;
+        _rainAudio.dopplerLevel = 0f;
+        _rainAudio.Play();
+    }
+
     private void LateUpdate()
     {
         if (_cam == null)
@@ -78,5 +122,31 @@ public class RainFollow : MonoBehaviour
         flatForward.Normalize();
 
         transform.position = _cam.position + flatForward * forwardOffset + Vector3.up * heightAboveCamera;
+
+        UpdateIndoorFade();
+    }
+
+    /// <summary>
+    /// Kameradan yukarı tek raycast: üstte çatı/tavan varsa yağmur emisyonunu söndürür.
+    /// Mevcut damlalar ömrünü tamamlayıp kaybolur; içeri girişte doğal bir geçiş olur.
+    /// </summary>
+    private void UpdateIndoorFade()
+    {
+        if (_particles == null) return;
+
+        bool indoors = Physics.Raycast(
+            _cam.position, Vector3.up, roofCheckDistance, roofLayers, QueryTriggerInteraction.Ignore);
+
+        float target = indoors ? 0f : 1f;
+        _emissionFactor = Mathf.MoveTowards(_emissionFactor, target, emissionFadeSpeed * Time.deltaTime);
+
+        var emission = _particles.emission;
+        emission.rateOverTime = emissionRate * _emissionFactor;
+
+        if (_rainAudio != null)
+        {
+            float volumeFactor = Mathf.Lerp(indoorVolumeFactor, 1f, _emissionFactor);
+            _rainAudio.volume = rainVolume * volumeFactor;
+        }
     }
 }
