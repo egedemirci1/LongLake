@@ -214,6 +214,19 @@ public class PlayerController : NetworkBehaviour
             {
                 _verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
                 GameAudio.PlayJump(characterIndex.Value);
+
+                if (_animator != null)
+                {
+                    bool isMoving = (Mathf.Abs(Input.GetAxis("Horizontal")) + Mathf.Abs(Input.GetAxis("Vertical"))) > 0.01f;
+                    if (isMoving && _speed > 0.1f)
+                    {
+                        _animator.SetTrigger("RunningJump");
+                    }
+                    else
+                    {
+                        _animator.SetTrigger("StandingJump");
+                    }
+                }
             }
         }
 
