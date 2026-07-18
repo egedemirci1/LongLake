@@ -17739,25 +17739,35 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   heightAboveCamera: 9
   forwardOffset: 0
-  rainRadius: 8
-  emissionRate: 950
+  rainRadius: 16
+  emissionRate: 1300
   lifetimeRange: {x: 1.3, y: 1.8}
-  speedRange: {x: 18, y: 26}
-  sizeRange: {x: 0.025, y: 0.045}
+  speedRange: {x: 20, y: 30}
+  sizeRange: {x: 0.03, y: 0.055}
   windX: 1.2
   windZ: 0.4
+  rainStreakMaterialPath: VFX/M_RainStreak
+  rainSplashMaterialPath: VFX/M_RainSplash
+  rainStreakTexturePath: VFX/T_RainStreak
+  rainSplashTexturePath: VFX/T_RainSplash
+  distantRadius: 100
+  distantEmissionRate: 750
+  distantHeightAboveCamera: 14
+  distantRoofClearance: 3
+  distantPositionSmoothTime: 0.35
   enableGroundSplashes: 1
   rainCollisionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  splashLifetimeRange: {x: 0.12, y: 0.24}
-  splashSizeRange: {x: 0.025, y: 0.06}
+  splashLifetimeRange: {x: 0.14, y: 0.28}
+  splashSizeRange: {x: 0.09, y: 0.2}
   rainLoopClip: {fileID: 0}
   rainResourcesPath: SFX/rain_loop
   rainVolume: 0.42
   indoorVolumeFactor: 0.12
   roofCheckDistance: 60
   emissionFadeSpeed: 3
+  indoorStateDebounce: 0.25
   roofLayers:
     serializedVersion: 2
     m_Bits: 4294967295
