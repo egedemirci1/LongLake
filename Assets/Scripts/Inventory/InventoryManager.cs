@@ -215,6 +215,7 @@ public class InventoryManager : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (GameMenuUI.IsBlockingGameplay) return;
 
         // Retry binding if UI not bound (safe for scene timing)
         if (hotbarObject == null || nameTexts == null || nameTexts.Length == 0 || iconImages == null || iconImages.Length == 0)
@@ -234,28 +235,34 @@ public class InventoryManager : NetworkBehaviour
             if (mainInventoryObject != null)
             {
                 bool isOpening = !mainInventoryObject.activeSelf;
-                mainInventoryObject.SetActive(isOpening);
-                
-                // Cursor kontrolü
-                if (isOpening)
-                {
-                    // Envanter açılıyor - cursor'u göster ve unlock et
-                    Cursor.lockState = CursorLockMode.None;
-                    Cursor.visible = true;
-                    GameAudio.PlayInvOpen();
-                }
-                else
-                {
-                    // Envanter kapanıyor - cursor'u kilitle ve gizle
-                    Cursor.lockState = CursorLockMode.Locked;
-                    Cursor.visible = false;
-                    GameAudio.PlayInvClose();
-                }
+                SetMainInventoryOpen(isOpening);
             }
+        }
+
+        // ESC ile envanteri kapat (pause menüsünden önce tüketilir)
+        if (Input.GetKeyDown(KeyCode.Escape) &&
+            mainInventoryObject != null &&
+            mainInventoryObject.activeSelf)
+        {
+            SetMainInventoryOpen(false);
         }
 
         // 1-2-3-4-5 tuşlarıyla slot seçme
         HandleSlotSelection();
+    }
+
+    private void SetMainInventoryOpen(bool open)
+    {
+        if (mainInventoryObject == null)
+            return;
+
+        mainInventoryObject.SetActive(open);
+        Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = open;
+        if (open)
+            GameAudio.PlayInvOpen();
+        else
+            GameAudio.PlayInvClose();
     }
 
     private void HandleSlotSelection()
@@ -1700,6 +1707,8 @@ public class InventoryManager : NetworkBehaviour
         // Sırt çantası oyunun ilerleme anahtarı (hotbar/envanter erişimi ona bağlı) — yere atılamaz.
         if (item != null && item.itemID == "backpack")
             return;
+
+        GameAudio.PlayDrop();
 
         // Server'a istek gönder
         DropItemToGroundServerRpc(item.itemID, isHotbarSlot, slotIndex);

@@ -433,6 +433,7 @@ public class NetworkLocalSetup : NetworkBehaviour
     /// <summary>Cursor'u serbest bırakması gereken bir UI (diyalog, envanter, not defteri, görev paneli) açık mı?</summary>
     private bool AnyUiWantsCursor()
     {
+        if (GameMenuUI.IsBlockingGameplay) return true;
         if (DialogueManager.IsDialogueOpen) return true;
 
         if (inventoryManager == null) inventoryManager = GetComponent<InventoryManager>();

@@ -109,6 +109,11 @@ public class PlayerController : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (GameMenuUI.IsBlockingGameplay)
+        {
+            ApplyPausedLocalMotion();
+            return;
+        }
         if (DialogueManager.IsDialogueOpen) return;
 
         GroundedCheck();
@@ -119,8 +124,31 @@ public class PlayerController : NetworkBehaviour
     private void LateUpdate()
     {
         if (!IsOwner) return;
+        if (GameMenuUI.IsBlockingGameplay) return;
         if (DialogueManager.IsDialogueOpen) return;
         CameraRotation();
+    }
+
+    private void ApplyPausedLocalMotion()
+    {
+        if (_stamina != null)
+            _stamina.SetSprinting(false);
+
+        _speed = 0f;
+        if (_animator != null)
+            _animator.SetFloat(SpeedHash, 0f);
+        if (IsSpawned)
+            netSpeed.Value = 0f;
+
+        // Menü açıkken yatay hareketi durdur, yerçekimini sürdür (havada asılı kalmasın).
+        GroundedCheck();
+        if (_grounded && _verticalVelocity < 0f)
+            _verticalVelocity = -2f;
+        else if (_verticalVelocity < 53f)
+            _verticalVelocity += gravity * Time.deltaTime;
+
+        if (_controller != null && _controller.enabled)
+            _controller.Move(new Vector3(0f, _verticalVelocity * Time.deltaTime, 0f));
     }
 
     private void GroundedCheck()

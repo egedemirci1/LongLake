@@ -30,7 +30,8 @@ public class RainFollow : MonoBehaviour
     [SerializeField] private AudioClip rainLoopClip;
     [SerializeField] private string rainResourcesPath = "SFX/rain_loop";
     [Range(0f, 1f)]
-    [SerializeField] private float rainVolume = 0.42f;
+    // rain_loop.wav mean ≈ −19 dB; keep as soft bed under gameplay SFX.
+    [SerializeField] private float rainVolume = 0.24f;
     [Range(0f, 1f)]
     [Tooltip("Kapalı alanda dışarıdaki yağmurun duyulma oranı.")]
     [SerializeField] private float indoorVolumeFactor = 0.12f;
@@ -209,7 +210,7 @@ public class RainFollow : MonoBehaviour
         _rainAudio.loop = true;
         _rainAudio.playOnAwake = false;
         _rainAudio.spatialBlend = 0f;
-        _rainAudio.volume = rainVolume;
+        _rainAudio.volume = AudioSettingsService.ScaleAmbience(rainVolume);
         _rainAudio.dopplerLevel = 0f;
         _rainAudio.Play();
     }
@@ -253,7 +254,8 @@ public class RainFollow : MonoBehaviour
         if (_rainAudio != null)
         {
             float volumeFactor = Mathf.Lerp(indoorVolumeFactor, 1f, _emissionFactor);
-            _rainAudio.volume = rainVolume * volumeFactor;
+            _rainAudio.volume = AudioSettingsService.ScaleAmbience(
+                rainVolume * volumeFactor);
         }
     }
 }

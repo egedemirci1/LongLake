@@ -9,12 +9,13 @@ public class MainMenuMusic : MonoBehaviour
 {
     [SerializeField] private AudioClip musicClip;
     [SerializeField] private AudioSource audioSource;
-    [SerializeField] [Range(0f, 1f)] private float targetVolume = 0.45f;
+    [SerializeField] [Range(0f, 1f)] private float targetVolume = 0.1f;
     [SerializeField] private float fadeInSeconds = 2f;
     [SerializeField] private float fadeOutSeconds = 1.25f;
 
     private Coroutine fadeRoutine;
     private bool fadingOut;
+    private float currentBaseVolume;
 
     private void Awake()
     {
@@ -27,9 +28,12 @@ public class MainMenuMusic : MonoBehaviour
         audioSource.loop = true;
         audioSource.spatialBlend = 0f;
         audioSource.volume = 0f;
+        currentBaseVolume = 0f;
 
         if (musicClip != null)
             audioSource.clip = musicClip;
+
+        AudioSettingsService.SettingsChanged += ApplyVolume;
     }
 
     private void Start()
@@ -62,7 +66,7 @@ public class MainMenuMusic : MonoBehaviour
 
     private IEnumerator FadeRoutine(float toVolume, float duration, bool stopWhenDone)
     {
-        float from = audioSource.volume;
+        float from = currentBaseVolume;
         float t = 0f;
         duration = Mathf.Max(0.01f, duration);
 
@@ -70,11 +74,13 @@ public class MainMenuMusic : MonoBehaviour
         {
             t += Time.unscaledDeltaTime;
             float u = Mathf.Clamp01(t / duration);
-            audioSource.volume = Mathf.Lerp(from, toVolume, u);
+            currentBaseVolume = Mathf.Lerp(from, toVolume, u);
+            ApplyVolume();
             yield return null;
         }
 
-        audioSource.volume = toVolume;
+        currentBaseVolume = toVolume;
+        ApplyVolume();
         if (stopWhenDone)
             audioSource.Stop();
 
@@ -83,7 +89,14 @@ public class MainMenuMusic : MonoBehaviour
 
     private void OnDestroy()
     {
+        AudioSettingsService.SettingsChanged -= ApplyVolume;
         if (audioSource != null && audioSource.isPlaying)
             audioSource.Stop();
+    }
+
+    private void ApplyVolume()
+    {
+        if (audioSource != null)
+            audioSource.volume = AudioSettingsService.ScaleMusic(currentBaseVolume);
     }
 }

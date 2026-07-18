@@ -18,8 +18,9 @@ public class FootstepAudio : NetworkBehaviour
 
     [Header("Feel")]
     [SerializeField] private float leftPitch = 1.03f;
-    [SerializeField] private float walkVolume = 0.48f;
-    [SerializeField] private float runVolume = 0.58f;
+    // walk.mp3 mean ≈ −60 dB (very quiet) → near full; running.mp3 ≈ −31 dB → attenuated.
+    [SerializeField] private float walkVolume = 1.00f;
+    [SerializeField] private float runVolume = 0.55f;
     [SerializeField] private float runPitchBoost = 1.08f;
 
     [Header("3D Audio")]
@@ -88,7 +89,8 @@ public class FootstepAudio : NetworkBehaviour
         }
 
         AudioClip targetClip = sprinting ? runClip : walkClip;
-        float targetVolume = sprinting ? runVolume : walkVolume;
+        float targetVolume = AudioSettingsService.ScaleSfx(
+            sprinting ? runVolume : walkVolume);
         float targetPitch = sprinting ? (leftPitch * runPitchBoost) : leftPitch;
 
         if (_source.clip != targetClip || !_source.isPlaying)

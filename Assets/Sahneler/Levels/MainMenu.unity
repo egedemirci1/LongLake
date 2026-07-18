@@ -3448,7 +3448,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuMusic
   musicClip: {fileID: 8300000, guid: 6cb6cbb8f69291342b34df89942fbc11, type: 3}
   audioSource: {fileID: 0}
-  targetVolume: 0.45
+  targetVolume: 0.1
   fadeInSeconds: 2
   fadeOutSeconds: 1.25
 --- !u!1 &1934782134

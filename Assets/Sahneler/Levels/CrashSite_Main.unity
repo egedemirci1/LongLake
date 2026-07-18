@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0.6981132, g: 0.6421324, b: 0.6421324, a: 1}
   m_FogMode: 2
   m_FogDensity: 0.02
@@ -70985,11 +70985,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
       propertyPath: maxDrawDistance
-      value: 150
+      value: 750
       objectReference: {fileID: 0}
     - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
       propertyPath: lodSwitchDistance
-      value: 35
+      value: 45
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

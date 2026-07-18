@@ -47,6 +47,7 @@ Material:
   - TransparentBackface
   - RayTracingPrepass
   - ForwardEmissiveForDeferred
+  - SHADOWCASTER
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -118,10 +119,10 @@ Material:
     - Vector1_8651797e3e304e108dbd25f9d5a426ba: 0.5
     - Vector1_a5b8b09028ce49a39f4d090894c89e22: 0.5
     - Vector1_a6983181c8dc4691ba6a28a34c4223a6: 1
-    - Wind_Blast: 0.05
-    - Wind_Intensity: 0.1
-    - Wind_Ripples: 0.05
-    - Wind_Speed: 5
+    - Wind_Blast: 0
+    - Wind_Intensity: 0
+    - Wind_Ripples: 0
+    - Wind_Speed: 0
     - Wind_Turbulence: 0
     - Wind_Wavelength: 10
     - Wind_Yaw: 180
@@ -146,7 +147,7 @@ Material:
     - _Blend: 0
     - _BlendMode: 0
     - _BlendModePreserveSpecular: 0
-    - _CastShadows: 1
+    - _CastShadows: 0
     - _ConservativeDepthOffsetEnable: 0
     - _Cull: 0
     - _CullMode: 0

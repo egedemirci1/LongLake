@@ -14,9 +14,9 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
     private const int MaxInstancesPerBatch = 1023;
 
     [Header("Draw Distance")]
-    [SerializeField] private float maxDrawDistance = 150f;
+    [SerializeField] private float maxDrawDistance = 750f;
     [Tooltip("Bu mesafeden sonra LOD1 / billboard çizilir.")]
-    [SerializeField] private float lodSwitchDistance = 35f;
+    [SerializeField] private float lodSwitchDistance = 45f;
     [SerializeField] private float shadowDistance = 50f;
 
     [Header("Spatial Grid")]

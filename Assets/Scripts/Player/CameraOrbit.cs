@@ -19,6 +19,9 @@ public class CameraOrbit : MonoBehaviour
 
     void LateUpdate()
     {
+        if (GameMenuUI.IsBlockingGameplay)
+            return;
+
         // Envanter açıksa kamera orbit kapanmalı
         InventoryManager inventoryManager = FindFirstObjectByType<InventoryManager>();
         if (inventoryManager != null && inventoryManager.mainInventoryObject != null && inventoryManager.mainInventoryObject.activeSelf)

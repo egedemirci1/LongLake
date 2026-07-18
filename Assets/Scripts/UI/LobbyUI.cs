@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -45,6 +46,7 @@ public class LobbyUI : MonoBehaviour
     private LobbyManager _lobby;
     private bool _waitingSelect;
     private bool _lockedForGameplayLoad;
+    private bool _returningToMenu;
     private bool _layoutReady;
 
     private Image _ahuCardBg;
@@ -120,7 +122,7 @@ public class LobbyUI : MonoBehaviour
 
     private void Update()
     {
-        if (_lockedForGameplayLoad) return;
+        if (_lockedForGameplayLoad || _returningToMenu) return;
 
         if (_lobby == null)
             TryBindLobby();
@@ -178,23 +180,73 @@ public class LobbyUI : MonoBehaviour
         if (ahuButton != null)
         {
             ahuButton.onClick.RemoveAllListeners();
+            ahuButton.onClick.AddListener(PlayUiClick);
             ahuButton.onClick.AddListener(() => SelectCharacter(0));
         }
         if (yamanButton != null)
         {
             yamanButton.onClick.RemoveAllListeners();
+            yamanButton.onClick.AddListener(PlayUiClick);
             yamanButton.onClick.AddListener(() => SelectCharacter(1));
         }
         if (readyButton != null)
         {
             readyButton.onClick.RemoveAllListeners();
+            readyButton.onClick.AddListener(PlayUiClick);
             readyButton.onClick.AddListener(ToggleReady);
         }
         if (startGameButton != null)
         {
             startGameButton.onClick.RemoveAllListeners();
+            startGameButton.onClick.AddListener(PlayUiClick);
             startGameButton.onClick.AddListener(StartGame);
         }
+    }
+
+    private static void PlayUiClick()
+    {
+        if (GameAudio.Instance != null)
+            GameAudio.Instance.PlayButtonClick();
+    }
+
+    private void ReturnToMainMenu()
+    {
+        if (_returningToMenu)
+            return;
+
+        PlayUiClick();
+        StartCoroutine(ReturnToMainMenuRoutine());
+    }
+
+    private IEnumerator ReturnToMainMenuRoutine()
+    {
+        _returningToMenu = true;
+        _waitingSelect = false;
+
+        if (lobbyPanel != null)
+            lobbyPanel.SetActive(false);
+
+        UnbindLobby();
+        var nm = NetworkManager.Singleton;
+        if (nm != null && !nm.ShutdownInProgress &&
+            (nm.IsListening || nm.IsServer || nm.IsClient))
+        {
+            nm.Shutdown();
+        }
+
+        float timeout = 2f;
+        while (nm != null && nm.ShutdownInProgress && timeout > 0f)
+        {
+            timeout -= Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (GameplaySceneLoader.Instance != null)
+            GameplaySceneLoader.Instance.ResetForMenu();
+        if (connectPanel != null)
+            connectPanel.SetActive(true);
+
+        _returningToMenu = false;
     }
 
     private void SelectCharacter(int index)
@@ -512,6 +564,36 @@ public class LobbyUI : MonoBehaviour
         cardImg.color = CardColor;
         cardImg.raycastTarget = true;
 
+        // Sol üstte ikincil geri aksiyonu; ana CTA'lardan ayrı tutulur.
+        var backGo = new GameObject(
+            "BackToMainMenuButton",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Button));
+        backGo.transform.SetParent(card.transform, false);
+        var backRt = backGo.GetComponent<RectTransform>();
+        backRt.anchorMin = new Vector2(0f, 1f);
+        backRt.anchorMax = new Vector2(0f, 1f);
+        backRt.pivot = new Vector2(0f, 1f);
+        backRt.anchoredPosition = new Vector2(32f, -22f);
+        backRt.sizeDelta = new Vector2(124f, 30f);
+
+        var backImg = backGo.GetComponent<Image>();
+        backImg.sprite = RuntimeUiSprites.GetRoundedSprite(8);
+        backImg.type = Image.Type.Sliced;
+        backImg.color = new Color(0.12f, 0.13f, 0.15f, 0.92f);
+
+        var backButton = backGo.GetComponent<Button>();
+        backButton.targetGraphic = backImg;
+        backButton.onClick.AddListener(ReturnToMainMenu);
+
+        var backLabel = CreateTmp(
+            backGo.transform, "Label", 13f, FontStyles.Bold, MutedText);
+        StretchFull(backLabel.rectTransform);
+        backLabel.alignment = TextAlignmentOptions.Center;
+        backLabel.text = "‹  ANA MENÜ";
+
         var accent = new GameObject("Accent", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         accent.transform.SetParent(card.transform, false);
         var aRt = accent.GetComponent<RectTransform>();
@@ -528,7 +610,7 @@ public class LobbyUI : MonoBehaviour
 
         // Header
         var eyebrow = CreateTmp(card.transform, "Eyebrow", 14f, FontStyles.Bold, AccentColor);
-        Place(eyebrow.rectTransform, 36f, -28f, 36f, 22f);
+        Place(eyebrow.rectTransform, 172f, -28f, 36f, 22f);
         eyebrow.characterSpacing = 8f;
         eyebrow.alignment = TextAlignmentOptions.MidlineLeft;
         eyebrow.text = "LOBI";

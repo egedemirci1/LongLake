@@ -101,6 +101,9 @@ public class NotebookUI : MonoBehaviour
 
     private void Update()
     {
+        if (GameMenuUI.IsBlockingGameplay)
+            return;
+
         if (questManager == null)
             ResolveQuestManager();
 

@@ -157,6 +157,11 @@ public class PlayerInteraction : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (GameMenuUI.IsBlockingGameplay)
+        {
+            HidePrompt();
+            return;
+        }
         if (interactionText == null) return;
 
         Vector3 origin = cameraRoot != null ? cameraRoot.position : transform.position + Vector3.up * 1.6f;

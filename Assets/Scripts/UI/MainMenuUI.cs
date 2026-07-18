@@ -87,9 +87,27 @@ public class MainMenuUI : MonoBehaviour
 
     private void HookUiButtons()
     {
-        if (hostButton != null) hostButton.onClick.AddListener(StartHost);
-        if (clientButton != null) clientButton.onClick.AddListener(ShowJoinPanel);
-        if (quitButton != null) quitButton.onClick.AddListener(QuitGame);
+        if (hostButton != null)
+        {
+            hostButton.onClick.AddListener(PlayUiClick);
+            hostButton.onClick.AddListener(StartHost);
+        }
+        if (clientButton != null)
+        {
+            clientButton.onClick.AddListener(PlayUiClick);
+            clientButton.onClick.AddListener(ShowJoinPanel);
+        }
+        if (quitButton != null)
+        {
+            quitButton.onClick.AddListener(PlayUiClick);
+            quitButton.onClick.AddListener(QuitGame);
+        }
+    }
+
+    private static void PlayUiClick()
+    {
+        if (GameAudio.Instance != null)
+            GameAudio.Instance.PlayButtonClick();
     }
 
     private void RegisterCallbacksOnce()
@@ -312,10 +330,12 @@ public class MainMenuUI : MonoBehaviour
 
         var connectBtn = CreateTmpButton(box.transform, "ConnectButton", "Bağlan",
             new Vector2(0.5f, 0f), new Vector2(-110f, 46f), new Vector2(200f, 52f));
+        connectBtn.onClick.AddListener(PlayUiClick);
         connectBtn.onClick.AddListener(ConnectFromJoinPanel);
 
         var backBtn = CreateTmpButton(box.transform, "BackButton", "Geri",
             new Vector2(0.5f, 0f), new Vector2(110f, 46f), new Vector2(200f, 52f));
+        backBtn.onClick.AddListener(PlayUiClick);
         backBtn.onClick.AddListener(HideJoinPanel);
 
         joinPanel.SetActive(false);

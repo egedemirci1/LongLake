@@ -48,7 +48,7 @@ Terrain:
   m_TreeBillboardDistance: 55
   m_TreeCrossFadeLength: 200
   m_TreeMaximumFullLODCount: 286
-  m_DetailObjectDistance: 384.2
+  m_DetailObjectDistance: 600
   m_DetailObjectDensity: 1
   m_HeightmapPixelError: 10
   m_SplatMapDistance: 1608
@@ -106,8 +106,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c4e2a91b8d54f0e9a6c3d1f5e8b2a70, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxDrawDistance: 150
-  lodSwitchDistance: 35
+  maxDrawDistance: 750
+  lodSwitchDistance: 45
   shadowDistance: 50
   cellSize: 32
   castShadows: 1

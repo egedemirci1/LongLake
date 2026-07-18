@@ -136,6 +136,7 @@ public class QuestManager : NetworkBehaviour
     private void Update()
     {
         if (!IsSpawned) return;
+        if (GameMenuUI.IsBlockingGameplay) return;
 
         if (Input.GetKeyDown(KeyCode.M))
             ToggleQuestPanel();
