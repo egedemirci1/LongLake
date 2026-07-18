@@ -8,7 +8,7 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: sdsd_0Mat
-    second: {fileID: 2100000, guid: a3f3ef9647dd8734bbd9841981f6df22, type: 2}
+    second: {fileID: 2100000, guid: 1282af1789b4476408d229e0f73aa449, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -35,7 +35,7 @@ ModelImporter:
     extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
-    isReadable: 0
+    isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 0.5

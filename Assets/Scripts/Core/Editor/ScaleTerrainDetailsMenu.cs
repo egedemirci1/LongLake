@@ -17,7 +17,7 @@ public static class ScaleTerrainDetailsMenu
         "Assets/ThirdParty/TerrainSampleAssets/Prefabs/Fern_A.prefab",
     };
 
-    [MenuItem("LongLake/Setup Terrain Grass Details (3x)")]
+    [MenuItem("LongLake/Terrain/Setup Grass Details (3x)")]
     private static void SetupGrassDetails()
     {
         var data = AssetDatabase.LoadAssetAtPath<TerrainData>(TerrainDataPath);

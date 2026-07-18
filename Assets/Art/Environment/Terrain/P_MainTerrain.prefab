@@ -44,14 +44,14 @@ Terrain:
   m_Enabled: 1
   serializedVersion: 6
   m_TerrainData: {fileID: 15600000, guid: 82c31d591a6327a46bd334e4dd8d60bf, type: 2}
-  m_TreeDistance: 786
+  m_TreeDistance: 0
   m_TreeBillboardDistance: 55
   m_TreeCrossFadeLength: 200
-  m_TreeMaximumFullLODCount: 286
-  m_DetailObjectDistance: 600
-  m_DetailObjectDensity: 1
-  m_HeightmapPixelError: 10
-  m_SplatMapDistance: 1608
+  m_TreeMaximumFullLODCount: 16
+  m_DetailObjectDistance: 45
+  m_DetailObjectDensity: 0.35
+  m_HeightmapPixelError: 28
+  m_SplatMapDistance: 900
   m_HeightmapMinimumLODSimplification: 0
   m_HeightmapMaximumLOD: 0
   m_ShadowCastingMode: 2
@@ -62,16 +62,16 @@ Terrain:
   m_IgnoreQualitySettings: 0
   m_ReflectionProbeUsage: 1
   m_MaterialTemplate: {fileID: 2100000, guid: 594ea882c5a793440b60ff72d896021e, type: 2}
-  m_BakeLightProbesForTrees: 1
+  m_BakeLightProbesForTrees: 0
   m_PreserveTreePrototypeLayers: 0
-  m_DeringLightProbesForTrees: 1
+  m_DeringLightProbesForTrees: 0
   m_ReceiveGI: 1
   m_ScaleInLightmap: 0.8
   m_LightmapParameters: {fileID: 15203, guid: 0000000000000000f000000000000000, type: 0}
   m_GroupingID: 0
   m_RenderingLayerMask: 1
   m_AllowAutoConnect: 1
-  m_EnableHeightmapRayTracing: 1
+  m_EnableHeightmapRayTracing: 0
   m_EnableTreesAndDetailsRayTracing: 0
   m_TreeMotionVectorModeOverride: 2
 --- !u!154 &5129130865226387161
@@ -106,11 +106,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c4e2a91b8d54f0e9a6c3d1f5e8b2a70, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxDrawDistance: 750
-  lodSwitchDistance: 45
-  shadowDistance: 50
-  cellSize: 32
-  castShadows: 1
-  receiveShadows: 1
+  maxDrawDistance: 550
+  lodSwitchDistance: 18
+  shadowDistance: 8
+  maxNearFullLod: 20
+  cellSize: 40
+  backgroundNameToken: background
+  backgroundMaxDrawDistance: 520
+  maxBackgroundDraw: 28000
+  backgroundColorVariation: 0.08
+  nearBillboardMaterial: {fileID: 2100000, guid: 1282af1789b4476408d229e0f73aa449, type: 2}
+  cullMoveThreshold: 10
+  cullMaxAgeFrames: 5
+  castShadows: 0
+  receiveShadows: 0
   disableTerrainTreeDrawing: 1
   logOnStart: 1

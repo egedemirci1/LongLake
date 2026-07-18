@@ -14,18 +14,42 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
     private const int MaxInstancesPerBatch = 1023;
 
     [Header("Draw Distance")]
-    [SerializeField] private float maxDrawDistance = 750f;
+    [SerializeField] private float maxDrawDistance = 550f;
     [Tooltip("Bu mesafeden sonra LOD1 / billboard çizilir.")]
-    [SerializeField] private float lodSwitchDistance = 45f;
-    [SerializeField] private float shadowDistance = 50f;
+    [SerializeField] private float lodSwitchDistance = 18f;
+    [SerializeField] private float shadowDistance = 8f;
+    [Tooltip("Aynı anda çizilecek maksimum yüksek-poly (LOD0) near ağaç. Fazlası billboard olur.")]
+    [SerializeField] private int maxNearFullLod = 20;
 
     [Header("Spatial Grid")]
     [Tooltip("Cull grid hücre boyutu (metre). Küçük = daha az ağaç taranır, daha fazla hücre.")]
-    [SerializeField] private float cellSize = 32f;
+    [SerializeField] private float cellSize = 40f;
+
+    [Header("Background Trees")]
+    [Tooltip("Prefab adında bu metin geçen prototype'lar daima billboard çizilir (LOD/gölge yok).")]
+    [SerializeField] private string backgroundNameToken = "background";
+    [Tooltip("Background ağaçlar için max draw distance. 0 = near ile aynı.")]
+    [SerializeField] private float backgroundMaxDrawDistance = 520f;
+    [Tooltip("Aynı anda çizilecek max background billboard (en yakın hücreler önce).")]
+    [SerializeField] private int maxBackgroundDraw = 28000;
+    [Tooltip("Background billboard'larda per-instance renk sapması (0 = kapalı, daha ucuz).")]
+    [Range(0f, 0.45f)]
+    [SerializeField] private float backgroundColorVariation = 0.08f;
+    [Tooltip("Near LOD1 billboard material override — SoftOcc ile background'a eşler.")]
+    [SerializeField] private Material nearBillboardMaterial;
+
+    private const string SoftOccMaterialPath = "Assets/Art/Environment/TreeFir/M_AgacBackground_SoftOcc.mat";
+
+    [Header("Cull Refresh")]
+    [Tooltip("Kamera bu kadar metre hareket edince cull listesi yenilenir.")]
+    [SerializeField] private float cullMoveThreshold = 10f;
+    [Tooltip("Hareket olmasa bile en geç bu kadar frame'de bir cull yenilenir.")]
+    [SerializeField] private int cullMaxAgeFrames = 5;
 
     [Header("Rendering")]
-    [SerializeField] private bool castShadows = true;
-    [SerializeField] private bool receiveShadows = true;
+    [Tooltip("Ağaç gölgesi Stats Tris'i 2–4× şişirir (cascade). Kapalı tutmak önerilir.")]
+    [SerializeField] private bool castShadows = false;
+    [SerializeField] private bool receiveShadows = false;
     [Tooltip("Terrain'in kendi tree çizimini kapatır (ot/detail etkilenmez).")]
     [SerializeField] private bool disableTerrainTreeDrawing = true;
 
@@ -34,14 +58,27 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
 
     private Terrain _terrain;
     private float _savedTreeDistance;
+    private bool _terrainTreesHidden;
     private PrototypeBatch[] _batches;
     private Camera _camera;
     private readonly Matrix4x4[] _chunkBuffer = new Matrix4x4[MaxInstancesPerBatch];
+    private readonly Vector4[] _colorChunk = new Vector4[MaxInstancesPerBatch];
+    private MaterialPropertyBlock _mpb;
     private float _gridOriginX;
     private float _gridOriginZ;
     private int _gridW;
     private int _gridH;
     private float _invCellSize;
+    private readonly NearCandidate[] _nearCandidates = new NearCandidate[2048];
+    private Vector3 _lastCullCamPos;
+    private int _framesSinceCull = 99;
+    private bool _hasCullCache;
+
+    private struct NearCandidate
+    {
+        public int index;
+        public float distSq;
+    }
 
     private struct LodMesh
     {
@@ -56,6 +93,8 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
         public LodMesh lod1;
         public Matrix4x4[] matrices;
         public Vector3[] positions;
+        public Vector4[] colors;
+        public bool isBackground;
 
         // CSR grid: cellStart[cell], cellStart[cell+1] → cellTreeIndices aralığı
         public int[] cellStart;
@@ -66,26 +105,37 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
         public Matrix4x4[] lod0NoShadow;
         public int lod0NoShadowCount;
         public Matrix4x4[] lod1Visible;
+        public Vector4[] lod1Colors;
         public int lod1Count;
     }
 
     private void Awake()
     {
         _terrain = GetComponent<Terrain>();
-
-        if (disableTerrainTreeDrawing && _terrain != null)
-        {
-            _savedTreeDistance = _terrain.treeDistance;
-            _terrain.treeDistance = 0f;
-        }
-
+        _mpb = new MaterialPropertyBlock();
         BuildBatches();
     }
 
     private void OnDestroy()
     {
-        if (_terrain != null && disableTerrainTreeDrawing)
-            _terrain.treeDistance = _savedTreeDistance;
+        RestoreTerrainTreeDrawing();
+    }
+
+    private void HideTerrainTreeDrawing()
+    {
+        if (!disableTerrainTreeDrawing || _terrainTreesHidden || _terrain == null)
+            return;
+        _savedTreeDistance = _terrain.treeDistance;
+        _terrain.treeDistance = 0f;
+        _terrainTreesHidden = true;
+    }
+
+    private void RestoreTerrainTreeDrawing()
+    {
+        if (!_terrainTreesHidden || _terrain == null)
+            return;
+        _terrain.treeDistance = _savedTreeDistance;
+        _terrainTreesHidden = false;
     }
 
     private void LateUpdate()
@@ -94,18 +144,47 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
             return;
 
         if (_camera == null || !_camera.isActiveAndEnabled)
-            _camera = Camera.main;
+            _camera = ResolveCamera();
         if (_camera == null)
             return;
 
+        // Native terrain tree'leri ancak GPU çizime hazır olunca kapat —
+        // kamera spawn olmadan orman kaybolmasın.
+        HideTerrainTreeDrawing();
+
         Vector3 camPos = _camera.transform.position;
-        RebuildCullListsFromGrid(camPos);
+        _framesSinceCull++;
+        float moveSq = (camPos - _lastCullCamPos).sqrMagnitude;
+        float moveThresh = Mathf.Max(2f, cullMoveThreshold);
+        bool needsCull = !_hasCullCache
+                         || moveSq >= moveThresh * moveThresh
+                         || _framesSinceCull >= Mathf.Max(1, cullMaxAgeFrames);
+
+        if (needsCull)
+        {
+            RebuildCullListsFromGrid(camPos);
+            _lastCullCamPos = camPos;
+            _framesSinceCull = 0;
+            _hasCullCache = true;
+        }
 
         for (int b = 0; b < _batches.Length; b++)
         {
             PrototypeBatch batch = _batches[b];
             if (!batch.lod0.IsValid)
                 continue;
+
+            if (batch.isBackground)
+            {
+                if (batch.lod1Count <= 0)
+                    continue;
+                // SoftOcc: MPB InstanceColor olmadan da çizilsin (billboard kaybolmasın).
+                if (batch.lod1Colors != null && backgroundColorVariation > 0.001f)
+                    DrawCachedColored(batch.lod0, batch.lod1Visible, batch.lod1Colors, batch.lod1Count);
+                else
+                    DrawCached(batch.lod0, batch.lod1Visible, batch.lod1Count, shadows: false);
+                continue;
+            }
 
             if (batch.lod0ShadowCount > 0)
                 DrawCached(batch.lod0, batch.lod0Shadow, batch.lod0ShadowCount, shadows: true);
@@ -114,27 +193,32 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
 
             LodMesh farLod = batch.lod1.IsValid ? batch.lod1 : batch.lod0;
             if (batch.lod1Count > 0 && farLod.IsValid)
-                DrawCached(farLod, batch.lod1Visible, batch.lod1Count, shadows: false);
+            {
+                // Near LOD1 billboard — SoftOcc; tint opsiyonel.
+                if (batch.lod1Colors != null && backgroundColorVariation > 0.001f)
+                    DrawCachedColored(farLod, batch.lod1Visible, batch.lod1Colors, batch.lod1Count);
+                else
+                    DrawCached(farLod, batch.lod1Visible, batch.lod1Count, shadows: false);
+            }
         }
     }
 
     private void RebuildCullListsFromGrid(Vector3 camPos)
     {
-        float maxDist = maxDrawDistance;
-        float maxDistSq = maxDist * maxDist;
+        float nearMaxDist = maxDrawDistance;
+        float nearMaxDistSq = nearMaxDist * nearMaxDist;
+        float bgMaxDist = backgroundMaxDrawDistance > 0.01f ? backgroundMaxDrawDistance : maxDrawDistance;
+        float bgMaxDistSq = bgMaxDist * bgMaxDist;
         float lodDistSq = lodSwitchDistance * lodSwitchDistance;
         float shadowDistSq = shadowDistance * shadowDistance;
         bool useShadows = castShadows;
+        int nearFullLodBudget = Mathf.Max(0, maxNearFullLod);
+        int bgBudget = Mathf.Max(1023, maxBackgroundDraw);
 
-        int minCx = Mathf.FloorToInt((camPos.x - maxDist - _gridOriginX) * _invCellSize);
-        int maxCx = Mathf.FloorToInt((camPos.x + maxDist - _gridOriginX) * _invCellSize);
-        int minCz = Mathf.FloorToInt((camPos.z - maxDist - _gridOriginZ) * _invCellSize);
-        int maxCz = Mathf.FloorToInt((camPos.z + maxDist - _gridOriginZ) * _invCellSize);
-
-        minCx = Mathf.Clamp(minCx, 0, _gridW - 1);
-        maxCx = Mathf.Clamp(maxCx, 0, _gridW - 1);
-        minCz = Mathf.Clamp(minCz, 0, _gridH - 1);
-        maxCz = Mathf.Clamp(maxCz, 0, _gridH - 1);
+        float cullRadius = Mathf.Max(nearMaxDist, bgMaxDist);
+        int camCx = Mathf.Clamp(Mathf.FloorToInt((camPos.x - _gridOriginX) * _invCellSize), 0, _gridW - 1);
+        int camCz = Mathf.Clamp(Mathf.FloorToInt((camPos.z - _gridOriginZ) * _invCellSize), 0, _gridH - 1);
+        int maxRing = Mathf.CeilToInt(cullRadius * _invCellSize) + 1;
 
         float camX = camPos.x;
         float camY = camPos.y;
@@ -147,43 +231,114 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
                 continue;
 
             int s0 = 0, s1 = 0, s2 = 0;
+            int candCount = 0;
             Matrix4x4[] buf0 = batch.lod0Shadow;
             Matrix4x4[] buf1 = batch.lod0NoShadow;
             Matrix4x4[] buf2 = batch.lod1Visible;
+            Vector4[] colorBuf = batch.lod1Colors;
+            Vector4[] colors = batch.colors;
             Vector3[] positions = batch.positions;
             Matrix4x4[] matrices = batch.matrices;
             int[] cellStart = batch.cellStart;
             int[] cellTrees = batch.cellTreeIndices;
+            bool isBackground = batch.isBackground;
+            float maxDistSq = isBackground ? bgMaxDistSq : nearMaxDistSq;
+            bool tintBg = isBackground && colorBuf != null && colors != null && backgroundColorVariation > 0.001f;
+            bool tintNear = !isBackground && colorBuf != null && colors != null;
 
-            for (int cz = minCz; cz <= maxCz; cz++)
+            // Kamera hücresinden dışa doğru halka — yakın orman önce dolar, bütçe aşımında uzak kesilir.
+            for (int ring = 0; ring <= maxRing; ring++)
             {
-                int row = cz * _gridW;
-                for (int cx = minCx; cx <= maxCx; cx++)
+                if (isBackground && s2 >= bgBudget)
+                    break;
+
+                int z0 = camCz - ring;
+                int z1 = camCz + ring;
+                int x0 = camCx - ring;
+                int x1 = camCx + ring;
+
+                for (int cz = z0; cz <= z1; cz++)
                 {
-                    int cell = row + cx;
-                    int start = cellStart[cell];
-                    int end = cellStart[cell + 1];
-                    for (int t = start; t < end; t++)
+                    if (cz < 0 || cz >= _gridH)
+                        continue;
+                    int row = cz * _gridW;
+                    bool onZEdge = cz == z0 || cz == z1;
+
+                    for (int cx = x0; cx <= x1; cx++)
                     {
-                        int i = cellTrees[t];
-                        float dx = positions[i].x - camX;
-                        float dy = positions[i].y - camY;
-                        float dz = positions[i].z - camZ;
-                        float distSq = dx * dx + dy * dy + dz * dz;
-                        if (distSq > maxDistSq)
+                        if (cx < 0 || cx >= _gridW)
+                            continue;
+                        // İç halkadaki hücreleri tekrar tarama.
+                        if (ring > 0 && !onZEdge && cx != x0 && cx != x1)
                             continue;
 
-                        if (distSq <= lodDistSq)
+                        if (isBackground && s2 >= bgBudget)
+                            break;
+
+                        int cell = row + cx;
+                        int start = cellStart[cell];
+                        int end = cellStart[cell + 1];
+                        for (int t = start; t < end; t++)
                         {
-                            if (useShadows && distSq <= shadowDistSq)
-                                buf0[s0++] = matrices[i];
+                            int i = cellTrees[t];
+                            float dx = positions[i].x - camX;
+                            float dy = positions[i].y - camY;
+                            float dz = positions[i].z - camZ;
+                            float distSq = dx * dx + dy * dy + dz * dz;
+                            if (distSq > maxDistSq)
+                                continue;
+
+                            if (isBackground)
+                            {
+                                if (s2 >= bgBudget)
+                                    break;
+                                buf2[s2] = matrices[i];
+                                if (tintBg)
+                                    colorBuf[s2] = colors[i];
+                                s2++;
+                                continue;
+                            }
+
+                            if (distSq <= lodDistSq && candCount < _nearCandidates.Length)
+                            {
+                                _nearCandidates[candCount++] = new NearCandidate { index = i, distSq = distSq };
+                            }
                             else
-                                buf1[s1++] = matrices[i];
+                            {
+                                buf2[s2] = matrices[i];
+                                if (tintNear)
+                                    colorBuf[s2] = colors[i];
+                                s2++;
+                            }
                         }
+                    }
+                }
+            }
+
+            // En yakın N ağaç LOD0; kalanı billboard — yüksek-poly bütçesi.
+            if (!isBackground && candCount > 0)
+            {
+                int keep = Mathf.Min(candCount, nearFullLodBudget);
+                if (candCount > keep)
+                    System.Array.Sort(_nearCandidates, 0, candCount, NearCandidateComparer.Instance);
+
+                for (int c = 0; c < candCount; c++)
+                {
+                    int i = _nearCandidates[c].index;
+                    float distSq = _nearCandidates[c].distSq;
+                    if (c < keep)
+                    {
+                        if (useShadows && distSq <= shadowDistSq)
+                            buf0[s0++] = matrices[i];
                         else
-                        {
-                            buf2[s2++] = matrices[i];
-                        }
+                            buf1[s1++] = matrices[i];
+                    }
+                    else
+                    {
+                        buf2[s2] = matrices[i];
+                        if (tintNear)
+                            colorBuf[s2] = colors[i];
+                        s2++;
                     }
                 }
             }
@@ -195,6 +350,12 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
         }
     }
 
+    private sealed class NearCandidateComparer : System.Collections.Generic.IComparer<NearCandidate>
+    {
+        public static readonly NearCandidateComparer Instance = new NearCandidateComparer();
+        public int Compare(NearCandidate a, NearCandidate b) => a.distSq.CompareTo(b.distSq);
+    }
+
     private void DrawCached(LodMesh lod, Matrix4x4[] matrices, int count, bool shadows)
     {
         int offset = 0;
@@ -202,6 +363,17 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
         {
             int chunk = Mathf.Min(MaxInstancesPerBatch, count - offset);
             FlushChunk(lod, matrices, offset, chunk, shadows);
+            offset += chunk;
+        }
+    }
+
+    private void DrawCachedColored(LodMesh lod, Matrix4x4[] matrices, Vector4[] colors, int count)
+    {
+        int offset = 0;
+        while (offset < count)
+        {
+            int chunk = Mathf.Min(MaxInstancesPerBatch, count - offset);
+            FlushChunkColored(lod, matrices, colors, offset, chunk);
             offset += chunk;
         }
     }
@@ -224,6 +396,44 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
             {
                 shadowCastingMode = shadows ? ShadowCastingMode.On : ShadowCastingMode.Off,
                 receiveShadows = receiveShadows,
+                layer = gameObject.layer,
+                renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask,
+                camera = null,
+                lightProbeUsage = LightProbeUsage.Off,
+                reflectionProbeUsage = ReflectionProbeUsage.Off
+            };
+
+            Graphics.RenderMeshInstanced(rp, lod.mesh, sub, _chunkBuffer, count);
+        }
+    }
+
+    private void FlushChunkColored(LodMesh lod, Matrix4x4[] matrices, Vector4[] colors, int offset, int count)
+    {
+        System.Array.Copy(matrices, offset, _chunkBuffer, 0, count);
+        for (int i = 0; i < count; i++)
+            _colorChunk[i] = colors != null ? colors[offset + i] : DarkForestBase;
+
+        // MaterialPropertyBlock: SoftOcc _Color (koyu) × _InstanceColor (hafif çarpan).
+        if (_mpb == null)
+            _mpb = new MaterialPropertyBlock();
+        _mpb.Clear();
+        _mpb.SetVectorArray("_InstanceColor", _colorChunk);
+
+        int subMeshCount = Mathf.Max(1, lod.mesh.subMeshCount);
+        for (int sub = 0; sub < subMeshCount; sub++)
+        {
+            Material mat = lod.materials[Mathf.Min(sub, lod.materials.Length - 1)];
+            if (mat == null)
+                continue;
+
+            if (!mat.enableInstancing)
+                mat.enableInstancing = true;
+
+            var rp = new RenderParams(mat)
+            {
+                matProps = _mpb,
+                shadowCastingMode = ShadowCastingMode.Off,
+                receiveShadows = false,
                 layer = gameObject.layer,
                 renderingLayerMask = RenderingLayerMask.defaultRenderingLayerMask,
                 camera = null,
@@ -299,6 +509,8 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
 
         var built = new List<PrototypeBatch>(prototypes.Length);
         int totalTrees = 0;
+        int nearTrees = 0;
+        int backgroundTrees = 0;
         int withLod1 = 0;
 
         for (int i = 0; i < prototypes.Length; i++)
@@ -306,19 +518,48 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
             if (lists[i].Count == 0)
                 continue;
 
-            if (!TryGetLodMeshes(prototypes[i].prefab, out LodMesh lod0, out LodMesh lod1))
+            GameObject prefab = prototypes[i].prefab;
+            bool isBackground = IsBackgroundPrototype(prefab);
+
+            if (!TryGetLodMeshes(prefab, out LodMesh lod0, out LodMesh lod1))
             {
-                Debug.LogWarning($"[TerrainTreeGpuInstancer] Prototype '{prototypes[i].prefab?.name}' mesh/material bulunamadı, atlandı.");
+                Debug.LogWarning($"[TerrainTreeGpuInstancer] Prototype '{prefab?.name}' mesh/material bulunamadı, atlandı.");
                 continue;
             }
 
-            if (lod1.IsValid)
+            // SoftOcc: Terrain Soft Occlusion doğrulaması + URP GPU çizim.
+            Material softOcc = ResolveNearBillboardMaterial();
+
+            // Background prefab tek mesh (billboard); near'da lod1 uzak mesh.
+            if (isBackground)
+            {
+                lod1 = default;
+                if (softOcc != null)
+                    lod0.materials = new[] { softOcc };
+            }
+            else if (lod1.IsValid)
+            {
                 withLod1++;
+                if (softOcc != null)
+                    lod1.materials = new[] { softOcc };
+            }
 
             int n = lists[i].Count;
             Matrix4x4[] mats = lists[i].ToArray();
             Vector3[] pos = positions[i].ToArray();
             BuildGridForTrees(pos, cellCount, out int[] cellStart, out int[] cellTreeIndices);
+
+            // Billboard tint: hem background hem near LOD1 için (görsel eşleşme).
+            Vector4[] colors = null;
+            Vector4[] lod1Colors = null;
+            bool needsBillboardTint = isBackground || lod1.IsValid;
+            if (needsBillboardTint)
+            {
+                colors = new Vector4[n];
+                for (int t = 0; t < n; t++)
+                    colors[t] = MakeBackgroundTint(pos[t], backgroundColorVariation);
+                lod1Colors = new Vector4[n];
+            }
 
             built.Add(new PrototypeBatch
             {
@@ -326,25 +567,133 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
                 lod1 = lod1,
                 matrices = mats,
                 positions = pos,
+                colors = colors,
+                isBackground = isBackground,
                 cellStart = cellStart,
                 cellTreeIndices = cellTreeIndices,
-                lod0Shadow = new Matrix4x4[n],
-                lod0NoShadow = new Matrix4x4[n],
+                lod0Shadow = isBackground ? System.Array.Empty<Matrix4x4>() : new Matrix4x4[n],
+                lod0NoShadow = isBackground ? System.Array.Empty<Matrix4x4>() : new Matrix4x4[n],
                 lod1Visible = new Matrix4x4[n],
+                lod1Colors = lod1Colors,
                 lod0ShadowCount = 0,
                 lod0NoShadowCount = 0,
                 lod1Count = 0
             });
             totalTrees += n;
+            if (isBackground)
+                backgroundTrees += n;
+            else
+                nearTrees += n;
         }
 
         _batches = built.ToArray();
+        _hasCullCache = false;
+        _framesSinceCull = 99;
 
         if (logOnStart)
         {
+            string nearMeshInfo = "n/a";
+            for (int i = 0; i < _batches.Length; i++)
+            {
+                if (_batches[i].isBackground)
+                    continue;
+                Mesh m0 = _batches[i].lod0.mesh;
+                Mesh m1 = _batches[i].lod1.mesh;
+                nearMeshInfo =
+                    $"LOD0={(m0 != null ? $"{m0.name} v={m0.vertexCount}" : "null")} " +
+                    $"LOD1={(m1 != null ? $"{m1.name} v={m1.vertexCount} ok={_batches[i].lod1.IsValid}" : "null")}";
+                break;
+            }
+
+            float bgDist = backgroundMaxDrawDistance > 0.01f ? backgroundMaxDrawDistance : maxDrawDistance;
             Debug.Log(
-                $"[TerrainTreeGpuInstancer] {totalTrees} ağaç, {_batches.Length} prototype, " +
-                $"grid {_gridW}x{_gridH} (cell={cell:F0}m). Switch={lodSwitchDistance:F0}m, Max={maxDrawDistance:F0}m.");
+                $"[TerrainTreeGpuInstancer] {totalTrees} ağaç (near={nearTrees}, background={backgroundTrees}), " +
+                $"{_batches.Length} prototype, grid {_gridW}x{_gridH} (cell={cell:F0}m). " +
+                $"NearLOD={lodSwitchDistance:F0}m, MaxFullLOD={maxNearFullLod}, BgMax={bgDist:F0}m/{maxBackgroundDraw}, " +
+                $"CullMove={cullMoveThreshold:F0}m/{cullMaxAgeFrames}f, {nearMeshInfo}.");
+        }
+    }
+
+    private Material ResolveNearBillboardMaterial()
+    {
+        if (nearBillboardMaterial != null)
+            return nearBillboardMaterial;
+
+#if UNITY_EDITOR
+        nearBillboardMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(SoftOccMaterialPath);
+#endif
+        if (nearBillboardMaterial == null)
+            nearBillboardMaterial = Resources.Load<Material>("VFX/M_AgacBackground_SoftOcc");
+
+        return nearBillboardMaterial;
+    }
+
+    private bool IsBackgroundPrototype(GameObject prefab)
+    {
+        if (prefab == null || string.IsNullOrEmpty(backgroundNameToken))
+            return false;
+        return prefab.name.IndexOf(backgroundNameToken, System.StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    // Billboard instance çarpanı — SoftOcc materyal _Color zaten koyu; bunu açma.
+    private static readonly Vector4 DarkForestBase = new Vector4(1f, 1f, 1f, 1f);
+
+    /// <summary>
+    /// Konum hash'inden hafif ton çarpanı (1 civarı). Mutlak renk değil — materyali açmaz.
+    /// </summary>
+    private static Vector4 MakeBackgroundTint(Vector3 worldPos, float strength)
+    {
+        if (strength <= 0.001f)
+            return DarkForestBase;
+
+        uint h = HashPosition(worldPos);
+        float u = (h & 1023u) / 1023f;
+        float v = ((h >> 10) & 1023u) / 1023f;
+        float w = ((h >> 20) & 1023u) / 1023f;
+
+        float brightness = Mathf.Lerp(0.88f, 1.06f, u);
+        float greenBias = Mathf.Lerp(-0.08f, 0.1f, v) * strength;
+        float coolBias = Mathf.Lerp(-0.05f, 0.06f, w) * strength;
+
+        float r = Mathf.Clamp(brightness * (1f - greenBias * 0.2f), 0.82f, 1.08f);
+        float g = Mathf.Clamp(brightness * (1f + greenBias), 0.85f, 1.1f);
+        float b = Mathf.Clamp(brightness * (1f + coolBias * 0.5f - greenBias * 0.1f), 0.8f, 1.06f);
+        return new Vector4(r, g, b, 1f);
+    }
+
+    private static Camera ResolveCamera()
+    {
+        Camera main = Camera.main;
+        if (main != null && main.isActiveAndEnabled)
+            return main;
+
+        Camera[] cameras = Camera.allCameras;
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera c = cameras[i];
+            if (c != null && c.isActiveAndEnabled && c.CompareTag("MainCamera"))
+                return c;
+        }
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera c = cameras[i];
+            if (c != null && c.isActiveAndEnabled && c.enabled)
+                return c;
+        }
+
+        return null;
+    }
+
+    private static uint HashPosition(Vector3 p)
+    {
+        unchecked
+        {
+            uint x = (uint)Mathf.RoundToInt(p.x * 7.1f);
+            uint z = (uint)Mathf.RoundToInt(p.z * 7.1f);
+            uint h = x * 374761393u + z * 668265263u;
+            h = (h ^ (h >> 13)) * 1274126177u;
+            return h ^ (h >> 16);
         }
     }
 
@@ -498,7 +847,7 @@ public class TerrainTreeGpuInstancer : MonoBehaviour
 
 #if UNITY_EDITOR
     [ContextMenu("Rebuild Tree Batches")]
-    private void RebuildFromContextMenu()
+    public void RebuildFromContextMenu()
     {
         _terrain = GetComponent<Terrain>();
         BuildBatches();

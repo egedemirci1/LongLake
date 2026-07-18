@@ -14,7 +14,7 @@ public static class PrepareDoorNavMeshMenu
 {
     private const string ScenePath = "Assets/Sahneler/Levels/CrashSite_Main.unity";
 
-    [MenuItem("LongLake/Prepare Door NavMesh Obstacles")]
+    [MenuItem("LongLake/NavMesh/Prepare Door Obstacles")]
     public static void PrepareObstaclesOnly()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
@@ -30,7 +30,7 @@ public static class PrepareDoorNavMeshMenu
                 $"{doors} kapı obstacle Size → (0.01, 0.001, 0.03).\n" +
                 $"{stripped} boş/kırık Door_Group MeshCollider kaldırıldı.\n" +
                 $"{thresholds} DoorThreshold eklendi/güncellendi.\n\n" +
-                "Şimdi: LongLake → Bake CrashSite NavMesh (Doors Open)",
+                "Şimdi: LongLake → NavMesh → Bake CrashSite (Doors Open)",
                 "Tamam");
         }
         finally
@@ -39,7 +39,7 @@ public static class PrepareDoorNavMeshMenu
         }
     }
 
-    [MenuItem("LongLake/Fix Door NavMesh Obstacles (Safe Size)")]
+    [MenuItem("LongLake/NavMesh/Fix Door Obstacles (Safe Size)")]
     public static void FixDoorObstaclesSafeSize()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
@@ -55,7 +55,7 @@ public static class PrepareDoorNavMeshMenu
                 $"{doors} obstacle Size → (0.01, 0.001, 0.03).\n" +
                 $"{stripped} Door_Group boş MeshCollider silindi.\n" +
                 $"{thresholds} DoorThreshold eklendi/güncellendi.\n\n" +
-                "Sonra: LongLake → Bake CrashSite NavMesh (Doors Open)",
+                "Sonra: LongLake → NavMesh → Bake CrashSite (Doors Open)",
                 "Tamam");
         }
         finally
@@ -64,7 +64,7 @@ public static class PrepareDoorNavMeshMenu
         }
     }
 
-    [MenuItem("LongLake/Prepare Door Thresholds (No Bake)")]
+    [MenuItem("LongLake/NavMesh/Prepare Door Thresholds (No Bake)")]
     public static void PrepareDoorThresholdsOnly()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
@@ -78,7 +78,7 @@ public static class PrepareDoorNavMeshMenu
                 "Kapı eşikleri hazır",
                 $"{n} Door_Group → Remove Object + DoorThreshold child.\n" +
                 $"{stripped} boş MeshCollider silindi.\n\n" +
-                "Sonra: LongLake → Bake CrashSite NavMesh (Doors Open)",
+                "Sonra: LongLake → NavMesh → Bake CrashSite (Doors Open)",
                 "Tamam");
         }
         finally
@@ -87,13 +87,13 @@ public static class PrepareDoorNavMeshMenu
         }
     }
 
-    [MenuItem("LongLake/Add Doorway Nav Floors (No Bake)")]
+    [MenuItem("LongLake/NavMesh/Add Doorway Floors (No Bake)")]
     public static void AddDoorwayNavFloorsOnly()
     {
         PrepareDoorThresholdsOnly();
     }
 
-    [MenuItem("LongLake/Bake CrashSite NavMesh (Doors Open)")]
+    [MenuItem("LongLake/NavMesh/Bake CrashSite (Doors Open)")]
     public static void BakeWithDoorsOpen()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
@@ -218,7 +218,7 @@ public static class PrepareDoorNavMeshMenu
         EditorSceneManager.SaveScene(scene);
     }
 
-    [MenuItem("LongLake/Remove Sky NavMesh Blockers (No Bake)")]
+    [MenuItem("LongLake/NavMesh/Remove Sky Blockers (No Bake)")]
     public static void RemoveSkyNavBlockersOnly()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
@@ -239,7 +239,7 @@ public static class PrepareDoorNavMeshMenu
         }
     }
 
-    [MenuItem("LongLake/Add Walkable Proxies Under Roads (No Bake)")]
+    [MenuItem("LongLake/NavMesh/Add Road Proxies (No Bake)")]
     public static void AddRoadProxiesOnly()
     {
         var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);

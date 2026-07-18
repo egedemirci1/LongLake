@@ -70995,11 +70995,71 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
       propertyPath: maxDrawDistance
-      value: 750
+      value: 550
       objectReference: {fileID: 0}
     - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
       propertyPath: lodSwitchDistance
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: shadowDistance
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: maxNearFullLod
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: castShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: receiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: backgroundMaxDrawDistance
+      value: 520
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: maxBackgroundDraw
+      value: 28000
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: backgroundColorVariation
+      value: 0.08
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: cullMoveThreshold
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: cullMaxAgeFrames
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8822441100332211001, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: cellSize
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 7754556372839656882, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: m_DetailObjectDistance
       value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 7754556372839656882, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: m_DetailObjectDensity
+      value: 0.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 7754556372839656882, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: m_HeightmapPixelError
+      value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 7754556372839656882, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: m_EnableHeightmapRayTracing
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7754556372839656882, guid: c50eba9437595cd4d86c2c86f40889bc, type: 3}
+      propertyPath: m_SplatMapDistance
+      value: 900
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

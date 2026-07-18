@@ -110,9 +110,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 316c7bdbf22f38441b3e115f3215fa3f, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 316c7bdbf22f38441b3e115f3215fa3f, type: 3}
       propertyPath: m_ScaleInLightmap
       value: 0.15260978
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 316c7bdbf22f38441b3e115f3215fa3f, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 1282af1789b4476408d229e0f73aa449, type: 2}
     - target: {fileID: 919132149155446097, guid: 316c7bdbf22f38441b3e115f3215fa3f, type: 3}
       propertyPath: m_Name
       value: agac-bilboard
