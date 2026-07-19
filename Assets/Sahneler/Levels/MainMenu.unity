@@ -548,9 +548,9 @@ RectTransform:
   - {fileID: 1934782135}
   m_Father: {fileID: 1643086685}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 240, y: -68}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 420, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &484402266
@@ -1386,9 +1386,9 @@ RectTransform:
   - {fileID: 1579324089}
   m_Father: {fileID: 1643086685}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 240, y: -148}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 420, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1272186251
@@ -2117,14 +2117,17 @@ MonoBehaviour:
   tipHoldSeconds: 2
   tipFadeSeconds: 0.35
   tips:
-  - "Ko\u015Fma hakk\u0131n s\u0131n\u0131rl\u0131d\u0131r; stamina bitince biraz beklemen gerekir."
-  - "Envanter ve craft paneli I tu\u015Fu ile a\u00E7\u0131l\u0131r."
-  - "E tu\u015Fu ile kap\u0131, \u00E7ekmece ve e\u015Fyalara etkile\u015Fime girersin."
-  - "G\xF6rev g\xFCnl\xFC\u011F\xFCn\xFC M tu\u015Fu ile a\u00E7\u0131p kapatabilirsin."
-  - "S\u0131rt \u00E7antas\u0131 bulunca hotbar a\u00E7\u0131l\u0131r; slotlar 1-8 ile se\u00E7ilir."
-  - "Kap\u0131y\u0131 \u00E7almak i\u00E7in iki oyuncu da kap\u0131n\u0131n yak\u0131n\u0131nda olmal\u0131."
-  - "Diyalogda her iki oyuncu da Devam demeli veya ayn\u0131 se\u00E7imi onaylamal\u0131."
-  - "Not defterini L tu\u015Fu ile a\u00E7abilirsin; ipu\u00E7lar\u0131 orada birikir."
+  - "Ko\u015Fma hakk\u0131n s\u0131n\u0131rl\u0131d\u0131r; stamina bitince biraz
+    beklemen gerekir."
+  - "Envanter ve craft paneli I tu\u015Fu ile a\xE7\u0131l\u0131r."
+  - "E tu\u015Fu ile kap\u0131, \xE7ekmece ve e\u015Fyalara etkile\u015Fime girersin."
+  - "G\xF6rev g\xFCnl\xFC\u011F\xFCn\xFC M tu\u015Fu ile a\xE7\u0131p kapatabilirsin."
+  - "S\u0131rt \xE7antas\u0131 bulunca hotbar a\xE7\u0131l\u0131r; slotlar 1-8 ile
+    se\xE7ilir."
+  - "Kap\u0131y\u0131 \xE7almak i\xE7in iki oyuncu da kap\u0131n\u0131n yak\u0131n\u0131nda
+    olmal\u0131."
+  - "Diyalogda her iki oyuncu da Devam demeli veya ayn\u0131 se\xE7imi onaylamal\u0131."
+  - "Not defterini L tu\u015Fu ile a\xE7abilirsin; ipu\xE7lar\u0131 orada birikir."
 --- !u!4 &1501989226
 Transform:
   m_ObjectHideFlags: 0

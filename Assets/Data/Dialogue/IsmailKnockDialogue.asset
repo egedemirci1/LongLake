@@ -16,47 +16,55 @@ MonoBehaviour:
   nodes:
   - id: n1
     speaker: "\u0130smail"
-    text: "Kim o? Gece vakti kap\u0131y\u0131 b\u00F6yle \u00E7alan olmaz burada..."
-    voiceClip: {fileID: 0}
-    choices: []
-    nextNodeId: n2
-  - id: n2
-    speaker: "\u0130smail"
-    text: "Siz de mi o kaza sesini duydunuz? Yolun kenar\u0131nda bir \u015Feyler oldu san\u0131r\u0131m."
-    voiceClip: {fileID: 0}
-    choices: []
-    nextNodeId: n3
-  - id: n3
-    speaker: "\u0130smail"
-    text: "Sizinle ne i\u015Finiz var burada?"
+    text: "Buyurun?"
     voiceClip: {fileID: 0}
     choices:
-    - label: "Arabam\u0131z yolda kald\u0131, yard\u0131m ar\u0131yoruz"
-      nextNodeId: n4_help
-    - label: "Kaza yerini kontrol etmeye geldik"
-      nextNodeId: n4_check
+    - label: "Kusura bakmay\u0131n. \u0130leride kaza yapt\u0131k; telefon da \u00E7ekmiyor."
+      nextNodeId: n2
+    - label: "Yolda kald\u0131k. Yard\u0131m isteyebilece\u011Fimiz birini ar\u0131yorduk."
+      nextNodeId: n2
     nextNodeId: 
-  - id: n4_help
+  - id: n2
     speaker: "\u0130smail"
-    text: "Anlad\u0131m... Bu saatte yaln\u0131z ba\u015F\u0131n\u0131za zor. Ben de d\u0131\u015Far\u0131da bir g\u00FCr\u00FClt\u00FC duymu\u015Ftım."
+    text: "Ge\u00E7mi\u015F olsun. \u0130yi misiniz? Yaralanan var m\u0131?"
+    voiceClip: {fileID: 0}
+    choices:
+    - label: "\u0130yiyiz, sadece biraz sars\u0131ld\u0131k."
+      nextNodeId: n3_ok
+    - label: "Ciddi bir \u015Fey yok ama ara\u00E7 k\u00F6t\u00FC durumda."
+      nextNodeId: n3_car
+    nextNodeId: 
+  - id: n3_ok
+    speaker: "\u0130smail"
+    text: "\u0130yi olman\u0131za sevindim. Az \u00F6nce sert bir ses duydum; demek sizdiniz."
     voiceClip: {fileID: 0}
     choices: []
-    nextNodeId: n5
-  - id: n4_check
+    nextNodeId: n4
+  - id: n3_car
     speaker: "\u0130smail"
-    text: "Do\u011Frusu iyi etmi\u015Fsiniz. Ben de pencereden bakt\u0131m ama net g\u00F6remedim."
+    text: "\u00D6nce sizin iyi olman\u0131z \u00F6nemli. Az \u00F6nce sert bir ses duydum; demek sizdiniz."
     voiceClip: {fileID: 0}
     choices: []
-    nextNodeId: n5
+    nextNodeId: n4
+  - id: n4
+    speaker: "\u0130smail"
+    text: "Ara\u00E7 nerede kald\u0131?"
+    voiceClip: {fileID: 0}
+    choices:
+    - label: "Viraj\u0131n a\u015Fa\u011F\u0131s\u0131nda, yolun kenar\u0131nda."
+      nextNodeId: n5
+    - label: "\u00C7ok uzakta de\u011Fil. \u0130sterseniz g\u00F6sterebiliriz."
+      nextNodeId: n5
+    nextNodeId: 
   - id: n5
     speaker: "\u0130smail"
-    text: "\u015Eu a\u015Fa\u011F\u0131da, yol kenar\u0131nda bir ara\u00E7 duruyor gibiydi. Birlikte bakmaya gidelim."
+    text: "Tamam. Bu ya\u011Fmurda burada beklemeyin. Fenerimi al\u0131p sizinle geleyim."
     voiceClip: {fileID: 0}
     choices: []
     nextNodeId: n6
   - id: n6
     speaker: "\u0130smail"
-    text: "Siz arkadan gelin. Ben \u00F6nden y\u00FCr\u00FCr\u00FCm \u2014 arabaya do\u011Fru."
+    text: "Hadi, arabaya bir bakal\u0131m."
     voiceClip: {fileID: 0}
     choices: []
     nextNodeId: 

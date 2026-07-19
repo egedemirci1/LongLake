@@ -1,0 +1,34 @@
+---
+description: Netcode for GameObjects / co-op sahiplik ve lobby kuralları
+globs: Assets/Scripts/**/*.cs
+alwaysApply: false
+---
+
+# Netcode & Co-op
+
+## Sahiplik
+- Hareket, kamera, local input: yalnız **`IsOwner`** (veya local player setup).
+- Kapı, quest, knock/dialogue trigger gibi paylaşılan state: **`NetworkVariable` + Server write**.
+- Client’tan state değiştirme → ServerRpc / mevcut server yolu; client’ta `NetworkVariable.Value =` yazma.
+
+```csharp
+// ✅ Server-authoritative (mevcut kalıp)
+private readonly NetworkVariable<bool> IsOpen = new(
+    false,
+    NetworkVariableReadPermission.Everyone,
+    NetworkVariableWritePermission.Server);
+
+// Mutasyon
+if (!IsServer || !IsSpawned) return;
+```
+
+## Lobby → oyun
+- Akış: `LobbyManager` → `GameplaySceneLoader` → sahne adı **`CrashSite_Main`** (test: `TestScene`).
+- Bu yükleme zincirini ve `NetworkLocalSetup` owner/local kamerayı bozmadan genişlet.
+
+## Dikkat
+- `QuestManager`, `DoorController`, `KnockDoorDialogueTrigger` zaten server-authoritative.
+- Play Mode çıkış temizliği: `Assets/Scripts/Core/Editor/NetcodePlayModeCleanup.cs` — kaldırma.
+- Host/client ayrımını UI’da (`LobbyUI`, `MainMenuUI`) varsayılan Netcode API ile tut.
+---
+

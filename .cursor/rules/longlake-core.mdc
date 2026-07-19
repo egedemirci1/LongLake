@@ -1,0 +1,34 @@
+---
+description: LongLake proje çekirdeği — stack, klasörler, dil, dokunulmaması gerekenler
+alwaysApply: true
+---
+
+# LongLake Core
+
+## Stack
+- Unity **6000.2.8f1**, render **URP** (`Assets/Settings/PC_RPAsset`). Shader/material = URP; Built-in varsayma.
+- Multiplayer: **Netcode for GameObjects 2.x**. NPC/kapı: **AI Navigation**.
+- Input: mevcut gameplay çoğunlukla legacy `Input.*`. Tek dosyada Input System’e geçme.
+
+## Klasörler
+- Scripts: `Assets/Scripts/<Domain>/` — Core, Player, Inventory, Dialogue, NPC, Interactables, Quest, UI.
+- Editor-only: ilgili domain altında `Editor/`; menü kökü **`LongLake/...`**.
+- Sahneler: `Assets/Sahneler/Levels/` (ana oyun: `CrashSite_Main`).
+- Data SO: `Assets/Data/`. Runtime load path’leri: `Assets/Resources/` (VFX, SFX).
+- Prefab: `Assets/Prefabs/` (etkileşimliler: `Etkilesimli-Esyalar/`).
+
+## Dil ve stil
+- Tip / metod / alan adları: **İngilizce**.
+- Yorum, tooltip, CreateAssetMenu, sahne/prefab klasör adları: **Türkçe olabilir**.
+- Namespace yok — yeni kod da global scope (bilinçli migration olmadan namespace ekleme).
+
+## Agent kısıtları
+- `Library/`, `Temp/`, `Obj/` silme veya commit etme.
+- `.meta` dosyalarını rastgele silme / taşıma.
+- Commit / push sadece kullanıcı isterse.
+- Büyük sahne/prefab YAML’ını gerekmedikçe yeniden yazma; mümkünse mevcut asset’i düzenle.
+
+## Karakterler
+- Ahu = index **0**, Yaman = index **1** (Ready Player Me avatarları).
+---
+

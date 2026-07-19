@@ -1,0 +1,16 @@
+---
+description: Cursor rule dosyaları kısa kalsın — max 500 satır, hedef ~50
+globs: .cursor/rules/**/*.mdc
+alwaysApply: false
+---
+
+# Cursor Rules Limits
+
+`.cursor/rules/*.mdc` dosyalarını yazarken veya düzenlerken:
+
+- **Üst sınır: 500 satır** (frontmatter dahil). Aşma; böl.
+- **Hedef: ~50 satır / kural.** Bir dosya şişiyorsa konuyu ayır (core / netcode / domain).
+- **Tek konu / dosya.** Genel Unity tutorial veya uzun API referansı koyma.
+- **Somut ve uygulanabilir:** path, sınıf adı, ✅/❌ örnek; spekülasyon yok.
+- Yeni kural eklerken mevcut `longlake-core`, `unity-csharp`, `netcode-coop`, `terrain-trees` ile çakışmayı birleştir veya netleştir; kopyala-yapıştır tekrarlama.
+---

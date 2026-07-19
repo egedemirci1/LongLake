@@ -1,0 +1,32 @@
+---
+description: Terrain GPU ağaç instancing, SoftOcclusion, performans
+globs: Assets/Scripts/Core/**/*Tree*.cs,Assets/Scripts/Core/Editor/**/*Tree*.cs,Assets/Scripts/Core/Editor/**/*Terrain*.cs,Assets/Art/Environment/TreeFir/**
+alwaysApply: false
+---
+
+# Terrain Trees
+
+## Mimari
+- Runtime çizim: `TerrainTreeGpuInstancer` (`Assets/Scripts/Core/`).
+- **Near:** `agac-root` prefab (LOD0 detay + LOD1 billboard).
+- **Background:** `agac-background` — isimde `"background"` → her zaman billboard, gölge yok.
+- Soft Occlusion: `NatureSoftOcclusionLeaves.shader` + `M_AgacBackground_SoftOcc.mat` under `Assets/Art/Environment/TreeFir/`.
+
+## Shader / URP
+- Unity 6: varyings’te `UNITY_VERTEX_INPUT_INSTANCE_ID` (OUTPUT değil).
+- SoftOcc: URP SubShader **önce**; `Dependency "BillboardShader"` + TreeTransparentCutout gerekli.
+- Terrain Paint Trees SoftOcc uyarısını “shader’ı silerek” çözme.
+
+## Editor menüleri
+- `LongLake/Trees/Setup Background Prototype`
+- `LongLake/Trees/Auto Place Background on TL_Grass`
+- `LongLake/Trees/Remove All Background Trees`
+- Yerleştirme sonrası sahne + `P_MainTerrain` prefab override’larını senkron tut.
+
+## Performans (kırmadan değiştir)
+- Native `treeDistance=0` gizleme: kamera hazır olana kadar ertele (Play Mode flash/freeze).
+- Cull her frame değil; background budget ve ring cull mevcut — bütçeyi körlemesine yükseltme.
+- Detail distance / density ve near full-LOD limiti düşük tutuldu; “daha net” için 100k+ full mesh açma.
+- Okunamayan mesh’te `mesh.triangles` çağırma (`vertexCount` kullan).
+---
+

@@ -1,0 +1,35 @@
+---
+description: LongLake C# / Unity script kalıpları
+globs: Assets/Scripts/**/*.cs
+alwaysApply: false
+---
+
+# Unity C# Conventions
+
+## Alanlar
+- Yeni inspector alanı: tercih `[SerializeField] private` + `_camelCase` veya mevcut dosyadaki stile uy.
+- Gruplama: `[Header("...")]`. Önemli public API için kısa `<summary>` (Türkçe OK).
+
+## Bileşen seçimi
+- Paylaşılan / senkron gameplay state → `NetworkBehaviour`.
+- Yerel FX, takipçi, editor helper → `MonoBehaviour` (`RainFollow`, `AmbienceFollow`, `TerrainTreeGpuInstancer`).
+
+## Mevcut kalıplar
+- Interact: `IInteractable` + `InventoryManager` akışını bozma.
+- Singleton / bootstrap varsa aynı pattern’e uy (`LobbyManager.Instance`, scene loader).
+- ScriptableObject: `ItemData`, `CraftingRecipe`, `DialogueSequence`, `QuestData` — yeni SO’ları `Assets/Data/` altına koy; CreateAssetMenu yolunu tutarlı tut.
+
+## Dosya boyutu
+- Tek `.cs` dosyası **500 satırı aşmasın**. MonoBehaviour / NetworkBehaviour şişerse tipi yeniden adlandırma; **`partial class`** ile böl (Unity serialization / prefab ref korunur).
+- Alanlar + lifecycle ana dosyada kalsın; UI build, bind, video, networking helper’ları partial’a taşı.
+
+## Editor
+- `#if UNITY_EDITOR` veya `Editor/` klasörü; runtime assembly’ye editor-only API sızdırma.
+- Menü: `LongLake/<Feature>/...` (ör. Trees, Terrain, NavMesh).
+
+## Resources path
+- Yağmur: `VFX/M_RainStreak`, `VFX/M_RainSplash`, `VFX/T_Rain*`, `SFX/rain_loop`.
+- Ambience: `SFX/ambiance`, `SFX/room-ambient`.
+- Bu string path’leri değiştirirken hem script hem `Assets/Resources/` asset’lerini güncelle.
+---
+
